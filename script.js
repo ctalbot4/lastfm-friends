@@ -77,7 +77,7 @@ function updateBlock(block) {
 }
 
 // API URL
-const apiUrl = "https://ws.audioscrobbler.com/2.0/?method=user.getfriends&" + getUsernameFromURL() + "&api_key=24e68c864088b9726a71eb31b4567cad&format=json";
+const apiUrl = "https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=" + getUsernameFromURL() + "&api_key=24e68c864088b9726a71eb31b4567cad&format=json";
 
 // Fetch data from the Last.fm API
 fetch(apiUrl)
