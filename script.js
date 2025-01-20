@@ -1,8 +1,7 @@
 // Function to get the username from the URL
 function getUsernameFromURL() {
-    // Extract the part after the last `/` in the URL
-    const path = window.location.pathname; 
-    const username = path.substring(path.lastIndexOf('#') + 1); // Get the username (e.g., "joedoe")
+    const hash = window.location.hash; 
+    const username = hash.substring(1);
     return username;
 }
 
