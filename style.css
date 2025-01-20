@@ -1,0 +1,43 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: start;
+    min-height: 100vh;
+}
+
+#block-container {
+    display: flex;
+    flex-flow: row;
+    gap: 10px;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+#pfp {
+    width: 50px;
+    height: 50px;
+}
+
+.block {
+    display: flex;
+    flex-flow: column;
+    width: 300px;
+    height: 300px;
+    background-size: cover;
+}
+
+.user-info {
+    display: flex;
+    flex-flow: row;
+    background-color: rgba(128, 128, 128, 0.5);
+    color: white;
+}
+
+.song-info {
+    display: flex;
+    flex-flow: column;
+    margin-top: auto;
+    background-color: rgba(128, 128, 128, 0.5);
+    color: white;
+}
