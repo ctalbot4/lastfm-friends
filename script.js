@@ -177,7 +177,7 @@ fetch(apiUrl)
     });
 
 window.addEventListener("hashchange", function() {
-    refresh();
+    location.reload();
 });
 
 setInterval(updateAllBlocks, 30000);
