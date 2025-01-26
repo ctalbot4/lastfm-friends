@@ -162,4 +162,4 @@ window.addEventListener("hashchange", function() {
     location.reload();
 });
 
-setInterval(updateAllBlocks, 10000);
+// setInterval(updateAllBlocks, 10000);

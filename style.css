@@ -1,4 +1,5 @@
 body {
+    font-family: Arial;
     margin: 0;
     padding: 0;
     display: flex;
@@ -9,9 +10,8 @@ body {
 #block-container {
     display: flex;
     flex-flow: row;
-    width: 100%;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    width: 100%;
 }
 
 #pfp {
@@ -21,10 +21,10 @@ body {
 }
 
 .block {
-    flex: 0 1 20%;
+    flex: 0 0 20%;
     display: flex;
     flex-flow: column;
-    min-width: 200px;
+    min-width: 250px;
     aspect-ratio: 1 / 1;
     background-size: cover;
 }
@@ -53,6 +53,12 @@ body {
 .song-info {
     display: flex;
     flex-flow: column;
+    gap: 2px;
+    padding: 5px;
+}
+
+.song-artist {
+    font-weight: bold;
 }
 
 .playing-icon {
@@ -71,7 +77,7 @@ body {
 
 .time {
     display: none;
-    min-width: 50px;
+    min-width: 60px;
 }
 
 [data-now-playing="true"] .playing-icon {
