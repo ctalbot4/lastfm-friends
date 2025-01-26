@@ -35,10 +35,38 @@ body {
     color: white;
 }
 
-.song-info {
+.bottom {
     display: flex;
-    flex-flow: column;
+    flex-flow: row;
     margin-top: auto;
     background-color: rgba(128, 128, 128, 0.5);
     color: white;
+
+}
+
+.song-info {
+    display: flex;
+    flex-flow: column;
+}
+
+.playing-icon {
+    width: 30px;
+    height: 30px;
+    visibility: hidden;
+}
+
+.time {
+    margin-left: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-right: 10px;
+    min-width: 50px;
+}
+
+[data-now-playing="true"] .playing-icon {
+    visibility: visible;
+}
+
+[data-now-playing="false"] .time {
+    visibility: visible;
 }
