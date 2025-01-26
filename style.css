@@ -9,22 +9,23 @@ body {
 #block-container {
     display: flex;
     flex-flow: row;
-    gap: 10px;
     width: 100%;
     flex-wrap: wrap;
+    justify-content: flex-start;
 }
 
 #pfp {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
 }
 
 .block {
+    flex: 0 1 20%;
     display: flex;
     flex-flow: column;
-    width: 300px;
-    height: 300px;
+    min-width: 200px;
+    aspect-ratio: 1 / 1;
     background-size: cover;
 }
 
@@ -33,6 +34,11 @@ body {
     flex-flow: row;
     background-color: rgba(128, 128, 128, 0.5);
     color: white;
+    align-items: center;
+    gap: 10px;
+    padding-left: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 .bottom {
@@ -52,21 +58,26 @@ body {
 .playing-icon {
     width: 30px;
     height: 30px;
-    visibility: hidden;
+    display: none;
 }
 
-.time {
+.status {
     margin-left: auto;
     margin-top: auto;
     margin-bottom: auto;
-    margin-right: 10px;
+    margin-right: 0px;
+    padding-right: 15px;
+}
+
+.time {
+    display: none;
     min-width: 50px;
 }
 
 [data-now-playing="true"] .playing-icon {
-    visibility: visible;
+    display: block;
 }
 
 [data-now-playing="false"] .time {
-    visibility: visible;
+    display: block;
 }

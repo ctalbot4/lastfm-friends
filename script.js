@@ -27,7 +27,8 @@ function createBlock(username, imageUrl) {
                     <span></span>
                 </div>
             </div>
-            <div class="time">                    
+            <div class="status">     
+                <span class="time"></span>               
                 <img src="https://www.last.fm/static/images/icons/now_playing_grey_12@2x.a643c755e003.gif" class="playing-icon">
             </div>
         </div>
@@ -56,7 +57,7 @@ async function updateBlock(block) {
         block.style.backgroundImage = `url(${imageUrl})`;
 
         const nowPlaying = recentTrack["@attr"]?.nowplaying;
-        const timeDiv = block.querySelector(".time");
+        const timeSpan = block.querySelector(".time");
         
         if (nowPlaying) {
             block.dataset.nowPlaying = "true";
@@ -72,19 +73,19 @@ async function updateBlock(block) {
             } 
             else if (diff < 60 * 60) {
                 const minutes = Math.floor(diff / 60);
-                timeDiv.innerText = `${minutes}m ago`;
+                timeSpan.innerText = `${minutes}m ago`;
             } 
             else if (diff < 60 * 60 * 24) {
                 const hours = Math.floor(diff / (60 * 60));
-                timeDiv.innerText = `${hours}h ago`;
+                timeSpan.innerText = `${hours}h ago`;
             } 
             else if (diff < 60 * 60 * 24 * 365) {
                 const days = Math.floor(diff / (60 * 60 * 24));
-                timeDiv.innerText = `${days}d ago`;
+                timeSpan.innerText = `${days}d ago`;
             }
             else {
                 const years = Math.floor(diff / (60 * 60 * 24 * 365));
-                timeDiv.innerText = `${years}y ago`;
+                timeSpan.innerText = `${years}y ago`;
             }
         }
     } catch (error) {
@@ -161,5 +162,4 @@ window.addEventListener("hashchange", function() {
     location.reload();
 });
 
-setInterval(updateAllBlocks, 30000);
-
+setInterval(updateAllBlocks, 10000);
