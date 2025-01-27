@@ -110,7 +110,6 @@ async function updateAllBlocks() {
 
 // Sort blocks then replace old ones
 function sortBlocks (blocks) {
-    // const blocks = Array.from(document.getElementsByClassName("block"));
     blocks.sort((x, y) => {
         if (x.dataset.nowPlaying == "true" && y.dataset.nowPlaying == "false") {
             return -1;
