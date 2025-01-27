@@ -41,7 +41,7 @@ function createBlock(username, imageUrl) {
 async function updateBlock(block) {
     const username = block.dataset.username;
     const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&user=${username}&api_key=24e68c864088b9726a71eb31b4567cad&format=json`;
-
+    const newBlock = block.cloneNode(true);
     try {
         const response = await fetch(friendUrl);
         if (!response.ok) {
@@ -51,22 +51,22 @@ async function updateBlock(block) {
         const data = await response.json();
         const recentTrack = data.recenttracks.track[0];
 
-        block.querySelector(".bottom > .song-info > .song-title > span").innerText = recentTrack.name;
-        block.querySelector(".bottom > .song-info > .song-artist > span").innerText = recentTrack.artist["#text"];
+        newBlock.querySelector(".bottom > .song-info > .song-title > span").innerText = recentTrack.name;
+        newBlock.querySelector(".bottom > .song-info > .song-artist > span").innerText = recentTrack.artist["#text"];
         const imageUrl = recentTrack.image[3]["#text"];
-        block.style.backgroundImage = `url(${imageUrl})`;
+        newBlock.style.backgroundImage = `url(${imageUrl})`;
 
         const nowPlaying = recentTrack["@attr"]?.nowplaying;
-        const timeSpan = block.querySelector(".time");
+        const timeSpan = newBlock.querySelector(".time");
         
         if (nowPlaying) {
-            block.dataset.nowPlaying = "true";
-            block.dataset.date = Math.floor(Date.now() / 1000);
+            newBlock.dataset.nowPlaying = "true";
+            newBlock.dataset.date = Math.floor(Date.now() / 1000);
         } 
         else {
-            block.dataset.nowPlaying = "false";
-            block.dataset.date = recentTrack.date.uts;
-            const diff = Math.floor((Date.now() - (block.dataset.date * 1000)) / 1000);
+            newBlock.dataset.nowPlaying = "false";
+            newBlock.dataset.date = recentTrack.date.uts;
+            const diff = Math.floor((Date.now() - (newBlock.dataset.date * 1000)) / 1000);
 
             if (diff < 60) {
                 timeDiv.innerText = "Just now";
@@ -91,6 +91,7 @@ async function updateBlock(block) {
     } catch (error) {
         console.error("Error updating block:", error);
     }
+    return newBlock;
 }
 
 async function updateAllBlocks() {
@@ -100,16 +101,16 @@ async function updateAllBlocks() {
     const updatePromises = Array.from(blocks).map(block => updateBlock(block));
 
     // Wait for all updateBlock calls to complete
-    await Promise.all(updatePromises);
+    const newBlocks = await Promise.all(updatePromises);
 
     // Call sortBlocks after all updates are done
-    sortBlocks();
+    sortBlocks(newBlocks);
     console.log("Refreshed!");
 }
 
-
-function sortBlocks () {
-    const blocks = Array.from(document.getElementsByClassName("block"));
+// Sort blocks then replace old ones
+function sortBlocks (blocks) {
+    // const blocks = Array.from(document.getElementsByClassName("block"));
     blocks.sort((x, y) => {
         if (x.dataset.nowPlaying == "true" && y.dataset.nowPlaying == "false") {
             return -1;
