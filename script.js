@@ -6,7 +6,10 @@ function getUsernameFromURL() {
     return username;
 }
 
-function createBlock(username, imageUrl) {
+function createBlock(friend) {
+    const username = friend.name;
+    const userUrl = friend.url
+    const imageUrl = friend.image[3]["#text"];
     const blockDiv = document.createElement("div");
     blockDiv.className = "block";
     blockDiv.setAttribute("data-username", username);
@@ -16,7 +19,7 @@ function createBlock(username, imageUrl) {
             <div class="profile-picture">
                 <img id="pfp" src="${imageUrl || 'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png'}">
             </div>
-            <div class="username">${username}</div>
+            <div class="username"><a href=${userUrl} target="_blank">${username}</a></div>
         </div>
         <div class="bottom">
             <div class="song-info">
@@ -150,7 +153,7 @@ fetch(apiUrl)
 
         friends.forEach((friend) => {
             const imageUrl = friend.image[3]["#text"];
-            const blockDiv = blockContainer.appendChild(createBlock(friend.name, imageUrl));
+            const blockDiv = blockContainer.appendChild(createBlock(friend, imageUrl));
         });
         updateAllBlocks();
     })
