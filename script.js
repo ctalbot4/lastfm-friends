@@ -22,12 +22,12 @@ function createBlock(friend) {
             <div class="username"><a href=${userUrl} target="_blank">${username}</a></div>
         </div>
         <div class="bottom">
-            <div class="song-info">
+            <div class="track-info">
                 <div class="song-title">
-                    <span></span>
+                    <a href="" target="_blank"></a>
                 </div>
-                <div class="song-artist">
-                    <span></span>
+                <div class="artist-title">
+                    <a href="" target="_blank"></a>
                 </div>
             </div>
             <div class="status">     
@@ -53,9 +53,14 @@ async function updateBlock(block) {
 
         const data = await response.json();
         const recentTrack = data.recenttracks.track[0];
+        const songLink = recentTrack.url;
+        const artistLink = songLink.split("/_")[0];
+        newBlock.querySelector(".bottom > .track-info > .song-title > a").innerText = recentTrack.name;
+        newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerText = recentTrack.artist["#text"];
+        newBlock.querySelector(".bottom > .track-info > .song-title > a").setAttribute('href', songLink);
+        newBlock.querySelector(".bottom > .track-info > .artist-title > a").setAttribute('href', artistLink);
 
-        newBlock.querySelector(".bottom > .song-info > .song-title > span").innerText = recentTrack.name;
-        newBlock.querySelector(".bottom > .song-info > .song-artist > span").innerText = recentTrack.artist["#text"];
+
         const imageUrl = recentTrack.image[3]["#text"];
         newBlock.style.backgroundImage = `url(${imageUrl})`;
 

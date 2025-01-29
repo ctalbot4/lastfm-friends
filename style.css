@@ -55,13 +55,13 @@ a {
     border-radius: 50%;
 }
 
-.song-info {
+.track-info {
     display: flex;
     flex-flow: column;
     gap: 2px;
 }
 
-.song-artist {
+.artist-title {
     font-weight: bold;
 }
 
