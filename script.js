@@ -2,14 +2,14 @@
 function getUsernameFromURL() {
     const hash = window.location.hash; 
     const username = hash.substring(1);
-    // const username = "ctalbot4_2"
+    // const username = "ctalbot4"
     return username;
 }
 
-function createBlock(friend) {
-    const username = friend.name;
-    const userUrl = friend.url
-    const imageUrl = friend.image[3]["#text"];
+function createBlock(user) {
+    const username = user.name;
+    const userUrl = user.url
+    const imageUrl = user.image[3]["#text"];
     const blockDiv = document.createElement("div");
     blockDiv.className = "block";
     blockDiv.setAttribute("data-username", username);
@@ -52,6 +52,13 @@ async function updateBlock(block) {
         }
 
         const data = await response.json();
+        if (data.recenttracks["@attr"]["total"] == 0) {
+            newBlock.classList.add("hidden");
+            return newBlock;
+        }
+        else {
+            newBlock.classList.remove("hidden");
+        }
         const recentTrack = data.recenttracks.track[0];
         const songLink = recentTrack.url;
         const artistLink = songLink.split("/_")[0];
@@ -59,7 +66,6 @@ async function updateBlock(block) {
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerText = recentTrack.artist["#text"];
         newBlock.querySelector(".bottom > .track-info > .song-title > a").setAttribute('href', songLink);
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").setAttribute('href', artistLink);
-
 
         const imageUrl = recentTrack.image[3]["#text"];
         newBlock.style.backgroundImage = `url(${imageUrl})`;
@@ -97,6 +103,7 @@ async function updateBlock(block) {
             }
         }
     } catch (error) {
+        newBlock.classList.add("hidden");
         console.error("Error updating block:", error);
     }
     return newBlock;
@@ -118,8 +125,15 @@ async function updateAllBlocks() {
 
 // Sort blocks then replace old ones
 function sortBlocks (blocks) {
+    const username = getUsernameFromURL();
     blocks.sort((x, y) => {
-        if (x.dataset.nowPlaying == "true" && y.dataset.nowPlaying == "false") {
+        if (x.dataset.username == username && x.dataset.nowPlaying == "true") {
+            return -1;
+        }
+        else if (y.dataset.username == username && y.dataset.nowPlaying == "true") {
+            return 1;
+        }
+        else if (x.dataset.nowPlaying == "true" && y.dataset.nowPlaying == "false") {
             return -1;
         }
         else if (x.dataset.nowPlaying == "false" && y.dataset.nowPlaying == "true") {
@@ -138,13 +152,34 @@ function sortBlocks (blocks) {
 
     const container = document.getElementById("block-container");
     container.innerHTML = "";
-    blocks.forEach(block => container.appendChild(block));
+    blocks.forEach(block => {
+        container.appendChild(block);});
 }
 
-const apiUrl = "https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=" + getUsernameFromURL() + "&api_key=24e68c864088b9726a71eb31b4567cad&format=json";
+const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&api_key=24e68c864088b9726a71eb31b4567cad&format=json`;
+const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=24e68c864088b9726a71eb31b4567cad&format=json`;
 
 // Fetch data from the Last.fm API
-fetch(apiUrl)
+    
+// Fetch user data
+const userFetch = fetch(userUrl)
+    .then((response) => {
+        if (!response.ok) {
+            throw new Error("Network error");
+        }
+        return response.json();
+    })
+    .then((data) => {
+        const user = data.user;
+        const blockContainer = document.getElementById("block-container");
+        blockContainer.appendChild(createBlock(user));
+    })
+    .catch((error) => {
+        console.error("Error fetching user data:", error);
+    });
+
+// Fetch friends data
+const friendsFetch = fetch(friendsUrl)
     .then((response) => {
         if (!response.ok) {
             throw new Error("Network error");
@@ -153,17 +188,19 @@ fetch(apiUrl)
     })
     .then((data) => {
         const friends = data.friends.user;
-
         const blockContainer = document.getElementById("block-container");
-
         friends.forEach((friend) => {
-            const imageUrl = friend.image[3]["#text"];
-            const blockDiv = blockContainer.appendChild(createBlock(friend, imageUrl));
+            blockContainer.appendChild(createBlock(friend));
         });
-        updateAllBlocks();
     })
     .catch((error) => {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching friends data:", error);
+    });
+
+// Call updateAllBlocks after both fetches have completed
+Promise.allSettled([userFetch, friendsFetch])
+    .then(() => {
+        updateAllBlocks();
     });
 
 window.addEventListener("hashchange", function() {

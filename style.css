@@ -84,6 +84,10 @@ a {
     text-align: right;
 }
 
+.hidden {
+    display: none;
+}
+
 [data-now-playing="true"] .playing-icon {
     display: block;
 }
