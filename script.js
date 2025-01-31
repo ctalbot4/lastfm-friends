@@ -2,7 +2,7 @@
 function getUsernameFromURL() {
     const hash = window.location.hash; 
     const username = hash.substring(1);
-    // const username = "ctalbot4"
+    // const username = "ctalbot4_2"
     return username;
 }
 
@@ -83,7 +83,7 @@ async function updateBlock(block) {
             const diff = Math.floor((Date.now() - (newBlock.dataset.date * 1000)) / 1000);
 
             if (diff < 60) {
-                timeDiv.innerText = "Just now";
+                timeSpan.innerText = "Just now";
             } 
             else if (diff < 60 * 60) {
                 const minutes = Math.floor(diff / 60);
