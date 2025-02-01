@@ -50,6 +50,7 @@ p {
 .bottom {
     display: flex;
     gap: 8px;
+    row-gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
 }
