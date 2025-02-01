@@ -1,8 +1,6 @@
-// Function to get the username from the URL
 function getUsernameFromURL() {
     const hash = window.location.hash; 
     const username = hash.substring(1);
-    // const username = "ctalbot4_2"
     return username;
 }
 
@@ -40,10 +38,9 @@ function createBlock(user) {
     return blockDiv;
 }
 
-
 async function updateBlock(block) {
     const username = block.dataset.username;
-    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&user=${username}&api_key=24e68c864088b9726a71eb31b4567cad&format=json`;
+    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&user=${username}&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
     const newBlock = block.cloneNode(true);
     try {
         const response = await fetch(friendUrl);
@@ -156,11 +153,11 @@ function sortBlocks (blocks) {
         container.appendChild(block);});
 }
 
-const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&api_key=24e68c864088b9726a71eb31b4567cad&format=json`;
-const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=24e68c864088b9726a71eb31b4567cad&format=json`;
+const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=200&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
+const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
 
-// Fetch data from the Last.fm API
-    
+let friendCount = 0;
+
 // Fetch user data
 const userFetch = fetch(userUrl)
     .then((response) => {
@@ -187,11 +184,13 @@ const friendsFetch = fetch(friendsUrl)
         return response.json();
     })
     .then((data) => {
+        friendCount = Math.min(parseInt(data.friends["@attr"].total, 10), parseInt(data.friends["@attr"].perPage, 10));
         const friends = data.friends.user;
         const blockContainer = document.getElementById("block-container");
         friends.forEach((friend) => {
             blockContainer.appendChild(createBlock(friend));
         });
+        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
     })
     .catch((error) => {
         console.error("Error fetching friends data:", error);
@@ -206,5 +205,3 @@ Promise.allSettled([userFetch, friendsFetch])
 window.addEventListener("hashchange", function() {
     location.reload();
 });
-
-setInterval(updateAllBlocks, 15000);

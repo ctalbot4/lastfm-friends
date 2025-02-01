@@ -1,5 +1,4 @@
 *.DS_Store
-test.html
 Gemfile
 Gemfile.lock
 /_site
