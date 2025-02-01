@@ -158,6 +158,8 @@ const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${g
 
 let friendCount = 0;
 
+document.title = `${getUsernameFromURL()} | Last.fm Friends`;
+
 // Fetch user data
 const userFetch = fetch(userUrl)
     .then((response) => {
