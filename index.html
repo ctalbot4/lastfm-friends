@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Friends</title>
-    <link rel="stylesheet" href="style.css"></link>
+    <title>Go to User</title>
+    <style>
+    </style>
 </head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-2QMKX3VH8T"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-2QMKX3VH8T');
-</script>
 <body>
-    <div id="block-container">
-    
+    <div class="container">
+        <h1>Enter a User</h1>
+        <input type="text" id="userInput" placeholder="">
+        <button onclick="goToLink()">Go</button>
     </div>
+
+    <script>
+        function goToLink() {
+            const username = document.getElementById('userInput').value;
+            if (username) {
+                window.location.href = `/dashboard/#${username}`;
+            }
+        }
+    </script>
 </body>
-<script src="script.js"></script>
 </html>
