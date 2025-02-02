@@ -111,6 +111,7 @@ button:hover {
     text-decoration: none;
     transition: filter 0.3s ease;
     background-color: rgba(256, 256, 256);
+    z-index: 1;
 }
 
 .github-icon > img {
