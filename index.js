@@ -47,15 +47,6 @@ const userFetch = fetch(userUrl)
 
                 container.appendChild(albumDiv);
             })
-            for (let i = data.topalbums.album.length - 1; i >= 0; i--) {
-                const album = data.topalbums.album[i];
-                const imageUrl = album.image[3]["#text"];
-                const albumDiv = document.createElement('div');
-                albumDiv.className = 'block';
-                albumDiv.style.backgroundImage = `url('${imageUrl}')`;
-
-                container.appendChild(albumDiv);
-            }
     })
     .catch((error) => {
         console.error("Error fetching user data:", error);
