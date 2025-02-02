@@ -27,7 +27,7 @@ body {
 
 .background {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(120px, 15%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 20%), 1fr));
     width: 100%
 }
 
