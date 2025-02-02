@@ -122,28 +122,32 @@ async function updateAllBlocks() {
 
 // Sort blocks then replace old ones
 function sortBlocks (blocks) {
-    const username = getUsernameFromURL();
+    const username = getUsernameFromURL().toLowerCase();
     blocks.sort((x, y) => {
-        if (x.dataset.username == username && x.dataset.nowPlaying == "true") {
+        const xUsername = x.dataset.username.toLowerCase();
+        const yUsername = y.dataset.username.toLowerCase();
+        const xNowPlaying = x.dataset.nowPlaying === "true";
+        const yNowPlaying = y.dataset.nowPlaying === "true";
+        const xDate = parseInt(x.dataset.date, 10) || 0;
+        const yDate = parseInt(y.dataset.date, 10) || 0;
+
+        if (xUsername === username && xNowPlaying) {
             return -1;
         }
-        else if (y.dataset.username == username && y.dataset.nowPlaying == "true") {
+        else if (yUsername === username && yNowPlaying) {
             return 1;
         }
-        else if (x.dataset.nowPlaying == "true" && y.dataset.nowPlaying == "false") {
+        else if (xNowPlaying && !yNowPlaying) {
             return -1;
         }
-        else if (x.dataset.nowPlaying == "false" && y.dataset.nowPlaying == "true") {
+        else if (!xNowPlaying && yNowPlaying) {
             return 1;
         }
-        else if (x.dataset.nowPlaying == "true" && y.dataset.nowPlaying == "true") {
-            return x.dataset.username.localeCompare(y.dataset.username);
-        }
-        else if (x.dataset.date > y.dataset.date) {
-            return -1;
+        else if (xNowPlaying && yNowPlaying) {
+            return xUsername.localeCompare(yUsername);
         }
         else {
-            return 1;
+            return yDate - xDate; 
         }
     });
 
