@@ -1,5 +1,5 @@
 body {
-    font-family: Arial;
+    font-family: "Inter", sans-serif;
     padding: 0px;
     margin: 0px;
 }
@@ -118,6 +118,8 @@ a {
 
 .status {
     margin-left: auto;
+    margin-top: auto;
+    margin-bottom: .3em;
     display: flex;
     align-items: center;
     padding-right: 10px;
