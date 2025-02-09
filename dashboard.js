@@ -15,7 +15,9 @@ function createBlock(user) {
     const blockHTML = `
         <div class="user-info">
             <div class="profile-picture">
-                <img id="pfp" src="${imageUrl || 'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png'}">
+                <a href="${userUrl}" target="_blank">
+                    <img id="pfp" src="${imageUrl || 'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png'}">
+                </a>
             </div>
             <div class="username"><a href=${userUrl} target="_blank">${username}</a></div>
         </div>
