@@ -4,6 +4,14 @@ function getUsernameFromURL() {
     return username;
 }
 
+const progressBar = document.getElementById("progress-bar");
+
+function updateProgress() {
+    completed++;
+    const progress = (completed / friendCount) * 100;
+    progressBar.style.width = progress + "%";
+}
+
 function createBlock(user) {
     const username = user.name;
     const userUrl = user.url
@@ -40,16 +48,18 @@ function createBlock(user) {
     return blockDiv;
 }
 
+let completed = 0;
+
 async function updateBlock(block) {
     const username = block.dataset.username;
     const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&user=${username}&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
     const newBlock = block.cloneNode(true);
     try {
         const response = await fetch(friendUrl);
+        updateProgress();
         if (!response.ok) {
             throw new Error("Network error");
         }
-
         const data = await response.json();
         if (data.recenttracks["@attr"]["total"] == 0) {
             newBlock.classList.add("hidden");
@@ -111,6 +121,8 @@ async function updateBlock(block) {
 async function updateAllBlocks() {
     const blocks = document.getElementById("block-container").getElementsByClassName("block");
 
+    completed = 0;
+
     // Convert blocks to an array and map each block to an updateBlock call
     const updatePromises = Array.from(blocks).map(block => updateBlock(block));
 
@@ -119,7 +131,8 @@ async function updateAllBlocks() {
 
     // Call sortBlocks after all updates are done
     sortBlocks(newBlocks);
-    console.log("Refreshed!");
+
+    console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
 // Sort blocks then replace old ones
@@ -207,7 +220,10 @@ const friendsFetch = fetch(friendsUrl)
 // Call updateAllBlocks after both fetches have completed
 Promise.allSettled([userFetch, friendsFetch])
     .then(() => {
-        updateAllBlocks();
+        updateAllBlocks()
+        .then(() => {
+            document.getElementById("block-container").classList.remove("hidden");
+            document.getElementById("progress-container").classList.add("hidden");});
     });
 
 window.addEventListener("hashchange", function() {
