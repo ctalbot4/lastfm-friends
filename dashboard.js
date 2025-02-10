@@ -194,6 +194,7 @@ const userFetch = fetch(userUrl)
     })
     .catch((error) => {
         console.error("Error fetching user data:", error);
+        document.getElementById("error-popup").classList.remove("hidden");
     });
 
 // Fetch friends data
@@ -215,6 +216,7 @@ const friendsFetch = fetch(friendsUrl)
     })
     .catch((error) => {
         console.error("Error fetching friends data:", error);
+        document.getElementById("error-popup").classList.remove("hidden");
     });
 
 // Call updateAllBlocks after both fetches have completed
