@@ -62,11 +62,11 @@ async function updateBlock(block) {
         }
         const data = await response.json();
         if (data.recenttracks["@attr"]["total"] == 0) {
-            newBlock.classList.add("hidden");
+            newBlock.classList.add("removed");
             return newBlock;
         }
         else {
-            newBlock.classList.remove("hidden");
+            newBlock.classList.remove("removed");
         }
         const recentTrack = data.recenttracks.track[0];
         const songLink = recentTrack.url;
@@ -112,7 +112,7 @@ async function updateBlock(block) {
             }
         }
     } catch (error) {
-        newBlock.classList.add("hidden");
+        newBlock.classList.add("removed");
         console.error("Error updating block:", error);
     }
     return newBlock;
@@ -194,7 +194,7 @@ const userFetch = fetch(userUrl)
     })
     .catch((error) => {
         console.error("Error fetching user data:", error);
-        document.getElementById("error-popup").classList.remove("hidden");
+        document.getElementById("error-popup").classList.remove("removed");
     });
 
 // Fetch friends data
@@ -216,7 +216,7 @@ const friendsFetch = fetch(friendsUrl)
     })
     .catch((error) => {
         console.error("Error fetching friends data:", error);
-        document.getElementById("error-popup").classList.remove("hidden");
+        document.getElementById("error-popup").classList.remove("removed");
     });
 
 // Call updateAllBlocks after both fetches have completed
@@ -225,7 +225,7 @@ Promise.allSettled([userFetch, friendsFetch])
         updateAllBlocks()
         .then(() => {
             document.getElementById("block-container").classList.remove("hidden");
-            document.getElementById("progress-container").classList.add("hidden");});
+            document.getElementById("progress-container").classList.add("removed");});
     });
 
 window.addEventListener("hashchange", function() {

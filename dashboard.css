@@ -136,6 +136,10 @@ a {
     opacity: 0;
 }
 
+.removed {
+    display: none;
+}
+
 #block-container:not(.hidden) {
     transition: opacity 0.2s ease-in-out;
     opacity: 1;
