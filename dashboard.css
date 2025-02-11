@@ -132,7 +132,13 @@ a {
 }
 
 .hidden {
-    display: none !important;
+    visibility: hidden !important;
+    opacity: 0;
+}
+
+#block-container:not(.hidden) {
+    transition: opacity 0.2s ease-in-out;
+    opacity: 1;
 }
 
 #pfp:hover, a:hover {

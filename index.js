@@ -21,7 +21,6 @@ document.getElementById("userInput").addEventListener("keydown", function(event)
 });
 
 // Attempt at stopping mobile scrolling
-
 document.addEventListener("touchmove", function(event) {
     event.preventDefault();
 }, { passive: false });
