@@ -16,9 +16,287 @@
   gtag('config', 'G-2QMKX3VH8T');
 </script>
 <body>
+<<<<<<< Updated upstream
     <div id="block-container">
+=======
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+    <div id="error-popup" class="removed">
+        <h1>Error</h1>
+        <p>There was a problem connecting to Last.fm. Did you enter a valid username?</p>
+    </div>
+    <!-- HTML Structure -->
+<div id="stats-ticker">
+    <div class="ticker-main">
+      <div class="live-indicator">
+        <div class="pulse-dot"></div>
+        <span>Live</span>
+      </div>
+      <div class="ticker-stats">
+        <div class="stat-item">
+          <span class="label">Now Playing:</span>
+          <span class="value">4 friends</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">Top Artist:</span>
+          <span class="value">The Weeknd</span>
+          <span class="subtext">(579 plays)</span>
+        </div>
+        <div class="stat-item">
+            <span class="label">Top Album:</span>
+            <span class="value">GNX</span>
+            <span class="subtext">(139 plays)</span>
+        </div>
+        <div class="stat-item">
+            <span class="label">Top Track:</span>
+            <span class="value">Not Like Us</span>
+            <span class="subtext">(62 plays)</span>
+        </div>
+        <div class="stat-item">
+            <span class="label">Plays:</span>
+            <span class="value">1398</span>
+        </div>
+      </div>
+      <button class="expand-btn" aria-label="Show more stats">
+        <svg class="chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+      </button>
+    </div>
+    
+    <!-- Expandable Dropdown -->
+    <div class="stats-dropdown">
+      <div class="dropdown-grid">
+        <div class="chart-container">
+          <h4>Top Artists This Week</h4>
+          <svg class="bar-chart"></svg>
+        </div>
+        <div class="leaderboard">
+          <h4>Most Played Tracks</h4>
+          <ol>
+            <li>Cruel Summer - 15 plays</li>
+            <li>Anti-Hero - 12 plays</li>
+            <li>Flowers - 10 plays</li>
+          </ol>
+        </div>
+        <div class="user-stats">
+          <h4>Your Listening</h4>
+          <div class="mini-stats">
+            <div class="stat">
+              <div class="number">42</div>
+              <div class="label">Tracks played</div>
+            </div>
+            <div class="stat">
+              <div class="number">18h</div>
+              <div class="label">Listening time</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+    <div id="block-container" class="hidden">
+>>>>>>> Stashed changes
     
     </div>
 </body>
+<style>
+   /* CSS Styles */
+#stats-ticker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 18, 0.96);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 1000;
+  /* Account for mobile browser UI */
+  padding-top: env(safe-area-inset-top);
+}
+
+.ticker-main {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 16px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ff453a;
+  font-size: 0.9em;
+  margin-right: 24px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #ff453a;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+.ticker-stats {
+  flex: 1;
+  display: flex;
+  gap: 32px;
+  overflow: hidden;
+}
+
+.stat-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.95em;
+  color: white;
+}
+
+.label {
+  opacity: 0.8;
+}
+
+.subtext {
+  font-size: 0.85em;
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.chevron {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s;
+}
+
+/* Dropdown Styles */
+.stats-dropdown {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#stats-ticker.expanded .stats-dropdown {
+  max-height: 400px;
+}
+
+.dropdown-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 24px;
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.chart-container {
+  min-height: 200px;
+}
+
+.leaderboard ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mini-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* Interactions */
+#stats-ticker:hover .chevron {
+  transform: rotate(180deg);
+}
+
+#stats-ticker.expanded .chevron {
+  transform: rotate(180deg);
+}
+
+#block-container {
+    margin-top: 28px;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Mobile Adaptation */
+@media (max-width: 768px) {
+  .ticker-main {
+    height: 28px;
+    padding: 0 12px;
+  }
+
+  .stats-dropdown {
+    overflow-y: auto;
+  }
+
+  .dropdown-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  
+  .ticker-stats {
+    gap: 16px;
+  }
+}
+</style>
+<script type="text/javascript">
+    // Get DOM elements
+const statsTicker = document.getElementById('stats-ticker');
+const expandBtn = statsTicker.querySelector('.expand-btn');
+
+// Toggle dropdown
+function toggleDropdown() {
+    statsTicker.classList.toggle('expanded');
+    
+    // Update button aria-label
+    const isExpanded = statsTicker.classList.contains('expanded');
+    expandBtn.setAttribute('aria-expanded', isExpanded.toString());
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!statsTicker.contains(e.target)) {
+        statsTicker.classList.remove('expanded');
+        expandBtn.setAttribute('aria-expanded', 'false');
+    }
+});
+
+// Handle button click
+expandBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent document click handler
+    toggleDropdown();
+});
+
+// Update now playing count
+function updateNowPlaying() {
+    // Count blocks with data-now-playing="true"
+    const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
+    
+    // Update the ticker display
+    const nowPlayingElement = document.querySelector('#stats-ticker .stat-item:first-child .value');
+    nowPlayingElement.textContent = `${nowPlayingCount} friend${nowPlayingCount !== 1 ? 's' : ''}`;
+}
+
+// Run on page load and whenever needed
+updateNowPlaying();
+
+// Optional: Update automatically every 5 seconds
+setInterval(updateNowPlaying, 5000);
+</script>
 <script src="/lastfm-friends/dashboard.js"></script>
 </html>
