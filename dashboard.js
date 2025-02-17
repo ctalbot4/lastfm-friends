@@ -205,6 +205,12 @@ const userFetch = fetch(userUrl)
     .then((data) => {
         const user = data.user;
         document.title = `${user.name} | Last.fm Friends`;
+        gtag('event', 'page_view', {
+            'page_title': document.title,
+            'page_location': window.location.href,
+            'page_path': window.location.pathname
+          });
+          
         const blockContainer = document.getElementById("block-container");
         blockContainer.appendChild(createBlock(user));
     })
