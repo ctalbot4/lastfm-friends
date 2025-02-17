@@ -1,3 +1,5 @@
+const APIKEY = "1c4a67a2eacf14e735edb9e4475d3237";
+
 function getUsernameFromURL() {
     const hash = window.location.hash; 
     const username = hash.substring(1);
@@ -49,10 +51,12 @@ function createBlock(user) {
 }
 
 let completed = 0;
+const userPlayCounts = {};
 
 async function updateBlock(block) {
     const username = block.dataset.username;
-    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&user=${username}&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
+    const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
+    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&from=${oneWeekAgo}&user=${username}&api_key=${APIKEY}&format=json`;
     const newBlock = block.cloneNode(true);
     try {
         const response = await fetch(friendUrl);
@@ -68,6 +72,8 @@ async function updateBlock(block) {
         else {
             newBlock.classList.remove("removed");
         }
+        userPlayCounts[username] = parseInt(data.recenttracks["@attr"].total);
+
         const recentTrack = data.recenttracks.track[0];
         const songLink = recentTrack.url;
         const artistLink = songLink.split("/_")[0];
@@ -132,6 +138,15 @@ async function updateAllBlocks() {
     // Call sortBlocks after all updates are done
     sortBlocks(newBlocks);
 
+    // Update now playing count
+    const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
+    const nowPlayingElement = document.querySelector('#stats-ticker .stat-item:first-child .value');
+    nowPlayingElement.textContent = `${nowPlayingCount} friend${nowPlayingCount !== 1 ? 's' : ''}`;
+
+    // Update total plays
+    const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
+    document.querySelector(".ticker-plays > .value").innerText = totalPlays;
+
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
@@ -172,12 +187,12 @@ function sortBlocks (blocks) {
         container.appendChild(block);});
 }
 
-const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=200&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
-const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
+const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=200&api_key=${APIKEY}&format=json`;
+const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${APIKEY}&format=json`;
 
 let friendCount = 0;
 
-document.title = `${getUsernameFromURL()} | Last.fm Friends`;
+document.title = `Loading... | Last.fm Friends`;
 
 // Fetch user data
 const userFetch = fetch(userUrl)
@@ -189,6 +204,7 @@ const userFetch = fetch(userUrl)
     })
     .then((data) => {
         const user = data.user;
+        document.title = `${user.name} | Last.fm Friends`;
         const blockContainer = document.getElementById("block-container");
         blockContainer.appendChild(createBlock(user));
     })
@@ -212,6 +228,7 @@ const friendsFetch = fetch(friendsUrl)
         friends.forEach((friend) => {
             blockContainer.appendChild(createBlock(friend));
         });
+        updateTicker();
         setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
     })
     .catch((error) => {
@@ -225,9 +242,109 @@ Promise.allSettled([userFetch, friendsFetch])
         updateAllBlocks()
         .then(() => {
             document.getElementById("block-container").classList.remove("hidden");
+            document.getElementById("stats-ticker").classList.remove("hidden");
             document.getElementById("progress-container").classList.add("removed");});
     });
 
 window.addEventListener("hashchange", function() {
     location.reload();
 });
+
+// NEW TICKER
+
+const statsTicker = document.getElementById('stats-ticker');
+
+// Update ticker (other than now playing count)
+async function updateTicker() {
+
+    const artistPlays = {};
+    const albumPlays = {};
+    const trackPlays = {};
+    const blocks = document.getElementById("block-container").getElementsByClassName("block");
+
+    const artistPromises = Array.from(blocks).map(block => {
+        const username = block.dataset.username;
+        artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${APIKEY}&format=json`;
+        return fetch(artistsUrl)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Network error");
+                }
+                return response.json();
+            })
+            .then((data) => {
+                data.topartists.artist.forEach(artist => {
+                    if (artistPlays[artist.name]) {
+                        artistPlays[artist.name] += parseInt(artist.playcount);
+                    } 
+                    else {
+                        artistPlays[artist.name] = parseInt(artist.playcount);
+                    }                
+                });
+            })
+            .catch((error) => {
+                console.error("Error fetching user artist data:", error);
+            });
+    });
+
+    const albumPromises = Array.from(blocks).map(block => {
+        const username = block.dataset.username;
+        albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${APIKEY}&format=json`;
+        return fetch(albumsUrl)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Network error");
+                }
+                return response.json();
+            })
+            .then((data) => {
+                data.topalbums.album.forEach(album => {
+                    if (albumPlays[album.name]) {
+                        albumPlays[album.name] += parseInt(album.playcount);
+                    } 
+                    else {
+                        albumPlays[album.name] = parseInt(album.playcount);
+                    }                
+                });
+            })
+            .catch((error) => {
+                console.error("Error fetching user album data:", error);
+            });
+    });
+
+    const trackPromises = Array.from(blocks).map(block => {
+        const username = block.dataset.username;
+        tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${APIKEY}&format=json`;
+        return fetch(tracksUrl)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Network error");
+                }
+                return response.json();
+            })
+            .then((data) => {
+                data.toptracks.track.forEach(track => {
+                    if (trackPlays[track.name]) {
+                        trackPlays[track.name] += parseInt(track.playcount);
+                    } 
+                    else {
+                        trackPlays[track.name] = parseInt(track.playcount);
+                    }                
+                });
+            })
+            .catch((error) => {
+                console.error("Error fetching user track data:", error);
+            });
+    });
+
+    await Promise.all([...artistPromises, ...albumPromises]);
+    const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => b[1] - a[1]);
+    const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => b[1] - a[1]);
+    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => b[1] - a[1]);
+    document.querySelector(".ticker-artist > .value").innerText = sortedArtistPlays[0][0];
+    document.querySelector(".ticker-artist > .subtext").innerText = `(${sortedArtistPlays[0][1]} plays)`;
+    document.querySelector(".ticker-album > .value").innerText = sortedAlbumPlays[0][0];
+    document.querySelector(".ticker-album > .subtext").innerText = `(${sortedAlbumPlays[0][1]} plays)`;
+    document.querySelector(".ticker-track > .value").innerText = sortedTrackPlays[0][0];
+    document.querySelector(".ticker-track> .subtext").innerText = `(${sortedTrackPlays[0][1]} plays)`;
+}
