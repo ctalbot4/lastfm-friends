@@ -2,6 +2,11 @@ body {
     font-family: "Inter", sans-serif;
     padding: 0px;
     margin: 0px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+body:has(#block-container:not(.hidden)) {
+    background-color: rgba(21, 21, 21);
 }
 
 a {
