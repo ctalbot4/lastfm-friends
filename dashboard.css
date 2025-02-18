@@ -201,10 +201,11 @@ a {
     top: 0;
     left: 0;
     right: 0;
-    background: rgba(18, 18, 18, 0.96);
+    background: rgba(21, 21, 21);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    z-index: 1000;
+    z-index: 10;
+    overflow: hidden;
     /* Account for mobile browser UI */
     padding-top: env(safe-area-inset-top);
 }
@@ -213,7 +214,7 @@ a {
     display: flex;
     align-items: center;
     height: 28px;
-    padding: 0 16px;
+    padding-right: 16px;
 }
 
 .live-indicator {
@@ -222,7 +223,11 @@ a {
     gap: 6px;
     color: #ff453a;
     font-size: 0.9em;
-    margin-right: 24px;
+    margin-right: 14px;
+    padding: 0px min(3%, 16px);
+    background: rgba(21, 21, 21);
+    backdrop-filter: blur(10px);
+    z-index: 5;
 }
 
 .pulse-dot {
@@ -233,17 +238,17 @@ a {
     animation: pulse 1.5s infinite;
 }
 
-.ticker-stats {
-    flex-grow: 1;
+.ticker-stats, .ticker-scroll {
     display: flex;
-    gap: 25px;
-    overflow: hidden;
+    gap: 28px;
+    width: 1350px;
+    flex-shrink: 0;
 }
 
 .stat-item {
     display: flex;
     align-items: baseline;
-    gap: 8px;
+    gap: 6px;
     font-size: 0.9em;
     color: white;
     flex-shrink: 0;
@@ -253,28 +258,53 @@ a {
     opacity: 0.8;
     flex-shrink: 0;
     display: inline-block;
+    font-size: 0.8em;
 }
 
 .subtext {
     font-size: 0.75em;
     opacity: 0.6;
-    margin-left: 4px;
     flex-shrink: 0;
     display: inline-block;
 }
 
 .value {
-    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     display: inline-block;
+    max-width: 180px;
+}
+
+.ticker-scroll {
+    display: none;
 }
 
 @keyframes pulse {
     0% { opacity: 1; }
     50% { opacity: 0.4; }
     100% { opacity: 1; }
+}
+
+@media (max-width: 1250px) {
+    .ticker-stats {
+        animation: ticker-scroll1 45s linear infinite;
+    }
+    .ticker-scroll {
+        display: flex;
+        animation: ticker-scroll2 45s linear infinite;
+    }
+}
+  
+@keyframes ticker-scroll1 {
+    0% { transform: translateX(0%); }
+    50% { transform: translateX(-1250px); }
+    50.000001% { transform: translateX(1250px); }
+    100% { transform: translateX(0%); }
+}
+@keyframes ticker-scroll2 {
+    0% { transform: translateX(0px); }
+    100% { transform: translateX(-2500px); }
 }
 
 /*

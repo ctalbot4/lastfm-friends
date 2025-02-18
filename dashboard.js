@@ -14,6 +14,7 @@ function updateProgress() {
     progressBar.style.width = progress + "%";
 }
 
+// Create a block with user info
 function createBlock(user) {
     const username = user.name;
     const userUrl = user.url
@@ -53,6 +54,7 @@ function createBlock(user) {
 let completed = 0;
 const userPlayCounts = {};
 
+// Fetch data for a block and update
 async function updateBlock(block) {
     const username = block.dataset.username;
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
@@ -124,6 +126,7 @@ async function updateBlock(block) {
     return newBlock;
 }
 
+// Update all blocks
 async function updateAllBlocks() {
     const blocks = document.getElementById("block-container").getElementsByClassName("block");
 
@@ -140,12 +143,16 @@ async function updateAllBlocks() {
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
-    const nowPlayingElement = document.querySelector('#stats-ticker .stat-item:first-child .value');
-    nowPlayingElement.textContent = `${nowPlayingCount} friend${nowPlayingCount !== 1 ? 's' : ''}`;
+    const nowPlayingElements = document.querySelectorAll('.ticker-friends > .value');
+    nowPlayingElements.forEach(element => {
+        element.textContent = `${nowPlayingCount} friend${nowPlayingCount !== 1 ? 's' : ''}`;
+    });
 
     // Update total plays
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
-    document.querySelector(".ticker-plays > .value").innerText = totalPlays;
+    document.querySelectorAll(".ticker-plays > .value").forEach(element => {
+        element.innerText = totalPlays;
+    });
 
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
@@ -187,80 +194,7 @@ function sortBlocks (blocks) {
         container.appendChild(block);});
 }
 
-const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=200&api_key=${APIKEY}&format=json`;
-const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${APIKEY}&format=json`;
-
-let friendCount = 0;
-
-document.title = `Loading... | Last.fm Friends`;
-
-// Fetch user data
-const userFetch = fetch(userUrl)
-    .then((response) => {
-        if (!response.ok) {
-            throw new Error("Network error");
-        }
-        return response.json();
-    })
-    .then((data) => {
-        const user = data.user;
-        document.title = `${user.name} | Last.fm Friends`;
-        gtag('event', 'page_view', {
-            'page_title': document.title,
-            'page_location': window.location.href,
-            'page_path': window.location.pathname
-          });
-          
-        const blockContainer = document.getElementById("block-container");
-        blockContainer.appendChild(createBlock(user));
-    })
-    .catch((error) => {
-        console.error("Error fetching user data:", error);
-        document.getElementById("error-popup").classList.remove("removed");
-    });
-
-// Fetch friends data
-const friendsFetch = fetch(friendsUrl)
-    .then((response) => {
-        if (!response.ok) {
-            throw new Error("Network error");
-        }
-        return response.json();
-    })
-    .then((data) => {
-        friendCount = Math.min(parseInt(data.friends["@attr"].total, 10), parseInt(data.friends["@attr"].perPage, 10));
-        const friends = data.friends.user;
-        const blockContainer = document.getElementById("block-container");
-        friends.forEach((friend) => {
-            blockContainer.appendChild(createBlock(friend));
-        });
-        updateTicker();
-        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
-    })
-    .catch((error) => {
-        console.error("Error fetching friends data:", error);
-        document.getElementById("error-popup").classList.remove("removed");
-    });
-
-// Call updateAllBlocks after both fetches have completed
-Promise.allSettled([userFetch, friendsFetch])
-    .then(() => {
-        updateAllBlocks()
-        .then(() => {
-            document.getElementById("block-container").classList.remove("hidden");
-            document.getElementById("stats-ticker").classList.remove("hidden");
-            document.getElementById("progress-container").classList.add("removed");});
-    });
-
-window.addEventListener("hashchange", function() {
-    location.reload();
-});
-
-// NEW TICKER
-
-const statsTicker = document.getElementById('stats-ticker');
-
-// Update ticker (other than now playing count)
+// Update ticker (other than now playing, plays)
 async function updateTicker() {
 
     const artistPlays = {};
@@ -347,10 +281,97 @@ async function updateTicker() {
     const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => b[1] - a[1]);
     const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => b[1] - a[1]);
     const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => b[1] - a[1]);
-    document.querySelector(".ticker-artist > .value").innerText = sortedArtistPlays[0][0];
-    document.querySelector(".ticker-artist > .subtext").innerText = `(${sortedArtistPlays[0][1]} plays)`;
-    document.querySelector(".ticker-album > .value").innerText = sortedAlbumPlays[0][0];
-    document.querySelector(".ticker-album > .subtext").innerText = `(${sortedAlbumPlays[0][1]} plays)`;
-    document.querySelector(".ticker-track > .value").innerText = sortedTrackPlays[0][0];
-    document.querySelector(".ticker-track> .subtext").innerText = `(${sortedTrackPlays[0][1]} plays)`;
+    document.querySelectorAll(".ticker-artist > .value").forEach(element => {
+        element.innerText = sortedArtistPlays[0][0];
+    });
+    document.querySelectorAll(".ticker-artist > .subtext").forEach(element => {
+        element.innerText = `(${sortedArtistPlays[0][1]} plays)`;
+    });
+    
+    document.querySelectorAll(".ticker-album > .value").forEach(element => {
+        element.innerText = sortedAlbumPlays[0][0];
+    });
+    document.querySelectorAll(".ticker-album > .subtext").forEach(element => {
+        element.innerText = `(${sortedAlbumPlays[0][1]} plays)`;
+    });
+    document.querySelectorAll(".ticker-track > .value").forEach(element => {
+        element.innerText = sortedTrackPlays[0][0];
+    });
+    document.querySelectorAll(".ticker-track> .subtext").forEach(element => {
+        element.innerText = `(${sortedTrackPlays[0][1]} plays)`;
+    });
+
+    console.log("Stats refreshed!");
 }
+
+const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=150&api_key=${APIKEY}&format=json`;
+const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${APIKEY}&format=json`;
+
+let friendCount = 0;
+
+document.title = `${getUsernameFromURL()} | Last.fm Friends`;
+
+// Fetch user data
+const userFetch = fetch(userUrl)
+    .then((response) => {
+        if (!response.ok) {
+            throw new Error("Network error");
+        }
+        return response.json();
+    })
+    .then((data) => {
+        const user = data.user;
+        document.title = `${user.name} | Last.fm Friends`;
+        gtag('event', 'page_view', {
+            'page_title': document.title,
+            'page_location': window.location.href,
+            'page_path': window.location.pathname
+          });
+
+        const blockContainer = document.getElementById("block-container");
+        blockContainer.appendChild(createBlock(user));
+    })
+    .catch((error) => {
+        console.error("Error fetching user data:", error);
+        document.getElementById("error-popup").classList.remove("removed");
+    });
+
+// Fetch friends data
+const friendsFetch = fetch(friendsUrl)
+    .then((response) => {
+        if (!response.ok) {
+            throw new Error("Network error");
+        }
+        return response.json();
+    })
+    .then((data) => {
+        friendCount = Math.min(parseInt(data.friends["@attr"].total, 10), parseInt(data.friends["@attr"].perPage, 10));
+        const friends = data.friends.user;
+        const blockContainer = document.getElementById("block-container");
+        friends.forEach((friend) => {
+            blockContainer.appendChild(createBlock(friend));
+        });
+        updateTicker();
+    })
+    .catch((error) => {
+        console.error("Error fetching friends data:", error);
+        document.getElementById("error-popup").classList.remove("removed");
+    });
+
+// Call updateAllBlocks after both fetches have completed
+Promise.allSettled([userFetch, friendsFetch])
+    .then(() => {
+        updateAllBlocks()
+        .then(() => {
+            document.getElementById("block-container").classList.remove("hidden");
+            document.getElementById("stats-ticker").classList.remove("hidden");
+            document.getElementById("progress-container").classList.add("removed");});
+
+            // Set conservative refreshes to try to avoid API rate limit
+            setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
+            setInterval(updateTicker, Math.max(90000, (friendCount / 45) * 1000));
+    });
+
+window.addEventListener("hashchange", function() {
+    location.reload();
+});
