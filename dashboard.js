@@ -280,7 +280,7 @@ async function updateTicker() {
             });
     });
 
-    await Promise.all([...artistPromises, ...albumPromises]);
+    await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
     const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => b[1] - a[1]);
     const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => b[1] - a[1]);
     const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => b[1] - a[1]);
