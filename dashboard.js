@@ -10,7 +10,7 @@ const progressBar = document.getElementById("progress-bar");
 
 function updateProgress() {
     completed++;
-    const progress = (completed / friendCount) * 100;
+    const progress = (completed / ((friendCount + 1) * 4)) * 100;
     progressBar.style.width = progress + "%";
 }
 
@@ -221,6 +221,7 @@ async function updateTicker() {
                         artistPlays[artist.name] = parseInt(artist.playcount);
                     }                
                 });
+                updateProgress();
             })
             .catch((error) => {
                 console.error("Error fetching user artist data:", error);
@@ -246,6 +247,7 @@ async function updateTicker() {
                         albumPlays[album.name] = parseInt(album.playcount);
                     }                
                 });
+                updateProgress();
             })
             .catch((error) => {
                 console.error("Error fetching user album data:", error);
@@ -271,6 +273,7 @@ async function updateTicker() {
                         trackPlays[track.name] = parseInt(track.playcount);
                     }                
                 });
+                updateProgress();
             })
             .catch((error) => {
                 console.error("Error fetching user track data:", error);
@@ -351,7 +354,6 @@ const friendsFetch = fetch(friendsUrl)
         friends.forEach((friend) => {
             blockContainer.appendChild(createBlock(friend));
         });
-        updateTicker();
     })
     .catch((error) => {
         console.error("Error fetching friends data:", error);
@@ -360,16 +362,16 @@ const friendsFetch = fetch(friendsUrl)
 
 // Call updateAllBlocks after both fetches have completed
 Promise.allSettled([userFetch, friendsFetch])
-    .then(() => {
-        updateAllBlocks()
-        .then(() => {
-            document.getElementById("block-container").classList.remove("hidden");
-            document.getElementById("stats-ticker").classList.remove("hidden");
-            document.getElementById("progress-container").classList.add("removed");});
+    .then(async () => {
+        await Promise.all([updateTicker(), updateAllBlocks()]);
 
-            // Set conservative refreshes to try to avoid API rate limit
-            setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
-            setInterval(updateTicker, Math.max(90000, (friendCount / 45) * 1000));
+        document.getElementById("block-container").classList.remove("hidden");
+        document.getElementById("stats-ticker").classList.remove("hidden");
+        document.getElementById("progress-container").classList.add("removed");
+
+        // Set conservative refreshes to try to avoid API rate limit
+        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
+        setInterval(updateTicker, Math.max(90000, (friendCount / 45) * 1000));
     });
 
 window.addEventListener("hashchange", function() {

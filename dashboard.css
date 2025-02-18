@@ -298,13 +298,13 @@ a {
   
 @keyframes ticker-scroll1 {
     0% { transform: translateX(0%); }
-    50% { transform: translateX(-1250px); }
-    50.000001% { transform: translateX(1250px); }
+    50% { transform: translateX(-1350px); }
+    50.000001% { transform: translateX(1350px); }
     100% { transform: translateX(0%); }
 }
 @keyframes ticker-scroll2 {
     0% { transform: translateX(0px); }
-    100% { transform: translateX(-2500px); }
+    100% { transform: translateX(-2700px); }
 }
 
 /*
