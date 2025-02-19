@@ -10,14 +10,14 @@ const progressBar = document.getElementById("progress-bar");
 
 function updateProgress() {
     completed++;
-    const progress = (completed / ((friendCount + 1) * 4)) * 100;
+    const progress = (completed + 1 / ((friendCount + 1) * 4)) * 100;
     progressBar.style.width = progress + "%";
 }
 
 // Create a block with user info
 function createBlock(user) {
     const username = user.name;
-    const userUrl = user.url
+    const userUrl = user.url;
     const imageUrl = user.image[3]["#text"];
     const blockDiv = document.createElement("div");
     blockDiv.className = "block";
@@ -371,7 +371,7 @@ Promise.allSettled([userFetch, friendsFetch])
 
         // Set conservative refreshes to try to avoid API rate limit
         setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
-        setInterval(updateTicker, Math.max(90000, (friendCount / 45) * 1000));
+        setInterval(updateTicker, Math.max(90000, (friendCount / 5) * 9 * 1000));
     });
 
 window.addEventListener("hashchange", function() {
