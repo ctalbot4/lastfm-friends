@@ -10,7 +10,7 @@ const progressBar = document.getElementById("progress-bar");
 
 function updateProgress() {
     completed++;
-    const progress = (completed + 1 / ((friendCount + 1) * 4)) * 100;
+    const progress = ((completed + 1) / ((friendCount + 1) * 4)) * 100;
     progressBar.style.width = progress + "%";
 }
 
