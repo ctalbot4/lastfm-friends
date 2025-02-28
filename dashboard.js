@@ -81,8 +81,8 @@ async function updateBlock(block) {
         const artistLink = songLink.split("/_")[0];
         newBlock.querySelector(".bottom > .track-info > .song-title > a").innerText = recentTrack.name;
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerText = recentTrack.artist["#text"];
-        newBlock.querySelector(".bottom > .track-info > .song-title > a").setAttribute('href', songLink);
-        newBlock.querySelector(".bottom > .track-info > .artist-title > a").setAttribute('href', artistLink);
+        newBlock.querySelector(".bottom > .track-info > .song-title > a").href = songLink;
+        newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;
 
         const imageUrl = recentTrack.image[3]["#text"];
         newBlock.style.backgroundImage = `url(${imageUrl})`;
@@ -214,12 +214,17 @@ async function updateTicker() {
             })
             .then((data) => {
                 data.topartists.artist.forEach(artist => {
+                    const count = parseInt(artist.playcount);
+                    const url = artist.url;
                     if (artistPlays[artist.name]) {
-                        artistPlays[artist.name] += parseInt(artist.playcount);
+                        artistPlays[artist.name].count += count;
                     } 
                     else {
-                        artistPlays[artist.name] = parseInt(artist.playcount);
-                    }                
+                        artistPlays[artist.name] = {
+                            count,
+                            url
+                        };
+                    }               
                 });
                 updateProgress();
             })
@@ -240,11 +245,16 @@ async function updateTicker() {
             })
             .then((data) => {
                 data.topalbums.album.forEach(album => {
+                    const count = parseInt(album.playcount);
+                    const url = album.url;
                     if (albumPlays[album.name]) {
-                        albumPlays[album.name] += parseInt(album.playcount);
+                        albumPlays[album.name].count += count;
                     } 
                     else {
-                        albumPlays[album.name] = parseInt(album.playcount);
+                        albumPlays[album.name] = {
+                            count,
+                            url
+                        };
                     }                
                 });
                 updateProgress();
@@ -266,12 +276,17 @@ async function updateTicker() {
             })
             .then((data) => {
                 data.toptracks.track.forEach(track => {
+                    const count = parseInt(track.playcount);
+                    const url = track.url;
                     if (trackPlays[track.name]) {
-                        trackPlays[track.name] += parseInt(track.playcount);
+                        trackPlays[track.name].count += count;
                     } 
                     else {
-                        trackPlays[track.name] = parseInt(track.playcount);
-                    }                
+                        trackPlays[track.name] = {
+                            count,
+                            url
+                        };
+                    }               
                 });
                 updateProgress();
             })
@@ -281,27 +296,38 @@ async function updateTicker() {
     });
 
     await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
-    const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => b[1] - a[1]);
-    const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => b[1] - a[1]);
-    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => b[1] - a[1]);
-    document.querySelectorAll(".ticker-artist > .value").forEach(element => {
+    const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => b[1].count - a[1].count);
+    const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => b[1].count - a[1].count);
+    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => b[1].count - a[1].count);
+
+    document.querySelectorAll(".ticker-artist > .value > a").forEach(element => {
         element.innerText = sortedArtistPlays[0][0];
     });
     document.querySelectorAll(".ticker-artist > .subtext").forEach(element => {
-        element.innerText = `(${sortedArtistPlays[0][1]} plays)`;
+        element.innerText = `(${sortedArtistPlays[0][1].count} plays)`;
+    });
+    document.querySelectorAll(".ticker-artist > .value > a").forEach(element => {
+        element.href = sortedArtistPlays[0][1].url;
     });
     
-    document.querySelectorAll(".ticker-album > .value").forEach(element => {
+    document.querySelectorAll(".ticker-album > .value > a").forEach(element => {
         element.innerText = sortedAlbumPlays[0][0];
     });
     document.querySelectorAll(".ticker-album > .subtext").forEach(element => {
-        element.innerText = `(${sortedAlbumPlays[0][1]} plays)`;
+        element.innerText = `(${sortedAlbumPlays[0][1].count} plays)`;
     });
-    document.querySelectorAll(".ticker-track > .value").forEach(element => {
+    document.querySelectorAll(".ticker-album > .value > a").forEach(element => {
+        element.href = sortedAlbumPlays[0][1].url;
+    });
+
+    document.querySelectorAll(".ticker-track > .value > a").forEach(element => {
         element.innerText = sortedTrackPlays[0][0];
     });
     document.querySelectorAll(".ticker-track> .subtext").forEach(element => {
-        element.innerText = `(${sortedTrackPlays[0][1]} plays)`;
+        element.innerText = `(${sortedTrackPlays[0][1].count} plays)`;
+    });
+    document.querySelectorAll(".ticker-track > .value > a").forEach(element => {
+        element.href = sortedTrackPlays[0][1].url;
     });
 
     console.log("Stats refreshed!");
@@ -370,7 +396,7 @@ Promise.allSettled([userFetch, friendsFetch])
         document.getElementById("progress-container").classList.add("removed");
 
         // Set conservative refreshes to try to avoid API rate limit
-        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
+        // setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
         setInterval(updateTicker, Math.max(90000, (friendCount / 5) * 9 * 1000));
     });
 

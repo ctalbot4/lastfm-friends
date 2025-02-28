@@ -14,6 +14,15 @@ a {
     color: inherit;
 }
 
+.ticker-stats a:hover {
+    text-decoration: underline; 
+}
+
+#pfp:hover, #block-container a:hover {
+    transition: filter 0.2s ease;
+    filter: brightness(.875); 
+}
+
 #block-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
@@ -117,9 +126,10 @@ a {
 }
 
 .playing-icon {
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
     display: none;
+    filter: brightness(1000%) contrast(1000%);
 }
 
 .status {
@@ -133,7 +143,7 @@ a {
 
 .time {
     display: none;
-    min-width: 65px;
+    min-width: 68px;
     text-align: right;
 }
 
@@ -149,11 +159,6 @@ a {
 #block-container:not(.hidden), #stats-ticker:not(.hidden) {
     transition: opacity 0.2s ease-in-out;
     opacity: 1;
-}
-
-#pfp:hover, a:hover {
-    transition: filter 0.2s ease;
-    filter: brightness(.875); 
 }
 
 #progress-container {
@@ -298,6 +303,9 @@ a {
     .ticker-scroll {
         display: flex;
         animation: ticker-scroll2 45s linear infinite;
+    }
+    .ticker-main:hover .ticker-scroll, .ticker-main:hover .ticker-stats {
+        animation-play-state: paused;
     }
 }
   
