@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Stats</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    h2 {
+      color: #1a1a1a;
+      font-size: 1.2rem;
+      margin: 24px 0 16px;
+    }
+    .chart-section {
+      max-width: 400px;
+      margin: 0 auto 32px;
+    }
+    .top-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .list-item {
+      position: relative;
+      margin: 8px 0;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9em;
+    }
+    .item-image {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .item-info {
+      flex-grow: 1;
+      min-width: 0;
+    }
+    .item-name {
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .play-count {
+      color: #666;
+      font-size: 0.85em;
+    }
+    .listeners {
+      position: relative;
+      margin-left: auto;
+      height: 24px;
+      width: 70px;
+    }
+    .listener-img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid white;
+      position: absolute;
+      top: 0;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .listener-img:hover {
+      z-index: 2;
+      transform: scale(1.15);
+    }
+    .listener-img[data-user]:hover::after {
+      content: attr(data-user);
+      position: absolute;
+      bottom: -26px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      white-space: nowrap;
+    }
+    .bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: rgba(100, 100, 255, 0.08);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chart-section">
+    <h2>Top Artists</h2>
+    <ul class="top-list" id="artists-list"></ul>
+  </div>
+
+  <div class="chart-section">
+    <h2>Top Albums</h2>
+    <ul class="top-list" id="albums-list"></ul>
+  </div>
+
+  <script>
+    const artists = [
+      { 
+        name: "Radiohead", 
+        plays: 500,
+        image: 'https://i.scdn.co/image/84282c28d851a700132356381fcfbadc67ff498b',
+        listeners: [
+          { user: 'Alex', img: 'https://i.pravatar.cc/40?img=1' },
+          { user: 'Sam', img: 'https://i.pravatar.cc/40?img=2' },
+          { user: 'Jordan', img: 'https://i.pravatar.cc/40?img=3' }
+        ]
+      },
+      { 
+        name: "Kanye West", 
+        plays: 324,
+        image: 'https://i.scdn.co/image/84282c28d851a700132356381fcfbadc67ff498b',
+        listeners: [
+          { user: 'Alex', img: 'https://i.pravatar.cc/40?img=1' },
+          { user: 'Sam', img: 'https://i.pravatar.cc/40?img=2' },
+          { user: 'Jordan', img: 'https://i.pravatar.cc/40?img=3' }
+        ]
+      },
+      // ... other artists ...
+    ];
+
+    const albums = [
+      { 
+        name: "OK Computer", 
+        plays: 320,
+        image: 'https://i.scdn.co/image/ab67616d00001e02df9a35baaa98675256b35177',
+        listeners: [
+          { user: 'Alex', img: 'https://i.pravatar.cc/40?img=1' },
+          { user: 'Casey', img: 'https://i.pravatar.cc/40?img=5' }
+        ]
+      },
+      // ... other albums ...
+    ];
+
+    function createListItem(itemData, maxPlays) {
+      const li = document.createElement("li");
+      li.classList.add("list-item");
+
+      // Progress bar
+      const bar = document.createElement("div");
+      bar.classList.add("bar");
+      bar.style.width = `${(itemData.plays / maxPlays) * 100}%`;
+
+      // Image
+      const img = document.createElement("img");
+      img.classList.add("item-image");
+      img.src = itemData.image;
+      img.alt = itemData.name;
+
+      // Text info
+      const info = document.createElement("div");
+      info.classList.add("item-info");
+      
+      const name = document.createElement("div");
+      name.classList.add("item-name");
+      name.textContent = itemData.name;
+      
+      const plays = document.createElement("div");
+      plays.classList.add("play-count");
+      plays.textContent = `${itemData.plays.toLocaleString()} plays`;
+
+      // Listeners
+      const listeners = document.createElement("div");
+      listeners.classList.add("listeners");
+
+      itemData.listeners.forEach((listener, index) => {
+        const img = document.createElement("img");
+        img.classList.add("listener-img");
+        img.src = listener.img;
+        img.style.left = `${index * 16}px`;
+        img.style.zIndex = index;
+        img.setAttribute('data-user', listener.user);
+        listeners.appendChild(img);
+      });
+
+      // Assemble elements
+      info.appendChild(name);
+      info.appendChild(plays);
+      li.appendChild(bar);
+      li.appendChild(img);
+      li.appendChild(info);
+      li.appendChild(listeners);
+
+      return li;
+    }
+
+    // Render artists
+    const artistsList = document.getElementById("artists-list");
+    const artistsMax = Math.max(...artists.map(a => a.plays));
+    artists.forEach(artist => {
+      artistsList.appendChild(createListItem(artist, artistsMax));
+    });
+
+    // Render albums
+    const albumsList = document.getElementById("albums-list");
+    const albumsMax = Math.max(...albums.map(a => a.plays));
+    albums.forEach(album => {
+      albumsList.appendChild(createListItem(album, albumsMax));
+    });
+  </script>
+</body>
+</html>

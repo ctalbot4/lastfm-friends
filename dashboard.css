@@ -320,15 +320,18 @@ a {
     100% { transform: translateX(-2700px); }
 }
 
-/*
-.block[data-now-playing="false"]::before {
+.block::before {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0);
+    transition: background-color 0.2s ease-in-out;
     z-index: 1;
 }
-/*
+
+.block[data-preview-playing="true"]::before {
+    background-color: rgba(0, 0, 0, 0.25);
+}
