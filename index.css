@@ -118,7 +118,7 @@ button:hover {
     height: 40px;
 }
 
-.github-icon > img:hover {
+.github-icon:hover > img {
     transition: filter 0.3s ease;
     filter: brightness(3); 
 }
