@@ -2,7 +2,7 @@ function goToUser() {
     const username = document.getElementById('userInput').value;
     if (username) {
         localStorage.setItem("lastUser", username);
-        window.location.href = `/lastfm-friends/dashboard#${username}`;
+        window.location.href = `dashboard#${username}`;
     }
 }
 
