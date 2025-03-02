@@ -150,10 +150,35 @@ async function updateAllBlocks() {
 
     // Update total plays
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
-    document.querySelectorAll(".ticker-plays > .value").forEach(element => {
-        element.innerText = totalPlays;
-    });
+    
+    // Counting animation
+    const startPlays = parseInt(document.querySelector(".ticker-plays > .value").innerText);
+    if (startPlays) {
+        let startTime = null;
+        const duration = Math.max(10000, (friendCount / 5) * 1000) - 2000;
 
+        function updateCounter(currentTime) {
+            if (!startTime) startTime = currentTime;
+            const elapsedTime = currentTime - startTime;
+            const progress = Math.min(elapsedTime / duration, 1);
+            const currentNumber = Math.floor(progress * (totalPlays - startPlays) + startPlays);
+            document.querySelectorAll(".ticker-plays > .value").forEach(element => {
+                element.innerText = currentNumber;
+            });
+
+            if (progress < 1) {
+                requestAnimationFrame(updateCounter);
+            }
+        }
+
+        requestAnimationFrame(updateCounter);
+    }
+    else {
+        document.querySelectorAll(".ticker-plays > .value").forEach(element => {
+            element.innerText = totalPlays;
+        });
+    }
+    
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
