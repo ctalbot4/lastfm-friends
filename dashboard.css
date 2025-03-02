@@ -204,7 +204,7 @@ a {
     display: block;
 }
 
-/* NEW TICKER */
+/* TICKER */
 
 #stats-ticker {
     position: fixed;
@@ -283,7 +283,7 @@ a {
     text-overflow: ellipsis;
     white-space: nowrap;
     display: inline-block;
-    max-width: 180px;
+    max-width: 190px;
 }
 
 .ticker-scroll {
@@ -335,3 +335,35 @@ a {
 .block[data-preview-playing="true"]::before {
     background-color: rgba(0, 0, 0, 0.25);
 }
+
+.sound-toggle {
+    position: absolute;
+    right: 0;
+    top: 6%;
+    border: none;
+    padding: 4px min(3%, 16px);
+    background: rgba(21, 21, 21);
+    cursor: pointer;
+    display: block;
+}
+
+@media (pointer: coarse) {
+    .sound-toggle {
+        display: none;
+    }
+}
+
+.sound-toggle img {
+    display: none;
+    width: 18px;
+    height: 18px;
+}
+
+.sound-toggle:hover > img {
+    transition: filter 0.3s ease;
+    filter: brightness(1.5); 
+}
+  
+.sound-toggle .sound-on { display: block; }
+.sound-toggle.muted .sound-off { display: block; }
+.sound-toggle.muted .sound-on { display: none; }

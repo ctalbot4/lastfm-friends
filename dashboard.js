@@ -396,7 +396,7 @@ Promise.allSettled([userFetch, friendsFetch])
         document.getElementById("progress-container").classList.add("removed");
 
         // Set conservative refreshes to try to avoid API rate limit
-        // setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
+        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
         setInterval(updateTicker, Math.max(90000, (friendCount / 5) * 9 * 1000));
     });
 
@@ -410,26 +410,24 @@ let currentAudio = null;
 let currentBlock = null;
 let activeRequestId = 0;
 
-// JSONP helper: appends a script tag with a unique callback parameter
+// Store timers across block clones
+const hoverTimers = {};
+const previewTimers = {};
+
+// JSONP helper
 function getJSONP(url, callback) {
-    console.log("Fetched.");
     const callbackName = "jsonp_callback_" + Math.round(100000 * Math.random());
     const requestId = activeRequestId;
     
-    window[callbackName] = function(data) {
-        console.log(`Callback triggered. Request ID: ${requestId}, Active ID: ${activeRequestId}`);
-        
+    window[callbackName] = function(data) {      
+        // Return if stale request  
         if (requestId !== activeRequestId) {
-            console.log("Stale request ignored.");
             delete window[callbackName];
             document.body.removeChild(script);
             return;
         }
     
-        console.log("Processing data...");
         callback(data);
-    
-        console.log("Cleaning up...");
         delete window[callbackName];
         document.body.removeChild(script);
     };
@@ -437,82 +435,70 @@ function getJSONP(url, callback) {
     const script = document.createElement("script");
     script.src = url + (url.indexOf('?') >= 0 ? "&" : "?") + "callback=" + callbackName;
     document.body.appendChild(script);
-  }
+}
 
-// Function that searches for a preview given a track title and artist name.
-// If no preview is found and the title contains parentheses, it removes them and retries (once).
+// Search for preview and retry if not found
 function searchPreview(trackTitle, artistName, block, retried = false) {
-    // Build query and URL for JSONP
-    const query = `artist:"${artistName}" track:"${trackTitle}"`;
+    // Remove any question marks (causes issues with Deezer API)
+    const sanitizedTrackTitle = trackTitle.replace(/\?/g, '');
+
+    const query = `artist:"${artistName}" track:"${sanitizedTrackTitle}"`;
     const encodedQuery = encodeURIComponent(query);
     const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
   
     getJSONP(url, function(result) {
-      if (result.data && result.data.length > 0) {
-        // Split the expected track and artist into words
+        // Find first fesult that contains matching word in artist and song name
         const trackWords = trackTitle.toLowerCase().split(/\s+/);
         const artistWords = artistName.toLowerCase().split(/\s+/);
-  
-        // Look for the first track that contains any word from both the track and artist strings
         let foundTrack = null;
         for (let track of result.data) {
-          const resultTrackTitle = track.title.toLowerCase();
-          const resultArtistName = track.artist.name.toLowerCase();
-          const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-          const artistMatches = artistWords.some(word => resultArtistName.includes(word));
-  
-          if (trackMatches && artistMatches) {
-            foundTrack = track;
-            break;
-          }
+            const resultTrackTitle = track.title.toLowerCase();
+            const resultArtistName = track.artist.name.toLowerCase();
+            const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
+            const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+            if (trackMatches && artistMatches) {
+                foundTrack = track;
+                break;
+            }
         }
-  
+        
         if (foundTrack && foundTrack.preview) {
-          currentAudio = new Audio(foundTrack.preview);
-          currentAudio.play();
-          block.dataset.previewPlaying = "true";
-        } else {
-          // If no matching preview found, and we haven't retried yet,
-          // remove parentheses from trackTitle and try again.
-          if (!retried && trackTitle.includes('(')) {
+            currentAudio = new Audio(foundTrack.preview);
+            currentAudio.play();
+            block.dataset.previewPlaying = "true";
+            previewTimers[block.dataset.username] = setTimeout(() => {
+                document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+            }, 30000);
+        }
+        else if (!retried && trackTitle.includes('(')) {
             const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
             console.log(`Retrying search without parentheses: "${newTitle}"`);
             searchPreview(newTitle, artistName, block, true);
-          } else {
-            console.log(`No matching preview found for "${trackTitle}" by "${artistName}"`);
-          }
         }
-      } else {
-        // No data returned – try retrying if not already done.
-        if (!retried && trackTitle.includes('(')) {
-          const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
-          console.log(`Retrying search without parentheses: "${newTitle}"`);
-          searchPreview(newTitle, artistName, block, true);
-        } else {
-          console.log(`No preview found for "${trackTitle}" by "${artistName}"`);
+        else {
+            console.log(`No preview found for "${trackTitle}" by "${artistName}"`);
         }
-      }
     });
   }
 
-// Use event delegation on the block container
 const blockContainer = document.getElementById("block-container");
 
 blockContainer.addEventListener("mouseover", function(e) {
+    if (!isSoundOn) return;
     const block = e.target.closest(".block");
     if (!block) return;
 
-    console.log(currentBlock);
-    console.log(activeRequestId);
-    console.log(currentAudio);
+    // If same track, don't restart
     if (currentBlock && currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
         currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
             return;
-        }
+    }
     
     // Clear any previous timeout
-    if (block.previewTimer) {
-        clearTimeout(block.previewTimer);
+    if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
+        clearTimeout(hoverTimers[block.dataset.username]);
+        clearTimeout(previewTimers[block.dataset.username]);
     }
         
     // Cancel previous interactions
@@ -520,47 +506,50 @@ blockContainer.addEventListener("mouseover", function(e) {
     if (currentAudio) {
         currentAudio.pause();
         currentAudio = null;
-      }
-      
+    }
+    
     if (currentBlock) {
-      currentBlock.dataset.previewPlaying = "false";
+        currentBlock.dataset.previewPlaying = "false";
     }
   
     currentBlock = block;
 
-  // Extract track and artist names from the block
-  block.previewTimer = setTimeout(() => {
-    const songLink = block.querySelector('.song-title a');
-    const artistLink = block.querySelector('.artist-title a');
-    if (!songLink || !artistLink) return;
-    const trackTitle = songLink.textContent.trim();
-    const artistName = artistLink.textContent.trim();
+    // Wait for 200 ms then start song search
+    hoverTimers[block.dataset.username] = setTimeout(() => {
+        const trackTitle = block.querySelector('.song-title a').textContent;
+        const artistName = block.querySelector('.artist-title a').textContent;
 
-    // Call the helper to search for a preview.
-    searchPreview(trackTitle, artistName, block);
-  }, 200);
+        searchPreview(trackTitle, artistName, block);
+    }, 200);
 });
 
-// Stop playback when mouse leaves the block
+// Stop when mouse leaves the block
 blockContainer.addEventListener("mouseout", function(e) {
-    console.log("mouseout");
     const block = e.target.closest(".block");
     if (!block || e.relatedTarget?.closest('.block') === block) return;
 
     // Clear any previous timeout
-    console.log(block.dataset.previewTimer);
-    if (block.previewTimer) {
-        clearTimeout(block.previewTimer);
+    if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
+        clearTimeout(hoverTimers[block.dataset.username]);
+        clearTimeout(previewTimers[block.dataset.username]);
     }
 
+    // Cancel 
     activeRequestId++;
-  
     if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-      currentAudio = null;
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
     }
     block.dataset.previewPlaying = "false";
     currentBlock = null;
 });
 
+// Sound toggle
+let isSoundOn = false;
+const soundToggle = document.getElementById('sound-toggle');
+
+soundToggle.addEventListener('click', () => {
+    isSoundOn = !isSoundOn;
+    soundToggle.classList.toggle('muted', !isSoundOn);
+});
