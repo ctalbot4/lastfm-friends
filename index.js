@@ -10,7 +10,8 @@ let lastUser;
 
 if (localStorage.getItem("lastUser") !== null) {
     lastUser = localStorage.getItem("lastUser");
-} else {
+} 
+else {
     lastUser = "ctalbot4";
 }
 
@@ -20,14 +21,28 @@ document.getElementById("userInput").addEventListener("keydown", function(event)
     }
 });
 
-// Attempt at stopping mobile scrolling
+// Stop mobile scrolling
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        window.scrollTo(0, 0);
+    }, 100);
+});
+
+document.getElementById('userInput').addEventListener('focus', function() {
+    document.body.classList.add('prevent-scroll');
+});
+
+document.getElementById('userInput').addEventListener('blur', function() {
+    document.body.classList.remove('prevent-scroll');
+});
+
 document.addEventListener("touchmove", function(event) {
     event.preventDefault();
 }, { passive: false });
 
+// Fetch background art
 const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${lastUser}&limit=100&period=12month&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
     
-// Fetch user data
 const userFetch = fetch(userUrl)
     .then((response) => {
         if (!response.ok) {

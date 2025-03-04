@@ -46,7 +46,6 @@ h1 {
 }
   
 .big {
-    animation: pulse 2s infinite alternate;
     font-size: 1.5em;
 }
   
@@ -92,7 +91,7 @@ p {
     border-color: #ff1a1a;
 }
 
-button {
+.bottom button {
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
     border: none;
@@ -104,7 +103,7 @@ button {
     transition: background-color 0.3s ease;
 }
 
-button:hover {
+.bottom button:hover {
     background-color: #b30000;
 }
 
@@ -131,4 +130,37 @@ button:hover {
 .github-icon:hover > img {
     transition: filter 0.3s ease;
     filter: brightness(3); 
+}
+
+.try-profile {
+    margin-top: 15px;
+    color: #666;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.try-button {
+    background: none;
+    border: none;
+    color: #ff1a1a;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    transition: color 0.3s ease;
+}
+
+.try-button:hover {
+    color: #b30000;
+    text-decoration: none;
+}
+
+body.prevent-scroll {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
