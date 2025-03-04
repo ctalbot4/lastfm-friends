@@ -3,8 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Last.fm Friends</title>
-    <link rel="stylesheet" href="index.css"></link>
+    <title>lastfmfriends.live</title>
+    <!-- SEO stuff -->
+    <meta name="description" content="See (and hear) what your friends are listening to in real-time on Last.fm.">
+    <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "lastfmfriends.live - Discover What Your Friends Are Listening To",
+          "url": "https://lastfmfriends.live",
+          "applicationCategory": "Music",
+          "operatingSystem": "All",
+          "description": "See (and hear) what your friends are listening to in real-time on Last.fm.",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://lastfmfriends.live/dashboard#{search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+    </script>
+    <meta property="og:image" content="https://lastfmfriends.live/favicon/favicon.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:image" content="https://lastfmfriends.live/favicon/favicon.svg">
+    <link rel="canonical" href="https://lastfmfriends.live">
+    <link rel="stylesheet" href="index.css">
     <link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
     <link rel="shortcut icon" href="favicon/favicon.ico" />
@@ -27,7 +51,9 @@
         <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg">
     </a>
     <div class="input-container">
-        <h1>Last.fm Friends</h1>
+        <h1>
+            <span class="big">lastfm</span><span class="small">friends.live</span>
+        </h1>
         <h5>Discover what your friends are listening to in real-time.</h5>
         <p>Enter a username:</p>
         <div class="bottom">

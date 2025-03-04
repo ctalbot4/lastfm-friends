@@ -363,7 +363,7 @@ const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${g
 
 let friendCount = 0;
 
-document.title = `${getUsernameFromURL()} | Last.fm Friends`;
+document.title = `${getUsernameFromURL()} | lastfmfriends.live`;
 
 // Fetch user data
 const userFetch = fetch(userUrl)
@@ -375,7 +375,7 @@ const userFetch = fetch(userUrl)
     })
     .then((data) => {
         const user = data.user;
-        document.title = `${user.name} | Last.fm Friends`;
+        document.title = `${user.name} | lastfmfriends.live`;
         gtag('event', 'page_view', {
             'page_title': document.title,
             'page_location': window.location.href,

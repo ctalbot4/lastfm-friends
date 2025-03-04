@@ -175,7 +175,7 @@ a {
 #progress-bar {
     width: 0%;
     height: 12px;
-    background-color: #3498db;
+    background-color: #d14f4f;
     transition: width 0.2s;
 }
 
