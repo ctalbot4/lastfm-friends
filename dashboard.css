@@ -37,37 +37,37 @@ a {
 }
 
 /* Top gradient */
-.block::before {
+.user-info::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 15%;
+    height: 105%;
     background: linear-gradient(to bottom, 
         rgba(0, 0, 0, 0.6) 0%, 
         rgba(0, 0, 0, 0.3) 50%,
         rgba(0, 0, 0, 0.15) 80%,
         transparent 100%
     );
-    z-index: 1;
+    z-index: -1;
 }
 
 /* Bottom gradient */
-.block::after {
+.bottom::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 20%;
+    height: 120%;     
     background: linear-gradient(to top, 
         rgba(0, 0, 0, 0.8) 0%, 
         rgba(0, 0, 0, 0.5) 50%,
         rgba(0, 0, 0, 0.2) 80%,
         transparent 100%
     );
-    z-index: 1;
+    z-index: -1;
 }
 
 .user-info {
@@ -123,6 +123,14 @@ a {
 
 .song-title {
     font-style: italic;
+}
+
+.heart-icon {
+    margin-left: 4px;
+    width: 12px;
+    height: 12px;
+    transform: translateY(1.5px);
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.7));
 }
 
 .playing-icon {

@@ -36,6 +36,9 @@ function createBlock(user) {
             <div class="track-info">
                 <div class="song-title">
                     <a href="" target="_blank"></a>
+                    <svg class="heart-icon" viewBox="0 0 120 120" fill="white">
+                    <path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/>
+                    </svg>
                 </div>
                 <div class="artist-title">
                     <a href="" target="_blank"></a>
@@ -55,21 +58,31 @@ let completed = 0;
 const userPlayCounts = {};
 
 // Fetch data for a block and update
-async function updateBlock(block) {
+async function updateBlock(block, retry = false) {
     const username = block.dataset.username;
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&from=${oneWeekAgo}&user=${username}&api_key=${APIKEY}&format=json`;
+    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&extended=1&from=${oneWeekAgo}&user=${username}&api_key=${APIKEY}&format=json`;
     const newBlock = block.cloneNode(true);
     try {
         const response = await fetch(friendUrl);
         updateProgress();
         if (!response.ok) {
-            throw new Error("Network error");
+            const errorData = await response.json();
+            throw {
+                status: response.status,
+                data: errorData
+            };
         }
         const data = await response.json();
+        if (data.error) {
+            throw {
+                status: response.status,
+                data: data
+            };
+        }
         if (data.recenttracks["@attr"]["total"] == 0) {
-            newBlock.classList.add("removed");
-            return newBlock;
+            // Remove if no tracks played
+            return null;
         }
         else {
             newBlock.classList.remove("removed");
@@ -80,7 +93,7 @@ async function updateBlock(block) {
         const songLink = recentTrack.url;
         const artistLink = songLink.split("/_")[0];
         newBlock.querySelector(".bottom > .track-info > .song-title > a").innerText = recentTrack.name;
-        newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerText = recentTrack.artist["#text"];
+        newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerText = recentTrack.artist.name;
         newBlock.querySelector(".bottom > .track-info > .song-title > a").href = songLink;
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;
 
@@ -89,6 +102,13 @@ async function updateBlock(block) {
 
         const nowPlaying = recentTrack["@attr"]?.nowplaying;
         const timeSpan = newBlock.querySelector(".time");
+
+        if (recentTrack.loved === "0") {
+            newBlock.querySelector(".heart-icon").classList.add("removed");
+        }
+        else {
+            newBlock.querySelector(".heart-icon").classList.remove("removed");
+        }
         
         if (nowPlaying) {
             newBlock.dataset.nowPlaying = "true";
@@ -119,10 +139,26 @@ async function updateBlock(block) {
                 timeSpan.innerText = `${years}y ago`;
             }
         }
-    } catch (error) {
+    } 
+    catch (error) {
         newBlock.classList.add("removed");
-        console.error("Error updating block:", error);
+
+        if (error.data) {
+            console.error(`API error ${error.data.error} for user ${username}:`, error.data.message);
+            if (error.data?.error === 17) {
+                // Remove if private user
+                return null;
+            }
+            else if (error.data?.error === 8 && retry == false) {
+                return updateBlock(block, true);
+            }
+        }
+        else {
+            console.error(`Error updating ${username}:`, error);
+        }
     }
+    newBlock.dataset.previewPlaying = block.dataset.previewPlaying || "false";
+
     return newBlock;
 }
 
@@ -138,8 +174,19 @@ async function updateAllBlocks() {
     // Wait for all updateBlock calls to complete
     const newBlocks = await Promise.all(updatePromises);
 
+    const newerBlocks = [];
+
+    // Sync previewPlaying from original blocks and ignore null blocks
+    newBlocks.forEach((newBlock, index) => {
+        if (newBlock) {
+            const originalBlock = blocks[index];
+            newBlock.dataset.previewPlaying = originalBlock.dataset.previewPlaying || "false";
+            newerBlocks.push(newBlock);
+        }
+    });
+
     // Call sortBlocks after all updates are done
-    sortBlocks(newBlocks);
+    sortBlocks(newerBlocks);
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
@@ -491,7 +538,7 @@ function searchPreview(trackTitle, artistName, block, retried = false) {
         if (foundTrack && foundTrack.preview) {
             currentAudio = new Audio(foundTrack.preview);
             currentAudio.play();
-            block.dataset.previewPlaying = "true";
+            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
             previewTimers[block.dataset.username] = setTimeout(() => {
                 document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
             }, 30000);
@@ -520,21 +567,25 @@ blockContainer.addEventListener("mouseover", function(e) {
             return;
     }
     
-    // Clear any previous timeout
+    // Clear previous timeout on hovered block
     if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
         clearTimeout(hoverTimers[block.dataset.username]);
         clearTimeout(previewTimers[block.dataset.username]);
+    }
+
+    // Clear previous timeout on previous block if mouseout wasn't triggered
+    if (currentBlock) {
+        document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`).dataset.previewPlaying = "false";
+        clearTimeout(hoverTimers[currentBlock.dataset.username]);
+        clearTimeout(previewTimers[currentBlock.dataset.username]);
     }
         
     // Cancel previous interactions
     activeRequestId++;
     if (currentAudio) {
         currentAudio.pause();
+        currentAudio.currentTime = 0;
         currentAudio = null;
-    }
-    
-    if (currentBlock) {
-        currentBlock.dataset.previewPlaying = "false";
     }
   
     currentBlock = block;
@@ -566,7 +617,7 @@ blockContainer.addEventListener("mouseout", function(e) {
         currentAudio.currentTime = 0;
         currentAudio = null;
     }
-    block.dataset.previewPlaying = "false";
+    document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
     currentBlock = null;
 });
 
