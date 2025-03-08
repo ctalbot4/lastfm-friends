@@ -127,9 +127,9 @@ a {
 
 .heart-icon {
     margin-left: 4px;
-    width: 12px;
-    height: 12px;
-    transform: translateY(1.5px);
+    width: 10px;
+    height: 10px;
+    transform: translateY(0.5px);
     filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.7));
 }
 
@@ -161,7 +161,7 @@ a {
 }
 
 .removed {
-    display: none;
+    display: none !important;
 }
 
 #block-container:not(.hidden), #stats-ticker:not(.hidden) {
@@ -222,7 +222,7 @@ a {
     background: rgba(21, 21, 21);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    z-index: 10;
+    z-index: 100;
     overflow: hidden;
     /* Account for mobile browser UI */
     padding-top: env(safe-area-inset-top);

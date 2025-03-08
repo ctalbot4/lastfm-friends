@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="charts.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
@@ -30,7 +31,6 @@
         <h1>Error</h1>
         <p>There was a problem connecting to Last.fm. Did you enter a valid username?</p>
     </div>
-
     <div id="stats-ticker" class="hidden">
       <div class="ticker-main">
         <div class="live-indicator">
@@ -62,7 +62,6 @@
               <span class="value"></span>
           </div>
         </div>
-        <!--Copy div for ticker scrolling-->
         <div class="ticker-scroll">
           <div class="stat-item ticker-friends">
             <span class="label">Now Playing:</span>
@@ -94,9 +93,26 @@
         <img src= "icons/soundoff.png" class="sound-off">
       </button>
     </div>
+    <div class="charts">
+      <div class="chart-section">
+        <h2>Top Artists</h2>
+        <ul class="top-list" id="artists-list"></ul>
+      </div>
+    
+      <div class="chart-section">
+        <h2>Top Albums</h2>
+        <ul class="top-list" id="albums-list"></ul>
+      </div>
+
+      <div class="chart-section">
+        <h2>Top Tracks</h2>
+        <ul class="top-list" id="tracks-list"></ul>
+      </div>
+    </div>
     <div id="block-container" class="hidden">
     
     </div>
 </body>
 <script src="dashboard.js"></script>
+<script src="charts.js"></script>
 </html>
