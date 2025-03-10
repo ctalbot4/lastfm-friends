@@ -283,9 +283,10 @@ body:has(#charts:not(.collapsed)) {
     height: 100vh;
 }
 
-/* Shrink charts to highlight ability to scroll to user */
+/* Enlarge charts to highlight ability to scroll to user */
 @media (max-width: 1337px) {
     #charts {
-        height: min(82%, 522px);
+        height: min(90%, 600px);
+        max-height: 90%;
     }
 }

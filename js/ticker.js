@@ -170,7 +170,7 @@ async function updateTicker() {
         element.innerText = `(${sortedTrackPlays[0][1].plays} plays)`;
     });
     document.querySelectorAll(".ticker-track > .value > a").forEach(element => {
-        element.href = sortedTrackPlays[0][1].url;
+        element.href = sortedTrackPlays[0][1].trackUrl;
     });
 
     let artistsMax = 0;   
