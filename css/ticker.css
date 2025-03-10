@@ -6,7 +6,7 @@
     background: rgba(21, 21, 21);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    z-index: 20;
+    z-index: 30;
     overflow: hidden;
     /* Account for mobile browser UI */
     padding-top: env(safe-area-inset-top);

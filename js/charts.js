@@ -55,11 +55,9 @@ function toggleCharts() {
     charts.classList.toggle('collapsed');
 }
 
-// Open charts on toggle click
+// Toggle charts on toggle click
 chartToggle.addEventListener('click', () => {
-    if (charts.classList.contains("collapsed")) {
-        toggleCharts();
-    }
+    toggleCharts();
 });
 
 document.addEventListener("click", function(event) {

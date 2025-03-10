@@ -57,7 +57,7 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
 const blockContainer = document.getElementById("block-container");
 
 blockContainer.addEventListener("mouseover", function(e) {
-    if (!isSoundOn) return;
+    if (!isSoundOn || !charts.classList.contains("collapsed")) return;
     const block = e.target.closest(".block");
     if (!block) return;
 

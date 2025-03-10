@@ -2,11 +2,11 @@
     position: fixed;
     top: 0;
     width: 100%;
-    height: min(80%, 547px);
+    height: min(82%, 575px);
     display: flex;
     flex-direction: column;
     background: rgba(21, 21, 21);
-    z-index: 30;
+    z-index: 20;
     box-sizing: border-box;
     transition: height 0.3s ease-in-out;
     max-height: 80%;
@@ -23,7 +23,7 @@
     overflow-x: hidden;
     row-gap: 30px;
     column-gap: 100px;
-    padding: 25px 40px 25px 40px;
+    padding: 53px 40px 25px 40px;
     align-items: flex-start;
     justify-content: center;
     box-sizing: border-box;
@@ -286,6 +286,6 @@ body:has(#charts:not(.collapsed)) {
 /* Shrink charts to highlight ability to scroll to user */
 @media (max-width: 1337px) {
     #charts {
-        height: min(80%, 494px);
+        height: min(82%, 522px);
     }
 }
