@@ -37,10 +37,51 @@ a {
     background-size: cover;
 }
 
+/* Mask when preview is playing */
+.block::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    transition: background-color 0.2s ease-in-out;
+    z-index: 1;
+}
+
+.block[data-preview-playing="true"]::before {
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
 /* Hover on username and profile pic */
 #pfp:hover, #block-container a:hover {
     transition: filter 0.2s ease;
-    filter: brightness(.875); 
+    filter: brightness(.875);
+}
+
+.user-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 10px;
+    color: white;
+    z-index: 2;
+}
+
+.bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    padding: 5px;
+    color: white;
+    z-index: 2;
 }
 
 /* Top gradient on block */
@@ -67,7 +108,7 @@ a {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 120%;     
+    height: 120%;
     background: linear-gradient(to top, 
         rgba(0, 0, 0, 0.8) 0%, 
         rgba(0, 0, 0, 0.5) 50%,
@@ -75,30 +116,6 @@ a {
         transparent 100%
     );
     z-index: -1;
-}
-
-.user-info {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 5px 10px;
-    color: white;
-    z-index: 2;
-}
-
-.bottom {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    padding: 5px;
-    color: white;
-    z-index: 2;
 }
 
 .username, .song-title, .artist-title, .time {

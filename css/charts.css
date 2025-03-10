@@ -1,9 +1,23 @@
+#charts {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: min(80%, 547px);
+    display: flex;
+    flex-direction: column;
+    background: rgba(21, 21, 21);
+    z-index: 30;
+    box-sizing: border-box;
+    transition: height 0.3s ease-in-out;
+    max-height: 80%;
+}
+
 .charts-scrollable {
     width: 100%;
     display: flex;
     flex-flow: row wrap;
     background: rgba(21, 21, 21);
-    z-index: 20;
+    z-index: 10;
     overflow-y: auto;
     scrollbar-gutter: stable;
     overflow-x: hidden;
@@ -35,77 +49,102 @@
     scroll-snap-align: start;
 }
 
-  .top-list {
+h2 {
+    color: white;
+    font-size: 1.2rem;
+    margin: 0 0 8px;
+    display: block;
+    text-align: start;
+    align-self: flex-start;
+}
+
+.top-list {
     list-style: none;
     padding: 0;
     margin: 0;
-  }
-  .list-item {
+}
+
+.list-item {
     position: relative;
     margin: 8px 0;
     background: rgba(100, 100, 255, 0.188);
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     display: grid;
-    grid-template-columns: auto 1fr 70px; /* Image | Content | Listeners */
+    grid-template-columns: auto 1fr 70px; /* Manage layout and hide image if necessary */
     align-items: center;
     gap: 12px;
     font-size: 0.9em;
     z-index: 1;
     height: 40px;
-  }
-  .list-item:has(.item-image.removed) {
+}
+
+/* Hide image if necessary */
+.list-item:has(.item-image.removed) {
     grid-template-columns: 0fr 1fr 70px;
     gap: 0;
 }
-  .item-image {
+
+.item-image {
     width: 40px;
     height: 40px;
     border-radius: 6px;
     object-fit: cover;
     flex-shrink: 0;
     grid-column: 1;
-  }
-  .item-info {
+}
+
+.item-info {
     grid-column: 2;
     min-width: 0;
     overflow: hidden;
-  }
-  .item-name {
+}
+
+.item-name {
     font-weight: 600;
     color: white;
     margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .item-subtext {
+}
+
+.item-name a:hover, .artist-subtext a:hover {
+    text-decoration: underline;
+}
+
+.item-subtext {
     color: #969595;
     font-size: 0.85em;
     display: flex;
     flex-flow: row;
     align-items: center;
     gap: 4px;
-  }
-  .artist-subtext {
+}
+
+.artist-subtext {
     font-weight: 600;
     display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 135px;
+    max-width: 135px; /* Manage long artist names */
     white-space: nowrap;
-  }
-  .plays {
+}
+
+.plays {
     white-space: nowrap;
-  }
-  .listeners {
+}
+
+.listeners {
     grid-column: 3;
     position: relative;
     margin-left: auto;
     height: 24px;
     width: 70px;
-    overflow: visible
-  }
+    overflow: visible;
+}
+
+/* Handle picture borders and "+X" text */
 .listener-container {
     position: absolute;
     display: block;
@@ -119,7 +158,8 @@
     text-align: center;
     line-height: 24px;
     font-size: 0.65rem;
-    cursor: default
+    cursor: default;
+    user-select: none;
 }
 
 .listener-img {
@@ -132,14 +172,11 @@
     transition: inherit;
 }
 
-.list-item:hover {
-    z-index: 2;
-}
-
 .listener-container:not(.others):hover {
     transform: scale(1.15);
 }
 
+/* Show usernames on hover */
 .listener-container:not(.others):hover::after {
     content: attr(data-user) " - " attr(data-plays) " plays";
     position: absolute;
@@ -155,7 +192,13 @@
     z-index: 3;
     pointer-events: none;
 }
-  .bar {
+
+/* Stop item below from covering usernames on hover */
+.list-item:hover {
+    z-index: 2;
+}
+
+.bar {
     position: absolute;
     left: 0;
     top: 0;
@@ -163,27 +206,10 @@
     background: rgba(100, 100, 255, 0.5);
     border-radius: 8px;
     z-index: -1;
-  }
-
-/* arrow /*
-
-/* Updated CSS */
-#charts {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    height: min(80%, 551.875px);
-    display: flex;
-    flex-direction: column;
-    background: rgba(21, 21, 21);
-    z-index: 110;
-    box-sizing: border-box;
-    transition: height 0.3s ease-in-out;
-    max-height: 80%;
 }
 
 .charts-collapse-handle {
-    height: 30px;
+    height: 25px;
     background: rgba(21, 21, 21);
     border-top: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
@@ -192,7 +218,7 @@
     cursor: pointer;
     position: sticky;
     bottom: 0;
-    z-index: 21;
+    z-index: 20;
     flex-shrink: 0;
 }
 
@@ -201,13 +227,14 @@
 }
 
 .collapse-arrow {
-    width: 14px;
-    height: 14px;
+    width: 10px;
+    height: 10px;
     border: solid white;
     border-width: 2px 0 0 2px;
     transform: rotate(45deg);
     margin-top: 6px;
 }
+
 .charts-collapse-handle:hover {
     background: rgba(255, 255, 255, 0.08);
 }
@@ -216,7 +243,7 @@
     transform: rotate(45deg) scale(1.1);
 }
 
-/* Collapsed State */
+/* Collapse charts dropdown */
 #charts.collapsed {
     height: 0 !important;
     transition: height 0.3s ease-in-out;
@@ -234,7 +261,7 @@
     transition: opacity 0.2s ease;
 }
 
-/* Scrollbar Styling */
+/* Always show scrollbar */
 .charts-scrollable::-webkit-scrollbar {
     width: 8px;
     background: transparent;
@@ -250,20 +277,13 @@
     background: rgba(255, 255, 255, 0.5);
 }
 
-h2 {
-    color: white;
-    font-size: 1.2rem;
-    margin: 0 0 8px;
-    display: block;
-    text-align: start;
-    align-self: flex-start;
-  }
-
-  body:has(#charts:not(.collapsed)) {
+/* Stop scrolling on blocks when charts open */
+body:has(#charts:not(.collapsed)) {
     overflow: hidden;
     height: 100vh;
 }
 
+/* Shrink charts to highlight ability to scroll to user */
 @media (max-width: 1337px) {
     #charts {
         height: min(80%, 494px);
