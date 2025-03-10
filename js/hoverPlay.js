@@ -20,39 +20,37 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
     if (requestId !== activeRequestId) {
         return;
     }
-        // Find first fesult that contains matching word in artist and song name
-        const trackWords = trackTitle.toLowerCase().split(/\s+/);
-        const artistWords = artistName.toLowerCase().split(/\s+/);
-        let foundTrack = null;
-        for (let track of result.data) {
-            const resultTrackTitle = track.title.toLowerCase();
-            const resultArtistName = track.artist.name.toLowerCase();
-            const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-            const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+    // Find first fesult that contains matching word in artist and song name
+    const trackWords = trackTitle.toLowerCase().split(/\s+/);
+    const artistWords = artistName.toLowerCase().split(/\s+/);
+    let foundTrack = null;
+    for (let track of result.data) {
+        const resultTrackTitle = track.title.toLowerCase();
+        const resultArtistName = track.artist.name.toLowerCase();
+        const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
+        const artistMatches = artistWords.some(word => resultArtistName.includes(word));
 
-            if (trackMatches && artistMatches) {
-                foundTrack = track;
-                break;
-            }
+        if (trackMatches && artistMatches) {
+            foundTrack = track;
+            break;
         }
-        
-        if (foundTrack && foundTrack.preview) {
-            currentAudio = new Audio(foundTrack.preview);
-            currentAudio.play();
-            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
-            previewTimers[block.dataset.username] = setTimeout(() => {
-                document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
-            }, 30000);
-        }
-        else if (!retried && trackTitle.includes('(')) {
-            const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
-            console.log(`Retrying search without parentheses: "${newTitle}"`);
-            searchPreview(newTitle, artistName, block, true);
-        }
-        else {
-            console.log(`No preview found for "${trackTitle}" by "${artistName}"`);
-        }
-  }
+    }
+
+    if (foundTrack && foundTrack.preview) {
+        currentAudio = new Audio(foundTrack.preview);
+        currentAudio.play();
+        document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
+        previewTimers[block.dataset.username] = setTimeout(() => {
+            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+        }, 30000);
+    } else if (!retried && trackTitle.includes('(')) {
+        const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
+        console.log(`Retrying search without parentheses: "${newTitle}"`);
+        searchPreview(newTitle, artistName, block, true);
+    } else {
+        console.log(`No preview found for "${trackTitle}" by "${artistName}"`);
+    }
+}
 
 const blockContainer = document.getElementById("block-container");
 
@@ -64,9 +62,9 @@ blockContainer.addEventListener("mouseover", function(e) {
     // If same track, don't restart
     if (currentBlock && currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
         currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
-            return;
+        return;
     }
-    
+
     // Clear previous timeout on hovered block
     if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
         clearTimeout(hoverTimers[block.dataset.username]);
@@ -79,7 +77,7 @@ blockContainer.addEventListener("mouseover", function(e) {
         clearTimeout(hoverTimers[currentBlock.dataset.username]);
         clearTimeout(previewTimers[currentBlock.dataset.username]);
     }
-        
+
     // Cancel previous interactions
     activeRequestId++;
     if (currentAudio) {
@@ -87,7 +85,7 @@ blockContainer.addEventListener("mouseover", function(e) {
         currentAudio.currentTime = 0;
         currentAudio = null;
     }
-  
+
     currentBlock = block;
 
     // Wait for 200 ms then start song search

@@ -24,8 +24,7 @@ async function updateTicker() {
                     if (artistPlays[artist.name]) {
                         artistPlays[artist.name].plays += plays;
                         artistPlays[artist.name].cappedPlays += cappedPlays;
-                    } 
-                    else {
+                    } else {
                         artistPlays[artist.name] = {
                             plays,
                             cappedPlays,
@@ -66,10 +65,9 @@ async function updateTicker() {
                     if (albumPlays[key]) {
                         albumPlays[key].plays += plays;
                         albumPlays[key].cappedPlays += cappedPlays;
-                    } 
-                    else {
+                    } else {
                         albumPlays[key] = {
-                            artist, 
+                            artist,
                             albumName,
                             plays,
                             cappedPlays,
@@ -78,7 +76,7 @@ async function updateTicker() {
                             userCount: 0,
                             users: {}
                         };
-                    }   
+                    }
                     albumPlays[key].users[username] = plays;
                     albumPlays[key].userCount++;
                 });
@@ -152,7 +150,7 @@ async function updateTicker() {
     document.querySelectorAll(".ticker-artist > .value > a").forEach(element => {
         element.href = sortedArtistPlays[0][1].url;
     });
-    
+
     document.querySelectorAll(".ticker-album > .value > a").forEach(element => {
         element.innerText = sortedAlbumPlays[0][1].albumName;
     });
@@ -173,7 +171,7 @@ async function updateTicker() {
         element.href = sortedTrackPlays[0][1].trackUrl;
     });
 
-    let artistsMax = 0;   
+    let artistsMax = 0;
     const artistsList = document.getElementById("artists-list");
 
     const artistChartPromises = sortedArtistPlays.slice(0, 9).map(async (artistData) => {
@@ -182,7 +180,7 @@ async function updateTicker() {
         artistUsers.sort((a, b) => b[1] - a[1]);
 
         artistsMax = Math.max(artistsMax, artistInfo.plays);
-    
+
         const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
         const imageUrl = (await getJSONP(fetchUrl)).data[0].picture;
         return {
@@ -191,12 +189,11 @@ async function updateTicker() {
             image: imageUrl,
             url: artistInfo.url,
             listeners: artistUsers.map(([username, plays]) => ({
-                    user: username,
-                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ? 
-                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src :
-                        "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                    plays: plays,
-                    url: ``
+                user: username,
+                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                plays: plays,
+                url: ``
             }))
         };
     });
@@ -217,23 +214,22 @@ async function updateTicker() {
         albumsMax = Math.max(albumsMax, albumInfo.plays);
 
         const sortedAlbumUsers = albumUsers.sort((a, b) => b[1] - a[1]);
-    
+
         return {
             name: albumInfo.albumName,
             plays: albumInfo.plays,
             image: albumInfo.img,
             url: albumInfo.url,
             listeners: sortedAlbumUsers.map(([username, plays]) => ({
-                    user: username,
-                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ? 
-                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src :
-                        "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                    plays: plays,
-                    url: ``
+                user: username,
+                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                plays: plays,
+                url: ``
             }))
         };
     });
-    
+
     const albumResults = await Promise.all(albumChartPromises);
     albumsList.innerHTML = '';
     albumResults.forEach(data => {
@@ -250,7 +246,7 @@ async function updateTicker() {
         tracksMax = Math.max(tracksMax, trackInfo.plays);
 
         const sortedTrackUsers = trackUsers.sort((a, b) => b[1] - a[1]);
-    
+
         return {
             name: trackInfo.trackName,
             artist: trackInfo.artist,
@@ -258,12 +254,11 @@ async function updateTicker() {
             url: trackInfo.trackUrl,
             artistUrl: trackInfo.artistUrl,
             listeners: sortedTrackUsers.map(([username, plays]) => ({
-                    user: username,
-                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ? 
-                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src :
-                        "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                    plays: plays,
-                    url: ``
+                user: username,
+                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                plays: plays,
+                url: ``
             }))
         };
     });

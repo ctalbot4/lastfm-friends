@@ -55,7 +55,8 @@ a {
 }
 
 /* Hover on username and profile pic */
-#pfp:hover, #block-container a:hover {
+#pfp:hover,
+#block-container a:hover {
     transition: filter 0.2s ease;
     filter: brightness(.875);
 }
@@ -92,12 +93,11 @@ a {
     left: 0;
     right: 0;
     height: 105%;
-    background: linear-gradient(to bottom, 
-        rgba(0, 0, 0, 0.6) 0%, 
-        rgba(0, 0, 0, 0.3) 50%,
-        rgba(0, 0, 0, 0.15) 80%,
-        transparent 100%
-    );
+    background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.6) 0%,
+            rgba(0, 0, 0, 0.3) 50%,
+            rgba(0, 0, 0, 0.15) 80%,
+            transparent 100%);
     z-index: -1;
 }
 
@@ -109,16 +109,18 @@ a {
     left: 0;
     right: 0;
     height: 120%;
-    background: linear-gradient(to top, 
-        rgba(0, 0, 0, 0.8) 0%, 
-        rgba(0, 0, 0, 0.5) 50%,
-        rgba(0, 0, 0, 0.2) 80%,
-        transparent 100%
-    );
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.8) 0%,
+            rgba(0, 0, 0, 0.5) 50%,
+            rgba(0, 0, 0, 0.2) 80%,
+            transparent 100%);
     z-index: -1;
 }
 
-.username, .song-title, .artist-title, .time {
+.username,
+.song-title,
+.artist-title,
+.time {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 }
 
@@ -188,7 +190,8 @@ a {
 }
 
 /* Transition in from progress bar */
-#block-container:not(.hidden), #stats-ticker:not(.hidden) {
+#block-container:not(.hidden),
+#stats-ticker:not(.hidden) {
     transition: opacity 0.2s ease-in-out;
     opacity: 1;
 }

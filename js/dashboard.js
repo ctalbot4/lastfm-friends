@@ -1,7 +1,7 @@
 const APIKEY = "1c4a67a2eacf14e735edb9e4475d3237";
 
 function getUsernameFromURL() {
-    const hash = window.location.hash; 
+    const hash = window.location.hash;
     const username = hash.substring(1);
     return username;
 }
@@ -85,8 +85,7 @@ async function updateBlock(block, retry = false) {
         if (data.recenttracks["@attr"]["total"] == 0) {
             // Remove if no tracks played
             return null;
-        }
-        else {
+        } else {
             newBlock.classList.remove("removed");
         }
         userPlayCounts[username] = parseInt(data.recenttracks["@attr"].total);
@@ -107,42 +106,35 @@ async function updateBlock(block, retry = false) {
 
         if (recentTrack.loved === "0") {
             newBlock.querySelector(".heart-icon").classList.add("removed");
-        }
-        else {
+        } else {
             newBlock.querySelector(".heart-icon").classList.remove("removed");
         }
-        
+
         if (nowPlaying) {
             newBlock.dataset.nowPlaying = "true";
             newBlock.dataset.date = Math.floor(Date.now() / 1000);
-        } 
-        else {
+        } else {
             newBlock.dataset.nowPlaying = "false";
             newBlock.dataset.date = recentTrack.date.uts;
             const diff = Math.floor((Date.now() - (newBlock.dataset.date * 1000)) / 1000);
 
             if (diff < 60) {
                 timeSpan.innerText = "Just now";
-            } 
-            else if (diff < 60 * 60) {
+            } else if (diff < 60 * 60) {
                 const minutes = Math.floor(diff / 60);
                 timeSpan.innerText = `${minutes}m ago`;
-            } 
-            else if (diff < 60 * 60 * 24) {
+            } else if (diff < 60 * 60 * 24) {
                 const hours = Math.floor(diff / (60 * 60));
                 timeSpan.innerText = `${hours}h ago`;
-            } 
-            else if (diff < 60 * 60 * 24 * 365) {
+            } else if (diff < 60 * 60 * 24 * 365) {
                 const days = Math.floor(diff / (60 * 60 * 24));
                 timeSpan.innerText = `${days}d ago`;
-            }
-            else {
+            } else {
                 const years = Math.floor(diff / (60 * 60 * 24 * 365));
                 timeSpan.innerText = `${years}y ago`;
             }
         }
-    } 
-    catch (error) {
+    } catch (error) {
         newBlock.classList.add("removed");
 
         if (error.data) {
@@ -150,12 +142,10 @@ async function updateBlock(block, retry = false) {
             if (error.data?.error === 17) {
                 // Remove if private user
                 return null;
-            }
-            else if (error.data?.error === 8 && retry == false) {
+            } else if (error.data?.error === 8 && retry == false) {
                 return updateBlock(block, true);
             }
-        }
-        else {
+        } else {
             console.error(`Error updating ${username}:`, error);
         }
     }
@@ -199,7 +189,7 @@ async function updateAllBlocks() {
 
     // Update total plays
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
-    
+
     // Counting animation
     const startPlays = parseInt(document.querySelector(".ticker-plays > .value").innerText);
     if (startPlays) {
@@ -221,18 +211,17 @@ async function updateAllBlocks() {
         }
 
         requestAnimationFrame(updateCounter);
-    }
-    else {
+    } else {
         document.querySelectorAll(".ticker-plays > .value").forEach(element => {
             element.innerText = totalPlays;
         });
     }
-    
+
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
 // Sort blocks then replace old ones
-function sortBlocks (blocks) {
+function sortBlocks(blocks) {
     const username = getUsernameFromURL().toLowerCase();
     blocks.sort((x, y) => {
         const xUsername = x.dataset.username.toLowerCase();
@@ -244,28 +233,24 @@ function sortBlocks (blocks) {
 
         if (xUsername === username && xNowPlaying) {
             return -1;
-        }
-        else if (yUsername === username && yNowPlaying) {
+        } else if (yUsername === username && yNowPlaying) {
             return 1;
-        }
-        else if (xNowPlaying && !yNowPlaying) {
+        } else if (xNowPlaying && !yNowPlaying) {
             return -1;
-        }
-        else if (!xNowPlaying && yNowPlaying) {
+        } else if (!xNowPlaying && yNowPlaying) {
             return 1;
-        }
-        else if (xNowPlaying && yNowPlaying) {
+        } else if (xNowPlaying && yNowPlaying) {
             return xUsername.localeCompare(yUsername);
-        }
-        else {
-            return yDate - xDate; 
+        } else {
+            return yDate - xDate;
         }
     });
 
     const container = document.getElementById("block-container");
     container.innerHTML = "";
     blocks.forEach(block => {
-        container.appendChild(block);});
+        container.appendChild(block);
+    });
 }
 
 const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=150&api_key=${APIKEY}&format=json`;
@@ -290,7 +275,7 @@ const userFetch = fetch(userUrl)
             'page_title': document.title,
             'page_location': window.location.href,
             'page_path': window.location.pathname
-          });
+        });
 
         const blockContainer = document.getElementById("block-container");
         blockContainer.appendChild(createBlock(user));

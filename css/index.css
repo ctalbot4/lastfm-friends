@@ -30,7 +30,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(120px, 20%), 1fr));
     width: 100%;
-    filter: brightness(0.7); 
+    filter: brightness(0.7);
 }
 
 .block {
@@ -44,11 +44,11 @@ h1 {
     margin-bottom: 15px;
     font-weight: 700;
 }
-  
+
 .left {
     font-size: 1.5em;
 }
-  
+
 .middle {
     font-size: 1em;
     color: #333;
@@ -134,7 +134,7 @@ p {
 
 .github-icon:hover > img {
     transition: filter 0.3s ease;
-    filter: brightness(3); 
+    filter: brightness(3);
 }
 
 .try-profile {

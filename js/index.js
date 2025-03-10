@@ -10,8 +10,7 @@ let lastUser;
 
 if (localStorage.getItem("lastUser") !== null) {
     lastUser = localStorage.getItem("lastUser");
-} 
-else {
+} else {
     lastUser = "ctalbot4";
 }
 
@@ -38,11 +37,13 @@ document.getElementById('userInput').addEventListener('blur', function() {
 
 document.addEventListener("touchmove", function(event) {
     event.preventDefault();
-}, { passive: false });
+}, {
+    passive: false
+});
 
 // Fetch background art
 const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${lastUser}&limit=100&period=12month&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
-    
+
 const userFetch = fetch(userUrl)
     .then((response) => {
         if (!response.ok) {
@@ -53,14 +54,14 @@ const userFetch = fetch(userUrl)
     .then((data) => {
         const container = document.querySelector('.background');
 
-            data.topalbums.album.forEach(album => {
-                const imageUrl = album.image[3]["#text"];
-                const albumDiv = document.createElement('div');
-                albumDiv.className = 'block';
-                albumDiv.style.backgroundImage = `url('${imageUrl}')`;
+        data.topalbums.album.forEach(album => {
+            const imageUrl = album.image[3]["#text"];
+            const albumDiv = document.createElement('div');
+            albumDiv.className = 'block';
+            albumDiv.style.backgroundImage = `url('${imageUrl}')`;
 
-                container.appendChild(albumDiv);
-            })
+            container.appendChild(albumDiv);
+        })
     })
     .catch((error) => {
         console.error("Error fetching user data:", error);

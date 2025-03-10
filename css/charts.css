@@ -30,13 +30,11 @@
     position: relative;
     overscroll-behavior: contain;
 
-    mask-image: linear-gradient(
-        to bottom,
-        transparent 0%,
-        black 5%,
-        black 95%,
-        transparent 100%
-    );
+    mask-image: linear-gradient(to bottom,
+            transparent 0%,
+            black 5%,
+            black 95%,
+            transparent 100%);
 }
 
 .chart-section {
@@ -69,7 +67,7 @@ h2 {
     margin: 8px 0;
     background: rgba(100, 100, 255, 0.188);
     border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     display: grid;
     grid-template-columns: auto 1fr 70px; /* Manage layout and hide image if necessary */
     align-items: center;
@@ -109,7 +107,8 @@ h2 {
     text-overflow: ellipsis;
 }
 
-.item-name a:hover, .artist-subtext a:hover {
+.item-name a:hover,
+.artist-subtext a:hover {
     text-decoration: underline;
 }
 
@@ -168,7 +167,7 @@ h2 {
     border-radius: 50%;
     display: block;
     position: relative;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     transition: inherit;
 }
 

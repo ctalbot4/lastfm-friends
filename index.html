@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,18 +9,18 @@
     <meta name="description" content="See (and hear) what your friends are listening to in real-time on Last.fm.">
     <script type="application/ld+json">
         {
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          "name": "lastfmfriends.live - Discover What Your Friends Are Listening To",
-          "url": "https://lastfmfriends.live",
-          "applicationCategory": "Music",
-          "operatingSystem": "All",
-          "description": "See (and hear) what your friends are listening to in real-time on Last.fm.",
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://lastfmfriends.live/dashboard#{search_term_string}",
-            "query-input": "required name=search_term_string"
-          }
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "lastfmfriends.live - Discover What Your Friends Are Listening To",
+            "url": "https://lastfmfriends.live",
+            "applicationCategory": "Music",
+            "operatingSystem": "All",
+            "description": "See (and hear) what your friends are listening to in real-time on Last.fm.",
+            "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://lastfmfriends.live/dashboard#{search_term_string}",
+                "query-input": "required name=search_term_string"
+            }
         }
     </script>
     <meta property="og:image" content="https://lastfmfriends.live/favicon/favicon.svg" />
@@ -39,12 +40,16 @@
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2QMKX3VH8T"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    window.dataLayer = window.dataLayer || [];
 
-  gtag('config', 'G-2QMKX3VH8T');
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-2QMKX3VH8T');
 </script>
+
 <body>
     <a href="https://github.com/ctalbot4/lastfm-friends" class="github-icon" target="_blank">
         <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg">
@@ -67,4 +72,5 @@
     <div class="background"></div>
 </body>
 <script src="js/index.js"></script>
+
 </html>

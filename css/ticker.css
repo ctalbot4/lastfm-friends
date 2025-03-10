@@ -20,7 +20,7 @@
 }
 
 .ticker-main a:hover {
-    text-decoration: underline; 
+    text-decoration: underline;
 }
 
 .live-indicator {
@@ -45,12 +45,21 @@
 }
 
 @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.4; }
-    100% { opacity: 1; }
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
-.ticker-stats, .ticker-scroll {
+.ticker-stats,
+.ticker-scroll {
     display: flex;
     gap: 28px;
     width: 1350px;
@@ -98,24 +107,44 @@
     .ticker-stats {
         animation: ticker-scroll1 45s linear infinite;
     }
+
     .ticker-scroll {
         display: flex;
         animation: ticker-scroll2 45s linear infinite;
     }
-    .ticker-main:hover .ticker-scroll, .ticker-main:hover .ticker-stats {
+
+    .ticker-main:hover .ticker-scroll,
+    .ticker-main:hover .ticker-stats {
         animation-play-state: paused;
     }
 }
 
 @keyframes ticker-scroll1 {
-    0% { transform: translateX(0%); }
-    50% { transform: translateX(-1350px); }
-    50.000001% { transform: translateX(1350px); }
-    100% { transform: translateX(0%); }
+    0% {
+        transform: translateX(0%);
+    }
+
+    50% {
+        transform: translateX(-1350px);
+    }
+
+    50.000001% {
+        transform: translateX(1350px);
+    }
+
+    100% {
+        transform: translateX(0%);
+    }
 }
+
 @keyframes ticker-scroll2 {
-    0% { transform: translateX(0px); }
-    100% { transform: translateX(-2700px); }
+    0% {
+        transform: translateX(0px);
+    }
+
+    100% {
+        transform: translateX(-2700px);
+    }
 }
 
 #buttons {
@@ -159,9 +188,17 @@
 
 .toggle:hover > img {
     transition: filter 0.3s ease;
-    filter: brightness(1.5); 
+    filter: brightness(1.5);
 }
-  
-#sound-toggle .sound-on { display: block; }
-#sound-toggle.muted .sound-off { display: block; }
-#sound-toggle.muted .sound-on { display: none; }
+
+#sound-toggle .sound-on {
+    display: block;
+}
+
+#sound-toggle.muted .sound-off {
+    display: block;
+}
+
+#sound-toggle.muted .sound-on {
+    display: none;
+}

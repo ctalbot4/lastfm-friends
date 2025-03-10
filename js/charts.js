@@ -29,8 +29,7 @@ function createListItem(itemData, maxPlays, isTrack = false) {
             li.querySelector(".listeners").appendChild(span);
             imgIndex--;
             continue;
-        } 
-        else if (i + 1 > count) {
+        } else if (i + 1 > count) {
             continue;
         }
         const listener = itemData.listeners[i];
@@ -64,7 +63,7 @@ document.addEventListener("click", function(event) {
     // Close if user clicks outside chart
     if (!charts.contains(event.target) && !chartToggle.contains(event.target) && !charts.classList.contains("collapsed")) {
         toggleCharts();
-    } 
+    }
     // Open if user clicks ticker
     else if (ticker.contains(event.target) && event.target.tagName != "A" && charts.classList.contains("collapsed")) {
         toggleCharts();

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,12 +19,18 @@
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2QMKX3VH8T"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    window.dataLayer = window.dataLayer || [];
 
-  gtag('config', 'G-2QMKX3VH8T', { 'send_page_view': false });
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-2QMKX3VH8T', {
+        'send_page_view': false
+    });
 </script>
+
 <body>
     <div id="progress-container">
         <div id="progress-bar"></div>
@@ -34,99 +41,98 @@
         <p>(Did you enter a valid username?)</p>
     </div>
     <div id="stats-ticker" class="hidden">
-      <div class="ticker-main">
-        <div class="live-indicator">
-          <div class="pulse-dot"></div>
-          <span>Live</span>
+        <div class="ticker-main">
+            <div class="live-indicator">
+                <div class="pulse-dot"></div>
+                <span>Live</span>
+            </div>
+            <div class="ticker-stats">
+                <div class="stat-item ticker-friends">
+                    <span class="label">Now Playing:</span>
+                    <span class="value">0 friend</span>
+                </div>
+                <div class="stat-item ticker-artist">
+                    <span class="label">Top Artist:</span>
+                    <span class="value"><a target="_blank"></a></span>
+                    <span class="subtext"></span>
+                </div>
+                <div class="stat-item ticker-album">
+                    <span class="label">Top Album:</span>
+                    <span class="value"><a target="_blank"></a></span>
+                    <span class="subtext"></span>
+                </div>
+                <div class="stat-item ticker-track">
+                    <span class="label">Top Track:</span>
+                    <span class="value"><a target="_blank"></a></span>
+                    <span class="subtext"></span>
+                </div>
+                <div class="stat-item ticker-plays">
+                    <span class="label">Plays:</span>
+                    <span class="value"></span>
+                </div>
+            </div>
+            <div class="ticker-scroll">
+                <div class="stat-item ticker-friends">
+                    <span class="label">Now Playing:</span>
+                    <span class="value">0 friend</span>
+                </div>
+                <div class="stat-item ticker-artist">
+                    <span class="label">Top Artist:</span>
+                    <span class="value"><a target="_blank"></a></span>
+                    <span class="subtext"></span>
+                </div>
+                <div class="stat-item ticker-album">
+                    <span class="label">Top Album:</span>
+                    <span class="value"><a target="_blank"></a></span>
+                    <span class="subtext"></span>
+                </div>
+                <div class="stat-item ticker-track">
+                    <span class="label">Top Track:</span>
+                    <span class="value"><a target="_blank"></a></span>
+                    <span class="subtext"></span>
+                </div>
+                <div class="stat-item ticker-plays">
+                    <span class="label">Plays:</span>
+                    <span class="value"></span>
+                </div>
+            </div>
         </div>
-        <div class="ticker-stats">
-          <div class="stat-item ticker-friends">
-            <span class="label">Now Playing:</span>
-            <span class="value">0 friend</span>
-          </div>
-          <div class="stat-item ticker-artist">
-            <span class="label">Top Artist:</span>
-            <span class="value"><a target="_blank"></a></span>
-            <span class="subtext"></span>
-          </div>
-          <div class="stat-item ticker-album">
-              <span class="label">Top Album:</span>
-              <span class="value"><a target="_blank"></a></span>
-              <span class="subtext"></span>
-          </div>
-          <div class="stat-item ticker-track">
-              <span class="label">Top Track:</span>
-              <span class="value"><a target="_blank"></a></span>
-              <span class="subtext"></span>
-          </div>
-          <div class="stat-item ticker-plays">
-              <span class="label">Plays:</span>
-              <span class="value"></span>
-          </div>
+        <div id="buttons">
+            <button id="chart-toggle" class="toggle" title="Toggle charts">
+                <img src="icons/charts.png">
+            </button>
+            <button id="sound-toggle" class="toggle muted" title="Toggle song previews when hovering">
+                <img src="icons/soundon.png" class="sound-on">
+                <img src="icons/soundoff.png" class="sound-off">
+            </button>
         </div>
-        <div class="ticker-scroll">
-          <div class="stat-item ticker-friends">
-            <span class="label">Now Playing:</span>
-            <span class="value">0 friend</span>
-          </div>
-          <div class="stat-item ticker-artist">
-            <span class="label">Top Artist:</span>
-            <span class="value"><a target="_blank"></a></span>
-            <span class="subtext"></span>
-          </div>
-          <div class="stat-item ticker-album">
-              <span class="label">Top Album:</span>
-              <span class="value"><a target="_blank"></a></span>
-              <span class="subtext"></span>
-          </div>
-          <div class="stat-item ticker-track">
-              <span class="label">Top Track:</span>
-              <span class="value"><a target="_blank"></a></span>
-              <span class="subtext"></span>
-          </div>
-          <div class="stat-item ticker-plays">
-              <span class="label">Plays:</span>
-              <span class="value"></span>
-          </div>
-        </div>
-      </div>
-      <div id="buttons">
-        <button id="chart-toggle" class="toggle" title="Toggle charts">
-          <img src= "icons/charts.png">
-        </button>
-        <button id="sound-toggle" class="toggle muted" title="Toggle song previews when hovering">
-          <img src= "icons/soundon.png" class="sound-on">
-          <img src= "icons/soundoff.png" class="sound-off">
-        </button>
-      </div>
     </div>
     <div id="charts" class="collapsed">
-      <div class="charts-scrollable">
-        <div class="chart-section">
-          <h2>Top Artists</h2>
-          <ul class="top-list" id="artists-list"></ul>
+        <div class="charts-scrollable">
+            <div class="chart-section">
+                <h2>Top Artists</h2>
+                <ul class="top-list" id="artists-list"></ul>
+            </div>
+            <div class="chart-section">
+                <h2>Top Albums</h2>
+                <ul class="top-list" id="albums-list"></ul>
+            </div>
+            <div class="chart-section">
+                <h2>Top Tracks</h2>
+                <ul class="top-list" id="tracks-list"></ul>
+            </div>
         </div>
-      
-        <div class="chart-section">
-          <h2>Top Albums</h2>
-          <ul class="top-list" id="albums-list"></ul>
+        <div class="charts-collapse-handle" onclick="toggleCharts()">
+            <div class="collapse-arrow"></div>
         </div>
-
-        <div class="chart-section">
-          <h2>Top Tracks</h2>
-          <ul class="top-list" id="tracks-list"></ul>
-        </div>
-      </div>
-      <div class="charts-collapse-handle" onclick="toggleCharts()">
-        <div class="collapse-arrow"></div>
-      </div>
     </div>
     <div id="block-container" class="hidden">
-    
+
     </div>
 </body>
 <script src="js/dashboard.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/ticker.js"></script>
 <script src="js/hoverPlay.js"></script>
+
 </html>
