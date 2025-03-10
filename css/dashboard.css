@@ -1,0 +1,229 @@
+body {
+    font-family: "Inter", sans-serif;
+    padding: 0px;
+    margin: 0px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Transition from progress bar */
+body:has(#block-container:not(.hidden)) {
+    background-color: rgba(21, 21, 21);
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.hidden {
+    visibility: hidden !important;
+    opacity: 0;
+}
+
+.removed {
+    display: none !important;
+}
+
+#block-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+    width: 100%;
+    margin-top: 28px;
+}
+
+.block {
+    aspect-ratio: 1;
+    position: relative;
+    background-size: cover;
+}
+
+/* Mask when preview is playing */
+.block::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    transition: background-color 0.2s ease-in-out;
+    z-index: 1;
+}
+
+.block[data-preview-playing="true"]::before {
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Hover on username and profile pic */
+#pfp:hover, #block-container a:hover {
+    transition: filter 0.2s ease;
+    filter: brightness(.875);
+}
+
+.user-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 10px;
+    color: white;
+    z-index: 2;
+}
+
+.bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    padding: 5px;
+    color: white;
+    z-index: 2;
+}
+
+/* Top gradient on block */
+.user-info::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 105%;
+    background: linear-gradient(to bottom, 
+        rgba(0, 0, 0, 0.6) 0%, 
+        rgba(0, 0, 0, 0.3) 50%,
+        rgba(0, 0, 0, 0.15) 80%,
+        transparent 100%
+    );
+    z-index: -1;
+}
+
+/* Bottom gradient on block */
+.bottom::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120%;
+    background: linear-gradient(to top, 
+        rgba(0, 0, 0, 0.8) 0%, 
+        rgba(0, 0, 0, 0.5) 50%,
+        rgba(0, 0, 0, 0.2) 80%,
+        transparent 100%
+    );
+    z-index: -1;
+}
+
+.username, .song-title, .artist-title, .time {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.profile-picture {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    width: 10%;
+    aspect-ratio: 1;
+    flex-shrink: 0;
+}
+
+#pfp {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.track-info {
+    display: flex;
+    flex-flow: column;
+    gap: 2px;
+}
+
+.artist-title {
+    font-weight: bold;
+}
+
+.song-title {
+    font-style: italic;
+}
+
+.heart-icon {
+    margin-left: 4px;
+    width: 10px;
+    height: 10px;
+    transform: translateY(0.5px);
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.7));
+}
+
+.playing-icon {
+    width: 25px;
+    height: 25px;
+    display: none; /* Hide by default */
+    filter: brightness(1000%) contrast(1000%);
+}
+
+[data-now-playing="true"] .playing-icon {
+    display: block;
+}
+
+[data-now-playing="false"] .time {
+    display: block;
+}
+
+.status {
+    margin-left: auto;
+    margin-top: auto;
+    margin-bottom: .3em;
+    display: flex;
+    align-items: center;
+    padding-right: 10px;
+}
+
+.time {
+    display: none;
+    min-width: 68px;
+    text-align: right;
+}
+
+/* Transition in from progress bar */
+#block-container:not(.hidden), #stats-ticker:not(.hidden) {
+    transition: opacity 0.2s ease-in-out;
+    opacity: 1;
+}
+
+#progress-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max(20%, 180px);
+    background-color: #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#progress-bar {
+    width: 0%;
+    height: 12px;
+    background-color: #d14f4f;
+    transition: width 0.2s;
+}
+
+#error-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    text-align: center;
+}
+
+#error-popup p {
+    color: #333;
+}

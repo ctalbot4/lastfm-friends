@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/charts.css">
+    <link rel="stylesheet" href="css/ticker.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
@@ -28,9 +30,9 @@
     </div>
     <div id="error-popup" class="removed">
         <h1>Error</h1>
-        <p>There was a problem connecting to Last.fm. Did you enter a valid username?</p>
+        <p>There was a problem connecting to Last.fm. Please try again.</p>
+        <p>(Did you enter a valid username?)</p>
     </div>
-
     <div id="stats-ticker" class="hidden">
       <div class="ticker-main">
         <div class="live-indicator">
@@ -62,7 +64,6 @@
               <span class="value"></span>
           </div>
         </div>
-        <!--Copy div for ticker scrolling-->
         <div class="ticker-scroll">
           <div class="stat-item ticker-friends">
             <span class="label">Now Playing:</span>
@@ -89,14 +90,43 @@
           </div>
         </div>
       </div>
-      <button id="sound-toggle" class="sound-toggle muted" title="Toggle song previews when hovering">
-        <img src= "icons/soundon.png" class="sound-on">
-        <img src= "icons/soundoff.png" class="sound-off">
-      </button>
+      <div id="buttons">
+        <button id="chart-toggle" class="toggle" title="Toggle charts">
+          <img src= "icons/charts.png">
+        </button>
+        <button id="sound-toggle" class="toggle muted" title="Toggle song previews when hovering">
+          <img src= "icons/soundon.png" class="sound-on">
+          <img src= "icons/soundoff.png" class="sound-off">
+        </button>
+      </div>
+    </div>
+    <div id="charts" class="collapsed">
+      <div class="charts-scrollable">
+        <div class="chart-section">
+          <h2>Top Artists</h2>
+          <ul class="top-list" id="artists-list"></ul>
+        </div>
+      
+        <div class="chart-section">
+          <h2>Top Albums</h2>
+          <ul class="top-list" id="albums-list"></ul>
+        </div>
+
+        <div class="chart-section">
+          <h2>Top Tracks</h2>
+          <ul class="top-list" id="tracks-list"></ul>
+        </div>
+      </div>
+      <div class="charts-collapse-handle" onclick="toggleCharts()">
+        <div class="collapse-arrow"></div>
+      </div>
     </div>
     <div id="block-container" class="hidden">
     
     </div>
 </body>
-<script src="dashboard.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ticker.js"></script>
+<script src="js/hoverPlay.js"></script>
 </html>

@@ -1,0 +1,291 @@
+#charts {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: min(80%, 547px);
+    display: flex;
+    flex-direction: column;
+    background: rgba(21, 21, 21);
+    z-index: 30;
+    box-sizing: border-box;
+    transition: height 0.3s ease-in-out;
+    max-height: 80%;
+}
+
+.charts-scrollable {
+    width: 100%;
+    display: flex;
+    flex-flow: row wrap;
+    background: rgba(21, 21, 21);
+    z-index: 10;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    overflow-x: hidden;
+    row-gap: 30px;
+    column-gap: 100px;
+    padding: 25px 40px 25px 40px;
+    align-items: flex-start;
+    justify-content: center;
+    box-sizing: border-box;
+    position: relative;
+    overscroll-behavior: contain;
+
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 5%,
+        black 95%,
+        transparent 100%
+    );
+}
+
+.chart-section {
+    min-width: 284px;
+    margin: 0;
+    display: flex;
+    flex-flow: column;
+    flex: 1 1 30%;
+    max-width: 350px;
+    scroll-snap-align: start;
+}
+
+h2 {
+    color: white;
+    font-size: 1.2rem;
+    margin: 0 0 8px;
+    display: block;
+    text-align: start;
+    align-self: flex-start;
+}
+
+.top-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.list-item {
+    position: relative;
+    margin: 8px 0;
+    background: rgba(100, 100, 255, 0.188);
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: grid;
+    grid-template-columns: auto 1fr 70px; /* Manage layout and hide image if necessary */
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9em;
+    z-index: 1;
+    height: 40px;
+}
+
+/* Hide image if necessary */
+.list-item:has(.item-image.removed) {
+    grid-template-columns: 0fr 1fr 70px;
+    gap: 0;
+}
+
+.item-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    grid-column: 1;
+}
+
+.item-info {
+    grid-column: 2;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.item-name {
+    font-weight: 600;
+    color: white;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-name a:hover, .artist-subtext a:hover {
+    text-decoration: underline;
+}
+
+.item-subtext {
+    color: #969595;
+    font-size: 0.85em;
+    display: flex;
+    flex-flow: row;
+    align-items: center;
+    gap: 4px;
+}
+
+.artist-subtext {
+    font-weight: 600;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 135px; /* Manage long artist names */
+    white-space: nowrap;
+}
+
+.plays {
+    white-space: nowrap;
+}
+
+.listeners {
+    grid-column: 3;
+    position: relative;
+    margin-left: auto;
+    height: 24px;
+    width: 70px;
+    overflow: visible;
+}
+
+/* Handle picture borders and "+X" text */
+.listener-container {
+    position: absolute;
+    display: block;
+    transition: all 0.2s ease;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background-color: rgba(21, 21, 21);
+    color: white;
+    text-align: center;
+    line-height: 24px;
+    font-size: 0.65rem;
+    cursor: default;
+    user-select: none;
+}
+
+.listener-img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: block;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transition: inherit;
+}
+
+.listener-container:not(.others):hover {
+    transform: scale(1.15);
+}
+
+/* Show usernames on hover */
+.listener-container:not(.others):hover::after {
+    content: attr(data-user) " - " attr(data-plays) " plays";
+    position: absolute;
+    bottom: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    color: rgba(21, 21, 21);
+    padding: 0px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    white-space: nowrap;
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* Stop item below from covering usernames on hover */
+.list-item:hover {
+    z-index: 2;
+}
+
+.bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: rgba(100, 100, 255, 0.5);
+    border-radius: 8px;
+    z-index: -1;
+}
+
+.charts-collapse-handle {
+    height: 25px;
+    background: rgba(21, 21, 21);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    flex-shrink: 0;
+}
+
+.charts-collapse-handle:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.collapse-arrow {
+    width: 10px;
+    height: 10px;
+    border: solid white;
+    border-width: 2px 0 0 2px;
+    transform: rotate(45deg);
+    margin-top: 6px;
+}
+
+.charts-collapse-handle:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.charts-collapse-handle:hover .collapse-arrow {
+    transform: rotate(45deg) scale(1.1);
+}
+
+/* Collapse charts dropdown */
+#charts.collapsed {
+    height: 0 !important;
+    transition: height 0.3s ease-in-out;
+}
+
+#charts.collapsed .charts-scrollable {
+    overflow: hidden;
+    padding: 0;
+}
+
+#charts.collapsed .chart-section,
+#charts.collapsed .charts-collapse-handle {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+/* Always show scrollbar */
+.charts-scrollable::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+
+.charts-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    border: 2px solid rgba(21, 21, 21);
+}
+
+.charts-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Stop scrolling on blocks when charts open */
+body:has(#charts:not(.collapsed)) {
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* Shrink charts to highlight ability to scroll to user */
+@media (max-width: 1337px) {
+    #charts {
+        height: min(80%, 494px);
+    }
+}
