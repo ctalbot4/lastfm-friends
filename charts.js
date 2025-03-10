@@ -1,16 +1,16 @@
 
 
-  function createListItem(itemData, maxPlays) {
+  function createListItem(itemData, maxPlays, isTrack = false) {
     const li = document.createElement("li");
     li.classList.add("list-item");
     li.innerHTML = 
-        `<div class="bar" style="width: ${(itemData.plays / maxPlays) * 100}%;"></div>
-            <img class="item-image${itemData.artist ? " removed" : ""}" src="${itemData.image}">
-            <div class="item-info"${itemData.artist ? ' style="padding-left: 16px"' : ""}>
+        `<div class="bar" style="width: ${15 + (itemData.plays / maxPlays) * 85}%;"></div>
+            <img class="item-image${isTrack ? ' removed"' : ` " src="${itemData.image}"`}>
+            <div class="item-info"${isTrack ? ' style="padding-left: 16px"' : ""}>
               <div class="item-name">${itemData.name}</div>
               <div class="item-subtext">
-                <span class="artist-subtext${itemData.artist ? "" : " removed"}">${itemData.artist ? `${itemData.artist}` : ""}</span>
-                <span class="plays">${itemData.artist ? `- ` : ""}${itemData.plays.toLocaleString()} plays</span>
+                <span class="artist-subtext${isTrack ? "" : " removed"}">${isTrack ? `${itemData.artist}` : ""}</span>
+                <span class="plays">${isTrack ? `- ` : ""}${itemData.plays.toLocaleString()} plays</span>
               </div>
             </div>
           <div class="listeners">

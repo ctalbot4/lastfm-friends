@@ -344,34 +344,50 @@ a {
     background-color: rgba(0, 0, 0, 0.25);
 }
 
-.sound-toggle {
+#buttons {
     position: absolute;
-    right: 0;
-    top: 6%;
     border: none;
-    padding: 4px min(3%, 16px);
     background: rgba(21, 21, 21);
-    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    right: 0;
+    top: 0;
+    padding: 2.5px min(3%, 12px) 0 14px;
+}
+
+.toggle {
     display: block;
+    background: inherit;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
 }
 
 @media (pointer: coarse) {
-    .sound-toggle {
+    #sound-toggle {
         display: none;
     }
 }
 
-.sound-toggle img {
-    display: none;
+#sound-toggle img {
     width: 18px;
     height: 18px;
 }
 
-.sound-toggle:hover > img {
+#chart-toggle img {
+    width: 22px;
+    height: 22px;
+}
+
+#sound-toggle img {
+    display: none;
+}
+
+.toggle:hover > img {
     transition: filter 0.3s ease;
     filter: brightness(1.5); 
 }
   
-.sound-toggle .sound-on { display: block; }
-.sound-toggle.muted .sound-off { display: block; }
-.sound-toggle.muted .sound-on { display: none; }
+#sound-toggle .sound-on { display: block; }
+#sound-toggle.muted .sound-off { display: block; }
+#sound-toggle.muted .sound-on { display: none; }

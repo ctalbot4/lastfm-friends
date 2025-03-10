@@ -287,18 +287,23 @@ async function updateTicker() {
             .then((data) => {
                 data.topartists.artist.forEach(artist => {
                     const plays = parseInt(artist.playcount);
+                    const cappedPlays = Math.min(plays, 800);
                     const url = artist.url;
                     if (artistPlays[artist.name]) {
                         artistPlays[artist.name].plays += plays;
+                        artistPlays[artist.name].cappedPlays += cappedPlays;
                     } 
                     else {
                         artistPlays[artist.name] = {
                             plays,
+                            cappedPlays,
                             url,
-                            users: []
+                            userCount: 0,
+                            users: {}
                         };
-                    }    
-                    artistPlays[artist.name].users[username] = plays;            
+                    }
+                    artistPlays[artist.name].users[username] = plays;
+                    artistPlays[artist.name].userCount++;
                 });
                 updateProgress();
             })
@@ -320,19 +325,30 @@ async function updateTicker() {
             .then((data) => {
                 data.topalbums.album.forEach(album => {
                     const plays = parseInt(album.playcount);
+                    const cappedPlays = Math.min(plays, 300);
                     const url = album.url;
-                    if (albumPlays[album.name]) {
-                        albumPlays[album.name].plays += plays;
+                    const artist = album.artist.name;
+                    const albumName = album.name;
+
+                    const key = `${albumName}::${artist}`;
+                    if (albumPlays[key]) {
+                        albumPlays[key].plays += plays;
+                        albumPlays[key].cappedPlays += cappedPlays;
                     } 
                     else {
-                        albumPlays[album.name] = {
+                        albumPlays[key] = {
+                            artist, 
+                            albumName,
                             plays,
+                            cappedPlays,
                             url,
                             img: album.image[1]["#text"],
-                            users: []
+                            userCount: 0,
+                            users: {}
                         };
                     }   
-                    albumPlays[album.name].users[username] = plays;                         
+                    albumPlays[key].users[username] = plays;
+                    albumPlays[key].userCount++;
                 });
                 updateProgress();
             })
@@ -354,20 +370,29 @@ async function updateTicker() {
             .then((data) => {
                 data.toptracks.track.forEach(track => {
                     const plays = parseInt(track.playcount);
+                    const cappedPlays = Math.min(plays, 30);
                     const url = track.url;
                     const artist = track.artist.name;
-                    if (trackPlays[track.name]) {
-                        trackPlays[track.name].plays += plays;
-                    }
-                    else {
-                        trackPlays[track.name] = {
+                    const trackName = track.name;
+
+                    const key = `${trackName}::${artist}`;
+
+                    if (trackPlays[key]) {
+                        trackPlays[key].plays += plays;
+                        trackPlays[key].cappedPlays += cappedPlays;
+                    } else {
+                        trackPlays[key] = {
                             artist,
+                            trackName,
                             plays,
+                            cappedPlays,
                             url,
-                            users: []
+                            userCount: 0,
+                            users: {}
                         };
                     }
-                    trackPlays[track.name].users[username] = plays;                         
+                    trackPlays[key].users[username] = plays;
+                    trackPlays[key].userCount++;
                 });
                 updateProgress();
             })
@@ -377,9 +402,13 @@ async function updateTicker() {
     });
 
     await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
-    const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => b[1].plays - a[1].plays);
-    const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => b[1].plays - a[1].plays);
-    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => b[1].plays - a[1].plays);
+
+    const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
+    const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
+    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => {
+        return (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays);
+    });
+    console.log(sortedTrackPlays);
 
     document.querySelectorAll(".ticker-artist > .value > a").forEach(element => {
         element.innerText = sortedArtistPlays[0][0];
@@ -392,7 +421,7 @@ async function updateTicker() {
     });
     
     document.querySelectorAll(".ticker-album > .value > a").forEach(element => {
-        element.innerText = sortedAlbumPlays[0][0];
+        element.innerText = sortedAlbumPlays[0][1].albumName;
     });
     document.querySelectorAll(".ticker-album > .subtext").forEach(element => {
         element.innerText = `(${sortedAlbumPlays[0][1].plays} plays)`;
@@ -402,7 +431,7 @@ async function updateTicker() {
     });
 
     document.querySelectorAll(".ticker-track > .value > a").forEach(element => {
-        element.innerText = sortedTrackPlays[0][0];
+        element.innerText = sortedTrackPlays[0][1].trackName;
     });
     document.querySelectorAll(".ticker-track> .subtext").forEach(element => {
         element.innerText = `(${sortedTrackPlays[0][1].plays} plays)`;
@@ -411,13 +440,15 @@ async function updateTicker() {
         element.href = sortedTrackPlays[0][1].url;
     });
 
-    const artistsMax = sortedArtistPlays[0][1].plays;
+    let artistsMax = 0;   
     const artistsList = document.getElementById("artists-list");
 
-    const artistChartPromises = sortedArtistPlays.slice(0, 5).map(async (artistData) => {
+    const artistChartPromises = sortedArtistPlays.slice(0, 9).map(async (artistData) => {
         const [artistName, artistInfo] = artistData;
         const artistUsers = Object.entries(artistInfo.users);
-        const sortedArtistUsers = artistUsers.sort((a, b) => b[1] - a[1]);
+        artistUsers.sort((a, b) => b[1] - a[1]);
+
+        artistsMax = Math.max(artistsMax, artistInfo.plays);
     
         const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
         const imageUrl = (await getJSONP(fetchUrl)).data[0].picture;
@@ -425,7 +456,7 @@ async function updateTicker() {
             name: artistName,
             plays: artistInfo.plays,
             image: imageUrl,
-            listeners: sortedArtistUsers.map(([username, plays]) => ({
+            listeners: artistUsers.map(([username, plays]) => ({
                     user: username,
                     img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ? 
                         document.querySelector(`[data-username="${username}"] .profile-picture img`).src :
@@ -442,17 +473,19 @@ async function updateTicker() {
         artistsList.appendChild(createListItem(data, artistsMax));
     });
 
-    const albumsMax = sortedAlbumPlays[0][1].plays;
+    let albumsMax = 0;
     const albumsList = document.getElementById("albums-list");
 
-
-    const albumChartPromises = sortedAlbumPlays.slice(0, 5).map(async (albumData) => {
-        const [albumName, albumInfo] = albumData;
+    const albumChartPromises = sortedAlbumPlays.slice(0, 9).map(async (albumData) => {
+        const [key, albumInfo] = albumData;
         const albumUsers = Object.entries(albumInfo.users);
+
+        albumsMax = Math.max(albumsMax, albumInfo.plays);
+
         const sortedAlbumUsers = albumUsers.sort((a, b) => b[1] - a[1]);
     
         return {
-            name: albumName,
+            name: albumInfo.albumName,
             plays: albumInfo.plays,
             image: albumInfo.img,
             listeners: sortedAlbumUsers.map(([username, plays]) => ({
@@ -465,29 +498,28 @@ async function updateTicker() {
             }))
         };
     });
-
+    
     const albumResults = await Promise.all(albumChartPromises);
     albumsList.innerHTML = '';
     albumResults.forEach(data => {
         albumsList.appendChild(createListItem(data, albumsMax));
     });
 
-    const tracksMax = sortedTrackPlays[0][1].plays;
+    let tracksMax = 0;
     const tracksList = document.getElementById("tracks-list");
 
-    const trackChartPromises = sortedTrackPlays.slice(0, 5).map(async (trackData) => {
-        const [trackName, trackInfo] = trackData;
+    const trackChartPromises = sortedTrackPlays.slice(0, 9).map(async (trackData) => {
+        const trackInfo = trackData[1];
         const trackUsers = Object.entries(trackInfo.users);
-        const artistName = trackInfo.artist;
+
+        tracksMax = Math.max(tracksMax, trackInfo.plays);
+
         const sortedTrackUsers = trackUsers.sort((a, b) => b[1] - a[1]);
     
-        const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
-        const imageUrl = (await getJSONP(fetchUrl)).data[0].picture;
         return {
-            name: trackName,
-            artist: artistName,
+            name: trackInfo.trackName,
+            artist: trackInfo.artist,
             plays: trackInfo.plays,
-            image: imageUrl,
             listeners: sortedTrackUsers.map(([username, plays]) => ({
                     user: username,
                     img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ? 
@@ -502,7 +534,7 @@ async function updateTicker() {
     const trackResults = await Promise.all(trackChartPromises);
     tracksList.innerHTML = '';
     trackResults.forEach(data => {
-        tracksList.appendChild(createListItem(data, tracksMax));
+        tracksList.appendChild(createListItem(data, tracksMax, true));
     });
     
 
@@ -595,7 +627,7 @@ Promise.allSettled([userFetch, friendsFetch])
         document.getElementById("progress-container").classList.add("removed");
 
         // Set conservative refreshes to try to avoid API rate limit
-        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
+        // setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
         // setInterval(updateTicker, Math.max(90000, (friendCount / 5) * 9 * 1000));
     });
 
@@ -736,3 +768,21 @@ soundToggle.addEventListener('click', () => {
     isSoundOn = !isSoundOn;
     soundToggle.classList.toggle('muted', !isSoundOn);
 });
+
+// Sound toggle
+let isChartOpen = false;
+const chartToggle = document.getElementById('chart-toggle');
+
+chartToggle.addEventListener('click', () => {
+    if (!isChartOpen) {
+        toggleCharts();
+    }
+});
+
+// DROPDOWN
+
+function toggleCharts() {
+    const charts = document.querySelector('.charts');
+    const isCollapsed = charts.classList.toggle('collapsed');
+    isChartOpen = !isChartOpen;
+}

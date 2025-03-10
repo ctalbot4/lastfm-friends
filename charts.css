@@ -1,45 +1,38 @@
-body {
-    margin: 0;
-    font-family: "Inter", sans-serif;
-}
-
-.charts {
-    position: fixed;
-    top: 0;
+.charts-scrollable {
     width: 100%;
-    height: 40%;
     display: flex;
     flex-flow: row wrap;
     background: rgba(21, 21, 21);
     z-index: 20;
-    overflow-x: auto;
-    gap: 100px;
-    padding: 40px;
-    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    row-gap: 30px;
+    column-gap: 100px;
+    padding: 25px 40px 15px 40px;
+    align-items: flex-start;
     justify-content: center;
+    box-sizing: border-box;
+    position: relative;
+    overscroll-behavior: contain;
+
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 5%,
+        black 95%,
+        transparent 100%
+    );
 }
 
 .chart-section {
-    width: 284px;
-    margin: 0 0 32px;
+    min-width: 284px;
+    margin: 0;
     display: flex;
     flex-flow: column;
+    flex: 1 1 30%;
+    max-width: 350px;
+    scroll-snap-align: start;
 }
-
-@media (max-width: 1200px) {
-    .chart-section {
-        
-    }
-}
-
-h2 {
-    color: white;
-    font-size: 1.2rem;
-    margin: 24px 0 16px;
-    display: block;
-    text-align: start;
-    align-self: flex-start;
-  }
 
   .top-list {
     list-style: none;
@@ -58,7 +51,6 @@ h2 {
     font-size: 0.9em;
     z-index: 1;
     height: 40px;
-    width: 284px;
   }
   .item-image {
     width: 40px;
@@ -78,7 +70,6 @@ h2 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 150px;
   }
   .item-subtext {
     color: #969595;
@@ -118,7 +109,7 @@ h2 {
     color: white;
     text-align: center;
     line-height: 24px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     cursor: default
 }
 
@@ -164,3 +155,108 @@ h2 {
     border-radius: 8px;
     z-index: -1;
   }
+
+/* arrow /*
+
+/* Updated CSS */
+.charts {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: min(80%, 541.875px);
+    display: flex;
+    flex-direction: column;
+    background: rgba(21, 21, 21);
+    z-index: 110;
+    box-sizing: border-box;
+    transition: height 0.3s ease-in-out;
+    max-height: 80%;
+}
+
+.charts-collapse-handle {
+    height: 30px;
+    background: rgba(21, 21, 21);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: sticky;
+    bottom: 0;
+    z-index: 21;
+    flex-shrink: 0;
+}
+
+.charts-collapse-handle:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.collapse-arrow {
+    width: 14px;
+    height: 14px;
+    border: solid white;
+    border-width: 2px 0 0 2px;
+    transform: rotate(45deg);
+    margin-top: 6px;
+}
+.charts-collapse-handle:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.charts-collapse-handle:hover .collapse-arrow {
+    transform: rotate(45deg) scale(1.1);
+}
+
+/* Collapsed State */
+.charts.collapsed {
+    height: 0 !important;
+    transition: height 0.3s ease-in-out;
+}
+
+.charts.collapsed .charts-scrollable {
+    overflow: hidden;
+    padding: 0;
+}
+
+.charts.collapsed .chart-section,
+.charts.collapsed .charts-collapse-handle {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+/* Scrollbar Styling */
+.charts-scrollable::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+
+.charts-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    border: 2px solid rgba(21, 21, 21);
+}
+
+.charts-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+h2 {
+    color: white;
+    font-size: 1.2rem;
+    margin: 0 0 8px;
+    display: block;
+    text-align: start;
+    align-self: flex-start;
+  }
+
+  body:has(.charts:not(.collapsed)) {
+    overflow: hidden;
+    height: 100vh;
+}
+
+@media (max-width: 1337px) {
+    .charts {
+        height: min(80%, 494px);
+    }
+}
