@@ -408,7 +408,6 @@ async function updateTicker() {
     const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => {
         return (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays);
     });
-    console.log(sortedTrackPlays);
 
     document.querySelectorAll(".ticker-artist > .value > a").forEach(element => {
         element.innerText = sortedArtistPlays[0][0];
@@ -770,11 +769,12 @@ soundToggle.addEventListener('click', () => {
 });
 
 // Sound toggle
-let isChartOpen = false;
 const chartToggle = document.getElementById('chart-toggle');
+const charts = document.getElementById("charts");
+const ticker = document.querySelector(".ticker-main");
 
 chartToggle.addEventListener('click', () => {
-    if (!isChartOpen) {
+    if (charts.classList.contains("collapsed")) {
         toggleCharts();
     }
 });
@@ -782,7 +782,16 @@ chartToggle.addEventListener('click', () => {
 // DROPDOWN
 
 function toggleCharts() {
-    const charts = document.querySelector('.charts');
-    const isCollapsed = charts.classList.toggle('collapsed');
-    isChartOpen = !isChartOpen;
+    const charts = document.querySelector('#charts');
+    charts.classList.toggle('collapsed');
 }
+
+document.addEventListener("click", function (event) {
+    console.log(event.target);
+    if (!charts.contains(event.target) && !chartToggle.contains(event.target) && !charts.classList.contains("collapsed")) {
+        toggleCharts();
+    }
+    else if (ticker.contains(event.target) && event.target.tagName != "A" && charts.classList.contains("collapsed")) {
+        toggleCharts();
+    }
+});

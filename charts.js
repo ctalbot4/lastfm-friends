@@ -41,29 +41,6 @@
       li.querySelector(".listeners").appendChild(span);
       imgIndex--;
     }
-    // itemData.listeners.forEach((listener, index, array) => {
-
-    //   const span = document.createElement("span");
-    //   span.classList.add("listener-container");
-    //   span.dataset.user = listener.user;
-    //   span.dataset.plays = listener.plays;
-    //   span.style.left = `${index * 18}px`;
-    //   span.style.zIndex = index;
-
-    //   if (index == 2 && array.length > 3) {
-    //     span.innerHTML = `+${array.length - 2}`;
-    //     span.classList.add("others");
-    //     li.querySelector(".listeners").appendChild(span);
-    //   }
-    //   else if (index < 3) {
-    //     span.innerHTML = `<img class="listener-img" src="${listener.img}">`;
-    //     li.querySelector(".listeners").appendChild(span);
-    //   }
-    //   else {
-    //     // Nothing
-    //   }
-    // });
-
 
     return li;
   }
