@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title></title>
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/charts.css">
@@ -101,7 +101,7 @@
             <button id="chart-toggle" class="toggle" title="Toggle charts">
                 <img src="icons/charts.png">
             </button>
-            <button id="sound-toggle" class="toggle muted" title="Toggle song previews when hovering">
+            <button id="ticker-sound-toggle" class="sound toggle muted" title="Toggle song previews when hovering">
                 <img src="icons/soundon.png" class="sound-on">
                 <img src="icons/soundoff.png" class="sound-off">
             </button>
@@ -128,6 +128,12 @@
     </div>
     <div id="block-container" class="hidden">
 
+    </div>
+    <div class="mobile-floating-button">
+        <button id="mobile-toggle" class="sound toggle muted removed" title="Toggle song previews when hovering">
+            <img src="icons/soundon.png" class="sound-on">
+            <img src="icons/soundoff.png" class="sound-off">
+        </button>
     </div>
 </body>
 <script src="js/dashboard.js"></script>

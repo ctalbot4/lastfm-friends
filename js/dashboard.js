@@ -190,6 +190,9 @@ async function updateAllBlocks() {
     // Update total plays
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
 
+    // Trigger mobile scroll handler
+    handleScroll();
+
     // Counting animation
     const startPlays = parseInt(document.querySelector(".ticker-plays > .value").innerText);
     if (startPlays) {
@@ -311,7 +314,10 @@ Promise.allSettled([userFetch, friendsFetch])
     .then(async () => {
         await Promise.all([updateTicker(), updateAllBlocks()]);
 
+        rows = organizeBlocksIntoRows();
+
         document.getElementById("block-container").classList.remove("hidden");
+        document.getElementById("mobile-toggle").classList.remove("removed");
         document.getElementById("stats-ticker").classList.remove("hidden");
         document.getElementById("progress-container").classList.add("removed");
 

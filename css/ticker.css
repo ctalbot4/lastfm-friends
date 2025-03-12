@@ -167,12 +167,12 @@
 }
 
 @media (pointer: coarse) {
-    #sound-toggle {
+    #ticker-sound-toggle {
         display: none;
     }
 }
 
-#sound-toggle img {
+#ticker-sound-toggle img {
     width: 18px;
     height: 18px;
 }
@@ -182,23 +182,50 @@
     height: 22px;
 }
 
-#sound-toggle img {
+.sound img {
     display: none;
 }
 
-.toggle:hover > img {
+.ticker-main .toggle:hover>img {
     transition: filter 0.3s ease;
     filter: brightness(1.5);
 }
 
-#sound-toggle .sound-on {
+.toggle .sound-on {
     display: block;
 }
 
-#sound-toggle.muted .sound-off {
+.muted .sound-off {
     display: block;
 }
 
-#sound-toggle.muted .sound-on {
+.muted .sound-on {
     display: none;
+}
+
+#mobile-toggle {
+    display: none;
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 84%);
+    right: 12px;
+    z-index: 19;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+@media (pointer: coarse) {
+    #mobile-toggle {
+        display: block;
+    }
+}
+
+.mobile-floating-button img {
+    width: 60%;
+    height: 60%;
+    margin: 20%;
+    object-fit: contain;
 }
