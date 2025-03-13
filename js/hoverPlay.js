@@ -97,9 +97,10 @@ if (!isTouchDevice) {
 
         // Wait for 200 ms then start song search
         hoverTimers[block.dataset.username] = setTimeout(() => {
-            const trackTitle = block.querySelector('.song-title a').textContent;
+            // Combine two spans for track title
+            const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
             const artistName = block.querySelector('.artist-title a').textContent;
-
+            console.log("Searching '" + trackTitle + "'");
             searchPreview(trackTitle, artistName, block);
         }, 200);
     });
@@ -245,9 +246,8 @@ function handleScroll() {
 
         currentBlock = block;
 
-        const trackTitle = block.querySelector('.song-title a').textContent;
+        const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();        
         const artistName = block.querySelector('.artist-title a').textContent;
-
         searchPreview(trackTitle, artistName, block);
     }
 

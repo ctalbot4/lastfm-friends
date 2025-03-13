@@ -23,8 +23,6 @@ function createBlock(user) {
     blockDiv.className = "block";
     blockDiv.setAttribute("data-username", username);
 
-
-    // TODO: Combine last word and heart to prevent heart wrapping
     const blockHTML = `
         <div class="user-info">
             <div class="profile-picture">
@@ -37,10 +35,14 @@ function createBlock(user) {
         <div class="bottom">
             <div class="track-info">
                 <div class="song-title">
-                    <a href="" target="_blank"></a>
-                    <svg class="heart-icon" viewBox="0 0 120 120" fill="white">
-                    <path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/>
-                    </svg>
+                    <a href="" target="_blank">
+                        <span class="rest"></span>
+                        <span class="no-break">
+                            <svg class="heart-icon" viewBox="0 0 120 120" fill="white">
+                            <path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/>
+                            </svg>
+                        </span>
+                    </a>
                 </div>
                 <div class="artist-title">
                     <a href="" target="_blank"></a>
@@ -91,9 +93,31 @@ async function updateBlock(block, retry = false) {
         userPlayCounts[username] = parseInt(data.recenttracks["@attr"].total);
 
         const recentTrack = data.recenttracks.track[0];
+
+        // Workaround for heart icon wrapping incorrectly
+        const trimmedName = recentTrack.name.trim(); 
+        const lastSpaceIndex = trimmedName.lastIndexOf(" ");
+
+        let frontString;
+        let backString;
+
+        if (lastSpaceIndex === -1) {
+            frontString = "";
+            backString = trimmedName;
+        }
+        else {
+            frontString = trimmedName.slice(0, lastSpaceIndex);
+            backString = trimmedName.slice(lastSpaceIndex + 1);
+        }
+
         const songLink = recentTrack.url;
         const artistLink = songLink.split("/_")[0];
-        newBlock.querySelector(".bottom > .track-info > .song-title > a").innerText = recentTrack.name;
+
+        newBlock.querySelector(".bottom > .track-info > .song-title > a").innerHTML = `
+                        <span class="rest">${frontString}</span>
+                        <span class="no-break">${backString}<svg class="heart-icon" viewBox="0 0 120 120" fill="white">
+                            <path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/>
+                            </svg></span>`;
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerText = recentTrack.artist.name;
         newBlock.querySelector(".bottom > .track-info > .song-title > a").href = songLink;
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;
