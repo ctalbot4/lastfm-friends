@@ -95,7 +95,7 @@ async function updateBlock(block, retry = false) {
         const recentTrack = data.recenttracks.track[0];
 
         // Workaround for heart icon wrapping incorrectly
-        const trimmedName = recentTrack.name.trim(); 
+        const trimmedName = recentTrack.name.trim();
         const lastSpaceIndex = trimmedName.lastIndexOf(" ");
 
         let frontString;
@@ -104,8 +104,7 @@ async function updateBlock(block, retry = false) {
         if (lastSpaceIndex === -1) {
             frontString = "";
             backString = trimmedName;
-        }
-        else {
+        } else {
             frontString = trimmedName.slice(0, lastSpaceIndex);
             backString = trimmedName.slice(lastSpaceIndex + 1);
         }
@@ -348,6 +347,39 @@ Promise.allSettled([userFetch, friendsFetch])
         // Set conservative refreshes to try to avoid API rate limit
         setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1000));
         setInterval(updateTicker, Math.max(90000, (friendCount / 5) * 9 * 1000));
+
+        // Handle tooltips on first visit
+        const chartsToggle = document.getElementById("charts-toggle");
+        const soundToggle = document.getElementById("ticker-sound-toggle");
+        const mobileToggle = document.getElementById("mobile-toggle");
+
+        if (!localStorage.getItem("visited")) {
+            localStorage.setItem("visited", "true");
+
+            setTimeout(() => {
+                chartsToggle.classList.add("tooltip");
+            }, 3000);
+            setTimeout(() => {
+                chartsToggle.classList.remove("tooltip");
+            }, 7000);
+            setTimeout(() => {
+                soundToggle.classList.add("tooltip");
+                mobileToggle.classList.add("tooltip");
+            }, 9000);
+            setTimeout(() => {
+                soundToggle.classList.remove("tooltip");
+                mobileToggle.classList.remove("tooltip");
+            }, 13000);
+            setTimeout(() => {
+                chartsToggle.classList.add("done");
+                soundToggle.classList.add("done");
+                mobileToggle.classList.add("done");
+            }, 15000);
+        } else {
+            chartsToggle.classList.add("done");
+            soundToggle.classList.add("done");
+            mobileToggle.classList.add("done");
+        }
     });
 
 window.addEventListener("hashchange", function() {

@@ -7,7 +7,6 @@
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     z-index: 30;
-    overflow: hidden;
     /* Account for mobile browser UI */
     padding-top: env(safe-area-inset-top);
 }
@@ -177,7 +176,105 @@
     height: 18px;
 }
 
-#chart-toggle img {
+#ticker-sound-toggle,
+#charts-toggle {
+    position: relative;
+}
+
+/* Tooltip */
+#charts-toggle:after {
+    content: 'See weekly charts';
+    top: calc(100% + 8px);
+}
+
+/* Tooltip */
+#ticker-sound-toggle:after {
+    content: 'Listen along with friends';
+    top: calc(100% + 8px);
+}
+
+/* Tooltip styling */
+#charts-toggle:after, #ticker-sound-toggle:after {
+    position: absolute;
+    right: 0;
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+    padding: 8px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: default;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Arrow pointer on tooltip */
+#charts-toggle:before, #ticker-sound-toggle:before {
+    content: "";
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 5px;
+    border-width: 0 6px 6px 6px;
+    border-style: solid;
+    border-color: transparent transparent rgba(255, 255, 255, 0.9) transparent;
+    cursor: default;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Tooltip */
+#mobile-toggle:after {
+    content: 'Listen along with friends';
+    position: absolute;
+    bottom: calc(100% + 10px);
+    right: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+    padding: 8px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: default;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Arrow pointer on tooltip */
+#mobile-toggle:before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 21px;
+    border-width: 6px 6px 0 6px;
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.9) transparent transparent transparent;
+    cursor: default;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#charts-toggle.tooltip:before,
+#charts-toggle.tooltip:after,
+#ticker-sound-toggle.tooltip:before,
+#ticker-sound-toggle.tooltip:after,
+#mobile-toggle.tooltip:before,
+#mobile-toggle.tooltip:after {
+    opacity: 1;
+}
+
+#charts-toggle.done:before,
+#charts-toggle.done:after,
+#ticker-sound-toggle.done:before,
+#ticker-sound-toggle.done:after,
+#mobile-toggle.done:before,
+#mobile-toggle.done:after {
+    display: none;
+}
+
+
+#charts-toggle img {
     width: 22px;
     height: 22px;
 }
@@ -215,7 +312,7 @@
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 
+    box-shadow:
         0 4px 6px -1px rgba(0, 0, 0, 0.1),
         0 2px 4px -1px rgba(0, 0, 0, 0.06),
         inset 0 2px 4px rgba(255, 255, 255, 0.2);

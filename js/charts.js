@@ -45,7 +45,7 @@ function createListItem(itemData, maxPlays, isTrack = false) {
 }
 
 // Open/close charts
-const chartToggle = document.getElementById('chart-toggle');
+const chartToggle = document.getElementById('charts-toggle');
 const charts = document.getElementById("charts");
 const ticker = document.querySelector(".ticker-main");
 
