@@ -109,4 +109,4 @@ function onSwipeDown(element, callback, threshold = 100) {
 const swipeElement = document.querySelector('.ticker-main');
 onSwipeDown(swipeElement, () => {
     if (charts.classList.contains("collapsed")) toggleCharts()
-}, 50);
+}, 25);

@@ -209,11 +209,16 @@
     top: calc(env(safe-area-inset-top) + 84%);
     right: 12px;
     z-index: 19;
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    background: #ffffff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2);
     cursor: pointer;
 }
 
@@ -223,9 +228,13 @@
     }
 }
 
-.mobile-floating-button img {
-    width: 60%;
-    height: 60%;
-    margin: 20%;
+#mobile-toggle img {
+    width: 55%;
+    height: 55%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     object-fit: contain;
+    filter: brightness(40%);
 }

@@ -183,7 +183,7 @@ function organizeBlocksIntoRows() {
 
 let rows;
 
-// Throttle scroll handler
+// Determine block to play preview on
 function handleScroll() {
     if (!isTouchDevice) return;
 
