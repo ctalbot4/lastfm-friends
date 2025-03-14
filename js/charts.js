@@ -52,6 +52,11 @@ const ticker = document.querySelector(".ticker-main");
 function toggleCharts() {
     const charts = document.querySelector('#charts');
     charts.classList.toggle('collapsed');
+
+    const isCollapsed = charts.classList.contains('collapsed');
+    gtag('event', 'charts_toggle', {
+        state: isCollapsed ? 'collapsed' : 'expanded'
+    });
 }
 
 // Toggle charts on toggle click

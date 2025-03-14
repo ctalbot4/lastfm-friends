@@ -45,8 +45,14 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
         currentAudio.play();
         document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
         previewTimers[block.dataset.username] = setTimeout(() => {
-            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+            document.getElementById("bock-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
         }, 30000);
+
+        gtag('event', 'song_play', {
+            state: isTouchDevice ? 'onscreen' : 'hover',
+            track_title: trackTitle || 'unknown',
+            artist: artistName || 'unknown'
+        });
     } else if (!retried && trackTitle.includes('(')) {
         const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
         console.log(`Retrying search without parentheses: "${newTitle}"`);
@@ -100,7 +106,6 @@ if (!isTouchDevice) {
             // Combine two spans for track title
             const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
             const artistName = block.querySelector('.artist-title a').textContent;
-            console.log("Searching '" + trackTitle + "'");
             searchPreview(trackTitle, artistName, block);
         }, 200);
     });
@@ -153,6 +158,10 @@ document.querySelectorAll('.sound').forEach(toggle => {
             });
             currentBlock = null;
         }
+
+        gtag('event', 'sound_toggle', {
+            state: isSoundOn ? 'unmuted' : 'muted'
+        });
     });
 });
 

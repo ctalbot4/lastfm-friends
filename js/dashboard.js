@@ -354,8 +354,6 @@ Promise.allSettled([userFetch, friendsFetch])
         const mobileToggle = document.getElementById("mobile-toggle");
 
         if (!localStorage.getItem("visited")) {
-            localStorage.setItem("visited", "true");
-
             setTimeout(() => {
                 chartsToggle.classList.add("tooltip");
             }, 3000);
@@ -374,6 +372,7 @@ Promise.allSettled([userFetch, friendsFetch])
                 chartsToggle.classList.add("done");
                 soundToggle.classList.add("done");
                 mobileToggle.classList.add("done");
+                localStorage.setItem("visited", "true");
             }, 15000);
         } else {
             chartsToggle.classList.add("done");
@@ -384,4 +383,67 @@ Promise.allSettled([userFetch, friendsFetch])
 
 window.addEventListener("hashchange", function() {
     location.reload();
+});
+
+// Google analytics events
+document.body.addEventListener("click", function (event) {
+    let target = event.target;
+
+    // Track clicks in charts
+    if (target.closest("#artists-list") && target.closest("a")) {
+        gtag("event", "chart_click", {
+            type: "artists",
+            target: target.textContent,
+        });
+    } else if (target.closest("#albums-list") && target.closest("a")) {
+        gtag("event", "chart_click", {
+            type: "albums",
+            target: target.textContent,
+        });
+    } else if (target.closest("#tracks-list") && target.closest("a")) {
+        gtag("event", "chart_click", {
+            type: "tracks",
+            target: target.textContent,
+        });
+    }
+
+    // Track clicks in block-container
+    if (target.closest("#block-container")) {
+        if (target.closest(".artist-title")) {
+            gtag("event", "block_click", {
+                type: "artist",
+                target: target.textContent,
+            });
+        } else if (target.closest(".song-title")) {
+            gtag("event", "block_click", {
+                type: "track",
+                target: target.textContent,
+            });
+        } else if (target.closest(".user-info")) {
+            gtag("event", "block_click", {
+                type: "username",
+                target: target.textContent,
+            });
+        }
+    }
+
+    // Track clicks in ticker
+    if (target.closest(".ticker-main")) {
+        if (target.closest(".ticker-artist") && target.closest("a")) {
+            gtag("event", "ticker_click", {
+                type: "artist",
+                target: target.textContent,
+            });
+        } else if (target.closest(".ticker-album") && target.closest("a")) {
+            gtag("event", "ticker_click", {
+                type: "album",
+                target: target.textContent,
+            });
+        } else if (target.closest(".ticker-track") && target.closest("a")) {
+            gtag("event", "ticker_click", {
+                type: "track",
+                target: target.textContent,
+            });
+        }
+    }
 });
