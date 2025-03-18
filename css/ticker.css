@@ -246,7 +246,7 @@
     content: "";
     position: absolute;
     bottom: calc(100% + 6px);
-    right: 21px;
+    right: 23px;
     border-width: 6px 6px 0 6px;
     border-style: solid;
     border-color: rgba(255, 255, 255, 0.9) transparent transparent transparent;

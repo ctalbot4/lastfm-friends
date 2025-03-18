@@ -1,5 +1,6 @@
 let currentAudio = null;
 let currentBlock = null;
+let currentAudioBlock = null;
 let activeRequestId = 0;
 
 // Store timers across block clones
@@ -41,12 +42,17 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
             currentAudio = new Audio();
         }
 
+        const previousAudioTime = parseFloat(block.dataset.previewTime);
+
         currentAudio.src = foundTrack.preview;
+        currentAudio.currentTime = previousAudioTime > 27 ? 0 : previousAudioTime;
         currentAudio.play();
+
+        currentAudioBlock = block;
         document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
         previewTimers[block.dataset.username] = setTimeout(() => {
-            document.getElementById("bock-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
-        }, 30000);
+            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+        }, (30 - currentAudio.currentTime) * 1000);
 
         gtag('event', 'song_play', {
             state: isTouchDevice ? 'onscreen' : 'hover',
@@ -85,18 +91,23 @@ if (!isTouchDevice) {
             clearTimeout(previewTimers[block.dataset.username]);
         }
 
-        // Clear previous timeout on previous block if mouseout wasn't triggered
+        // Clear previous timeout and save preview time on previous block if mouseout wasn't triggered
         if (currentBlock) {
             document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`).dataset.previewPlaying = "false";
             clearTimeout(hoverTimers[currentBlock.dataset.username]);
             clearTimeout(previewTimers[currentBlock.dataset.username]);
+
+            // Check if currentBlock is the block playing audio
+            if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {
+                currentBlock.dataset.previewTime = currentAudio.currentTime;
+            }
         }
 
         // Cancel previous interactions
         activeRequestId++;
         if (currentAudio) {
             currentAudio.pause();
-            currentAudio.currentTime = 0;
+            currentAudioBlock = null;
         }
 
         currentBlock = block;
@@ -123,11 +134,15 @@ if (!isTouchDevice) {
             clearTimeout(previewTimers[block.dataset.username]);
         }
 
-        // Cancel 
+        // Cancel audio and save preview time
         activeRequestId++;
         if (currentAudio) {
             currentAudio.pause();
-            currentAudio.currentTime = 0;
+            // Check if block is the block playing audio
+            if (currentAudioBlock?.dataset.username == block.dataset.username) {
+                block.dataset.previewTime = currentAudio.currentTime;
+            }
+            currentAudioBlock = null;
         }
         document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
         currentBlock = null;
@@ -196,6 +211,7 @@ let rows;
 // Determine block to play preview on
 function handleScroll() {
     if (!isTouchDevice) return;
+    const requestId = activeRequestId;
 
     rows = organizeBlocksIntoRows();
     const viewportTop = window.scrollY;
@@ -242,15 +258,23 @@ function handleScroll() {
 
         // Clear previous timeout on previous block 
         if (currentBlock) {
-            document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`).dataset.previewPlaying = "false";
+            // Need to get block again, might have old copy after refresh
+            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`);
+            updatedCurrentBlock.dataset.previewPlaying = "false";
             clearTimeout(previewTimers[currentBlock.dataset.username]);
+
+            // Check if currentBlock is the block playing audio
+            if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {   
+                console.log("Currently playing")             
+                updatedCurrentBlock.dataset.previewTime = currentAudio.currentTime;
+            }
         }
 
         // Cancel previous interactions
         activeRequestId++;
         if (currentAudio) {
             currentAudio.pause();
-            currentAudio.currentTime = 0;
+            currentAudioBlock = null;
         }
 
         currentBlock = block;

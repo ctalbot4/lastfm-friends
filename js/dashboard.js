@@ -93,9 +93,14 @@ async function updateBlock(block, retry = false) {
         userPlayCounts[username] = parseInt(data.recenttracks["@attr"].total);
 
         const recentTrack = data.recenttracks.track[0];
+        const trimmedName = recentTrack.name.trim();
+        const oldName = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
+
+        if (trimmedName != oldName) {
+            newBlock.dataset.previewTime = 0;
+        }
 
         // Workaround for heart icon wrapping incorrectly
-        const trimmedName = recentTrack.name.trim();
         const lastSpaceIndex = trimmedName.lastIndexOf(" ");
 
         let frontString;
@@ -191,11 +196,14 @@ async function updateAllBlocks() {
 
     const newerBlocks = [];
 
-    // Sync previewPlaying from original blocks and ignore null blocks
+    // Sync values from original blocks that user might've changed during update and ignore null blocks
     newBlocks.forEach((newBlock, index) => {
         if (newBlock) {
             const originalBlock = blocks[index];
             newBlock.dataset.previewPlaying = originalBlock.dataset.previewPlaying || "false";
+            if (newBlock.dataset.previewTime != 0) {
+                newBlock.dataset.previewTime = originalBlock.dataset.previewTime;
+            }
             newerBlocks.push(newBlock);
         }
     });
