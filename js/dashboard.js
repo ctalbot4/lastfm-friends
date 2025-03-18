@@ -400,18 +400,18 @@ document.body.addEventListener("click", function (event) {
     // Track clicks in charts
     if (target.closest("#artists-list") && target.closest("a")) {
         gtag("event", "chart_click", {
-            type: "artists",
-            target: target.textContent,
+            click_type: "artists",
+            artist_target: target.textContent,
         });
     } else if (target.closest("#albums-list") && target.closest("a")) {
         gtag("event", "chart_click", {
-            type: "albums",
-            target: target.textContent,
+            click_type: "albums",
+            album_target: target.textContent,
         });
     } else if (target.closest("#tracks-list") && target.closest("a")) {
         gtag("event", "chart_click", {
-            type: "tracks",
-            target: target.textContent,
+            click_type: "tracks",
+            track_target: target.textContent,
         });
     }
 
@@ -419,18 +419,18 @@ document.body.addEventListener("click", function (event) {
     if (target.closest("#block-container")) {
         if (target.closest(".artist-title")) {
             gtag("event", "block_click", {
-                type: "artist",
-                target: target.textContent,
+                click_type: "artist",
+                artist_target: target.textContent,
             });
         } else if (target.closest(".song-title")) {
             gtag("event", "block_click", {
-                type: "track",
-                target: target.textContent,
+                click_type: "track",
+                track_target: target.textContent,
             });
         } else if (target.closest(".user-info")) {
             gtag("event", "block_click", {
-                type: "username",
-                target: target.textContent,
+                click_type: "username",
+                user_target: target.textContent,
             });
         }
     }
@@ -439,18 +439,18 @@ document.body.addEventListener("click", function (event) {
     if (target.closest(".ticker-main")) {
         if (target.closest(".ticker-artist") && target.closest("a")) {
             gtag("event", "ticker_click", {
-                type: "artist",
-                target: target.textContent,
+                click_type: "artist",
+                artist_target: target.textContent,
             });
         } else if (target.closest(".ticker-album") && target.closest("a")) {
             gtag("event", "ticker_click", {
-                type: "album",
-                target: target.textContent,
+                click_type: "album",
+                album_target: target.textContent,
             });
         } else if (target.closest(".ticker-track") && target.closest("a")) {
             gtag("event", "ticker_click", {
-                type: "track",
-                target: target.textContent,
+                click_type: "track",
+                track_target: target.textContent,
             });
         }
     }

@@ -55,9 +55,9 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
         }, (30 - currentAudio.currentTime) * 1000);
 
         gtag('event', 'song_play', {
-            state: isTouchDevice ? 'onscreen' : 'hover',
-            track_title: trackTitle || 'unknown',
-            artist: artistName || 'unknown'
+            preview_trigger: isTouchDevice ? 'onscreen' : 'hover',
+            preview_track: trackTitle || 'unknown',
+            preview_artist: artistName || 'unknown'
         });
     } else if (!retried && trackTitle.includes('(')) {
         const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
@@ -177,7 +177,7 @@ document.querySelectorAll('.sound').forEach(toggle => {
         }
 
         gtag('event', 'sound_toggle', {
-            state: isSoundOn ? 'unmuted' : 'muted'
+            sound_state: isSoundOn ? 'unmuted' : 'muted'
         });
     });
 });

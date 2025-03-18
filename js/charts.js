@@ -55,7 +55,7 @@ function toggleCharts() {
 
     const isCollapsed = charts.classList.contains('collapsed');
     gtag('event', 'charts_toggle', {
-        state: isCollapsed ? 'collapsed' : 'expanded'
+        chart_state: isCollapsed ? 'collapsed' : 'expanded'
     });
 }
 
