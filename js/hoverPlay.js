@@ -93,13 +93,15 @@ if (!isTouchDevice) {
 
         // Clear previous timeout and save preview time on previous block if mouseout wasn't triggered
         if (currentBlock) {
-            document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`).dataset.previewPlaying = "false";
+            // Need to get block again, might have old copy after refresh
+            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`);
+            updatedCurrentBlock.dataset.previewPlaying = "false";
             clearTimeout(hoverTimers[currentBlock.dataset.username]);
             clearTimeout(previewTimers[currentBlock.dataset.username]);
 
             // Check if currentBlock is the block playing audio
             if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {
-                currentBlock.dataset.previewTime = currentAudio.currentTime;
+                updatedCurrentBlock.dataset.previewTime = currentAudio.currentTime;
             }
         }
 
@@ -265,7 +267,6 @@ function handleScroll() {
 
             // Check if currentBlock is the block playing audio
             if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {   
-                console.log("Currently playing")             
                 updatedCurrentBlock.dataset.previewTime = currentAudio.currentTime;
             }
         }
