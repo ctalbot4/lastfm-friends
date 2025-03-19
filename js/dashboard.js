@@ -1,9 +1,8 @@
-const KEY1 = "1c4a67a2eacf14e735edb9e4475d3237";
-const KEY2 = "64f825a488a6da7a9c9d61f3730cc388";
-const KEY3 = "55de7221c445521949d4d7cd63eee220";
+const keys = ["1c4a67a2eacf14e735edb9e4475d3237", "64f825a488a6da7a9c9d61f3730cc388", "55de7221c445521949d4d7cd63eee220", 
+              "c731f64e0454248fe35c165b218d5c44", "42bf6298e999a72b46d63f5988d09c74", "028d39166c0205b7856f64287fd3385e"
+            ];
 
 function getKey() {
-    const keys = [KEY1, KEY2, KEY3];
     return keys[Math.floor(Math.random() * keys.length)];
 }
 
