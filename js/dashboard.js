@@ -1,4 +1,11 @@
-const APIKEY = "1c4a67a2eacf14e735edb9e4475d3237";
+const KEY1 = "1c4a67a2eacf14e735edb9e4475d3237";
+const KEY2 = "64f825a488a6da7a9c9d61f3730cc388";
+const KEY3 = "55de7221c445521949d4d7cd63eee220";
+
+function getKey() {
+    const keys = [KEY1, KEY2, KEY3];
+    return keys[Math.floor(Math.random() * keys.length)];
+}
 
 function getUsernameFromURL() {
     const hash = window.location.hash;
@@ -65,7 +72,7 @@ const userPlayCounts = {};
 async function updateBlock(block, retry = false) {
     const username = block.dataset.username;
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&extended=1&from=${oneWeekAgo}&user=${username}&api_key=${APIKEY}&format=json`;
+    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&extended=1&from=${oneWeekAgo}&user=${username}&api_key=${getKey()}&format=json`;
     const newBlock = block.cloneNode(true);
     try {
         const response = await fetch(friendUrl);
@@ -287,8 +294,8 @@ function sortBlocks(blocks) {
     });
 }
 
-const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=150&api_key=${APIKEY}&format=json`;
-const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${APIKEY}&format=json`;
+const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=150&api_key=${getKey()}&format=json`;
+const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${getKey()}&format=json`;
 
 let friendCount = 0;
 

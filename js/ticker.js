@@ -8,7 +8,7 @@ async function updateTicker() {
 
     const artistPromises = Array.from(blocks).map(block => {
         const username = block.dataset.username;
-        artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${APIKEY}&format=json`;
+        artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${getKey()}&format=json`;
         return fetch(artistsUrl)
             .then((response) => {
                 if (!response.ok) {
@@ -45,7 +45,7 @@ async function updateTicker() {
 
     const albumPromises = Array.from(blocks).map(block => {
         const username = block.dataset.username;
-        albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${APIKEY}&format=json`;
+        albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${getKey()}&format=json`;
         return fetch(albumsUrl)
             .then((response) => {
                 if (!response.ok) {
@@ -89,7 +89,7 @@ async function updateTicker() {
 
     const trackPromises = Array.from(blocks).map(block => {
         const username = block.dataset.username;
-        tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${APIKEY}&format=json`;
+        tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${getKey()}&format=json`;
         return fetch(tracksUrl)
             .then((response) => {
                 if (!response.ok) {
