@@ -269,6 +269,7 @@ async function updateTicker() {
         tracksList.appendChild(createListItem(data, tracksMax, true));
     });
 
+    lastTickerUpdate = Date.now();
     console.log("Stats refreshed!");
 }
 

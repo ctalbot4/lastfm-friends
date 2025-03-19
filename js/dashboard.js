@@ -1,6 +1,6 @@
-const keys = ["1c4a67a2eacf14e735edb9e4475d3237", "64f825a488a6da7a9c9d61f3730cc388", "55de7221c445521949d4d7cd63eee220", 
-              "c731f64e0454248fe35c165b218d5c44", "42bf6298e999a72b46d63f5988d09c74", "028d39166c0205b7856f64287fd3385e"
-            ];
+const keys = ["1c4a67a2eacf14e735edb9e4475d3237", "64f825a488a6da7a9c9d61f3730cc388", "55de7221c445521949d4d7cd63eee220",
+    "c731f64e0454248fe35c165b218d5c44", "42bf6298e999a72b46d63f5988d09c74", "028d39166c0205b7856f64287fd3385e"
+];
 
 function getKey() {
     return keys[Math.floor(Math.random() * keys.length)];
@@ -257,6 +257,7 @@ async function updateAllBlocks() {
         });
     }
 
+    lastBlocksUpdate = Date.now();
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
@@ -359,8 +360,7 @@ Promise.allSettled([userFetch, friendsFetch])
         document.getElementById("progress-container").classList.add("removed");
 
         // Set conservative refreshes to try to avoid API rate limit
-        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1500));
-        setInterval(updateTicker, Math.max(270000, (friendCount / 5) * 9 * 3000));
+        scheduleUpdates();
 
         // Handle tooltips on first visit
         const chartsToggle = document.getElementById("charts-toggle");
@@ -395,12 +395,66 @@ Promise.allSettled([userFetch, friendsFetch])
         }
     });
 
+let lastBlocksUpdate;
+let blocksIntervalTime = Math.max(10000, (friendCount / 5) * 1500);
+let blocksTimeout;
+
+let lastTickerUpdate;
+let tickerIntervalTime = Math.max(270000, (friendCount / 5) * 9 * 3000)
+let tickerTimeout;
+
+// Schedule next ticker and block update
+async function scheduleUpdates() {
+    // Cancel other timeouts because this will replace them
+    cancelUpdates();
+
+    const now = Date.now();
+
+    // Calculate time when the next update should occur
+    let nextBlockUpdateTime = lastBlocksUpdate + blocksIntervalTime;
+    let blocksDelay = nextBlockUpdateTime - now;
+
+    if (blocksDelay <= 0) {
+        await updateAllBlocks();
+
+        // Schedule next update
+        blocksTimeout = setTimeout(scheduleUpdates, blocksIntervalTime);
+    } else {
+        blocksTimeout = setTimeout(scheduleUpdates, blocksDelay);
+    }
+
+    let nextTickerUpdateTime = lastTickerUpdate + tickerIntervalTime;
+    let tickerDelay = nextTickerUpdateTime - now;
+
+    if (tickerDelay <= 0) {
+        await updateTicker();
+
+        // Schedule next update
+        tickerTimeout = setTimeout(scheduleUpdates, tickerIntervalTime);
+    } else {
+        tickerTimeout = setTimeout(scheduleUpdates, tickerDelay);
+    }
+}
+
+function cancelUpdates() {
+    clearTimeout(blocksTimeout);
+    clearTimeout(tickerTimeout);
+}
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        scheduleUpdates();
+    } else {
+        cancelUpdates();
+    }
+});
+
 window.addEventListener("hashchange", function() {
     location.reload();
 });
 
 // Google analytics events
-document.body.addEventListener("click", function (event) {
+document.body.addEventListener("click", function(event) {
     let target = event.target;
 
     // Track clicks in charts
