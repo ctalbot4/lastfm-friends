@@ -360,7 +360,7 @@ Promise.allSettled([userFetch, friendsFetch])
         document.getElementById("progress-container").classList.add("removed");
 
         // Set conservative refreshes to try to avoid API rate limit
-        setInterval(updateAllBlocks, Math.max(30000, (friendCount / 5) * 3000));
+        setInterval(updateAllBlocks, Math.max(10000, (friendCount / 5) * 1500));
         setInterval(updateTicker, Math.max(270000, (friendCount / 5) * 9 * 3000));
 
         // Handle tooltips on first visit
