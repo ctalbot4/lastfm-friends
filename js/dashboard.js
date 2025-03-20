@@ -56,7 +56,7 @@ function createBlock(user) {
             </div>
             <div class="status">     
                 <span class="time"></span>               
-                <img src="https://www.last.fm/static/images/icons/now_playing_grey_12@2x.a643c755e003.gif" class="playing-icon">
+                <img src="icons/playing.gif" class="playing-icon">
             </div>
         </div>
     `;
@@ -178,6 +178,12 @@ async function updateBlock(block, retry = false) {
                 return null;
             } else if (error.data?.error === 8 && retry == false) {
                 return updateBlock(block, true);
+            }
+            else if (error.data?.error === 29) {
+                gtag('event', 'exception', {
+                    'description': 'rate_limit',
+                    'fatal': false
+                  });
             }
         } else {
             console.error(`Error updating ${username}:`, error);
