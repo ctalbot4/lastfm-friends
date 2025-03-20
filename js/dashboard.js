@@ -360,6 +360,8 @@ Promise.allSettled([userFetch, friendsFetch])
         document.getElementById("progress-container").classList.add("removed");
 
         // Set conservative refreshes to try to avoid API rate limit
+        blocksIntervalTime = Math.max(10000, (friendCount / 5) * 1500);
+        tickerIntervalTime = Math.max(270000, (friendCount / 5) * 9 * 3000);
         scheduleUpdates();
 
         // Handle tooltips on first visit
@@ -396,11 +398,11 @@ Promise.allSettled([userFetch, friendsFetch])
     });
 
 let lastBlocksUpdate;
-let blocksIntervalTime = Math.max(10000, (friendCount / 5) * 1500);
+let blocksIntervalTime;
 let blocksTimeout;
 
 let lastTickerUpdate;
-let tickerIntervalTime = Math.max(270000, (friendCount / 5) * 9 * 3000)
+let tickerIntervalTime;
 let tickerTimeout;
 
 // Schedule next ticker and block update
