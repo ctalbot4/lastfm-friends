@@ -1,11 +1,3 @@
-const keys = ["1c4a67a2eacf14e735edb9e4475d3237", "64f825a488a6da7a9c9d61f3730cc388", "55de7221c445521949d4d7cd63eee220",
-    "c731f64e0454248fe35c165b218d5c44", "42bf6298e999a72b46d63f5988d09c74", "028d39166c0205b7856f64287fd3385e"
-];
-
-function getKey() {
-    return keys[Math.floor(Math.random() * keys.length)];
-}
-
 function getUsernameFromURL() {
     const hash = window.location.hash;
     const username = hash.substring(1);
@@ -68,10 +60,10 @@ let completed = 0;
 const userPlayCounts = {};
 
 // Fetch data for a block and update
-async function updateBlock(block, retry = false) {
+async function updateBlock(block, retry = false, key = KEY) {
     const username = block.dataset.username;
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&extended=1&from=${oneWeekAgo}&user=${username}&api_key=${getKey()}&format=json`;
+    const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&extended=1&from=${oneWeekAgo}&user=${username}&api_key=${key}&format=json`;
     const newBlock = block.cloneNode(true);
     try {
         const response = await fetch(friendUrl);
@@ -178,12 +170,11 @@ async function updateBlock(block, retry = false) {
                 return null;
             } else if (error.data?.error === 8 && retry == false) {
                 return updateBlock(block, true);
-            }
-            else if (error.data?.error === 29) {
+            } else if (error.data?.error === 29) {
                 gtag('event', 'exception', {
                     'description': 'rate_limit',
                     'fatal': false
-                  });
+                });
             }
         } else {
             console.error(`Error updating ${username}:`, error);
@@ -199,14 +190,24 @@ const blockContainer = document.getElementById("block-container");
 // Update all blocks
 async function updateAllBlocks() {
     const blocks = blockContainer.getElementsByClassName("block");
+    const blocksArr = Array.from(blocks);
 
     completed = 0;
 
-    // Convert blocks to an array and map each block to an updateBlock call
-    const updatePromises = Array.from(blocks).map(block => updateBlock(block));
+    const chunks = [];
+    const newBlocks = [];
 
-    // Wait for all updateBlock calls to complete
-    const newBlocks = await Promise.all(updatePromises);
+    chunks.push(blocksArr.slice(0, 250));
+    const blockPromises = await Promise.all(chunks[0].map(block => updateBlock(block)));
+    newBlocks.push(...blockPromises);
+
+    // Update second chunk if necessary
+    if (friendCount > 250) {
+        await new Promise(resolve => setTimeout(resolve, 8000));
+        chunks.push(blocksArr.slice(250, 500));
+        const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, false, KEY2)));
+        newBlocks.push(...blockPromises);
+    }
 
     const newerBlocks = [];
 
@@ -268,7 +269,25 @@ async function updateAllBlocks() {
     lastBlocksUpdate = Date.now();
 
     // Cache blocks, ticker, charts
-    localStorage.setItem(blocksCacheKey, blockContainer.innerHTML);
+    try {
+        localStorage.setItem(blocksCacheKey, blockContainer.innerHTML);
+    } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota exceeded. Clearing storage...');
+            
+            const scheduleData = localStorage.getItem(scheduleCacheKey);
+            const friendsData = localStorage.getItem(friendsCacheKey);
+            const tickerData = localStorage.getItem(tickerCacheKey);
+
+            localStorage.clear();
+
+            localStorage.setItem(scheduleCacheKey, scheduleData);
+            localStorage.setItem(friendsCacheKey, friendsData);
+            localStorage.setItem(tickerCacheKey, tickerData);
+            localStorage.setItem(blocksCacheKey, blockContainer.innerHTML);
+            localStorage.setItem("visited", true);
+        }
+    }
     const chartsDiv = document.querySelector(".charts-scrollable");
     const tickerDiv = document.querySelector(".ticker-stats");
 
@@ -276,8 +295,25 @@ async function updateAllBlocks() {
         charts: chartsDiv.innerHTML,
         ticker: tickerDiv.innerHTML
     }
+    try {
+        localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+    } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota exceeded. Clearing storage...');
+            
+            const scheduleData = localStorage.getItem(scheduleCacheKey);
+            const friendsData = localStorage.getItem(friendsCacheKey);
+            const blocksData = localStorage.getItem(blocksCacheKey);
 
-    localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+            localStorage.clear();
+
+            localStorage.setItem(scheduleCacheKey, scheduleData);
+            localStorage.setItem(friendsCacheKey, friendsData);
+            localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+            localStorage.setItem(blocksCacheKey, blocksData);
+            localStorage.setItem("visited", true);
+        }
+    }
 
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
@@ -315,9 +351,6 @@ function sortBlocks(blocks) {
     });
 }
 
-const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=250&api_key=${getKey()}&format=json`;
-const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${getKey()}&format=json`;
-
 let friendCount = 0;
 
 document.title = `${getUsernameFromURL()} | lastfmfriends.live`;
@@ -329,8 +362,27 @@ let scheduleCacheKey;
 let foundBlocksCache = false;
 let foundTickerCache = false;
 
+let KEY;
+let KEY2;
+
+// Get API key from backend
+async function getKey(cache = true) {
+    const cachedKey = sessionStorage.getItem("lfl_key");
+    if (cache && cachedKey) {
+        return cachedKey;
+    }
+    const response = await fetch("https://api-fetch.ctalbot4.workers.dev/");
+    const data = await response.json();
+    sessionStorage.setItem("lfl_key", data.key);
+    return data.key;
+}
+
 // Initial fetch on load
 async function initialFetch() {
+    KEY = await getKey();
+
+    const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=500&api_key=${KEY}&format=json`;
+    const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${KEY}&format=json`;
     try {
         // Fetch user data
         const userResponse = await fetch(userUrl);
@@ -367,6 +419,11 @@ async function initialFetch() {
         blocksIntervalTime = Math.max(10000, (friendCount / 5) * 1500);
         tickerIntervalTime = Math.max(270000, (friendCount / 5) * 9 * 3000);
 
+        // Get secondary key if necessary
+        if (friendCount > 250) {
+            KEY2 = await getKey(false);
+        }
+
         const cachedFriends = localStorage.getItem(friendsCacheKey);
 
         if (cachedFriends) {
@@ -374,7 +431,10 @@ async function initialFetch() {
             if (JSON.stringify(friends) === JSON.stringify(parsedFriends)) {
                 const cachedSchedule = localStorage.getItem(scheduleCacheKey);
                 if (cachedSchedule) {
-                    const { blocks, ticker } = JSON.parse(cachedSchedule);
+                    const {
+                        blocks,
+                        ticker
+                    } = JSON.parse(cachedSchedule);
                     lastBlocksUpdate = blocks;
                     lastTickerUpdate = ticker;
 
@@ -387,7 +447,7 @@ async function initialFetch() {
                     if (blocksDelay > 0) {
                         const cachedBlocks = localStorage.getItem(blocksCacheKey);
                         blockContainer.innerHTML = cachedBlocks;
-                        console.log("Loaded blocks from cache");
+                        console.log("Loaded blocks from cache.");
                         foundBlocksCache = true;
                     }
 
@@ -407,17 +467,35 @@ async function initialFetch() {
                         chartsDiv.innerHTML = charts;
 
                         foundTickerCache = true;
-                        console.log("Loaded ticker from cache");
+                        console.log("Loaded ticker from cache.");
                     }
                 }
 
             }
         }
-        localStorage.setItem(friendsCacheKey, JSON.stringify(friends));
+        try {
+            localStorage.setItem(friendsCacheKey, JSON.stringify(friends));
+        } catch (e) {
+            if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+                console.warn('LocalStorage quota exceeded. Clearing storage...');
+            
+                const scheduleData = localStorage.getItem(scheduleCacheKey);
+                const tickerData = localStorage.getItem(tickerCacheKey);
+                const blocksData = localStorage.getItem(blocksCacheKey);
+
+                localStorage.clear();
+
+                localStorage.setItem(scheduleCacheKey, scheduleData);
+                localStorage.setItem(friendsCacheKey, JSON.stringify(friends));
+                localStorage.setItem(tickerCacheKey, tickerData);
+                localStorage.setItem(blocksCacheKey, blocksData);
+                localStorage.setItem("visited", true);
+            }
+        }
 
         if (!foundBlocksCache) {
             friends.forEach((friend) => {
-            blockContainer.appendChild(createBlock(friend));
+                blockContainer.appendChild(createBlock(friend));
             });
         }
     } catch (error) {
@@ -430,7 +508,7 @@ const initialPromise = initialFetch();
 
 // Call updateAllBlocks after both fetches have completed
 Promise.allSettled([initialPromise])
-    .then(async () => {    
+    .then(async () => {
         await Promise.all([
             foundTickerCache ? null : updateTicker(),
             foundBlocksCache ? null : updateAllBlocks()

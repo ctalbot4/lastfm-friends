@@ -1,139 +1,162 @@
-// Update ticker (other than now playing, plays)
-async function updateTicker(cache) {
+const artistPlays = {};
+const albumPlays = {};
+const trackPlays = {};
 
-    const artistPlays = {};
-    const albumPlays = {};
-    const trackPlays = {};
+async function fetchArtists(block, key = KEY) {
+    const username = block.dataset.username;
+    artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
+    return fetch(artistsUrl)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network error");
+            }
+            return response.json();
+        })
+        .then((data) => {
+            data.topartists.artist.forEach(artist => {
+                const plays = parseInt(artist.playcount);
+                const cappedPlays = Math.min(plays, 800);
+                const url = artist.url;
+                if (artistPlays[artist.name]) {
+                    artistPlays[artist.name].plays += plays;
+                    artistPlays[artist.name].cappedPlays += cappedPlays;
+                } else {
+                    artistPlays[artist.name] = {
+                        plays,
+                        cappedPlays,
+                        url,
+                        userCount: 0,
+                        users: {}
+                    };
+                }
+                artistPlays[artist.name].users[username] = plays;
+                artistPlays[artist.name].userCount++;
+            });
+            updateProgress();
+        })
+        .catch((error) => {
+            console.error("Error fetching user artist data:", error);
+        });
+}
+
+async function fetchAlbums(block, key = KEY) {
+    const username = block.dataset.username;
+    albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
+    return fetch(albumsUrl)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network error");
+            }
+            return response.json();
+        })
+        .then((data) => {
+            data.topalbums.album.forEach(album => {
+                const plays = parseInt(album.playcount);
+                const cappedPlays = Math.min(plays, 300);
+                const url = album.url;
+                const artist = album.artist.name;
+                const albumName = album.name;
+
+                const key = `${albumName}::${artist}`;
+                if (albumPlays[key]) {
+                    albumPlays[key].plays += plays;
+                    albumPlays[key].cappedPlays += cappedPlays;
+                } else {
+                    albumPlays[key] = {
+                        artist,
+                        albumName,
+                        plays,
+                        cappedPlays,
+                        url,
+                        img: album.image[1]["#text"],
+                        userCount: 0,
+                        users: {}
+                    };
+                }
+                albumPlays[key].users[username] = plays;
+                albumPlays[key].userCount++;
+            });
+            updateProgress();
+        })
+        .catch((error) => {
+            console.error("Error fetching user album data:", error);
+        });
+}
+
+async function fetchTracks(block, key = KEY) {
+    const username = block.dataset.username;
+    tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
+    return fetch(tracksUrl)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network error");
+            }
+            return response.json();
+        })
+        .then((data) => {
+            data.toptracks.track.forEach(track => {
+                const plays = parseInt(track.playcount);
+                const cappedPlays = Math.min(plays, 30);
+                const trackUrl = track.url;
+                const artistUrl = track.artist.url;
+                const artist = track.artist.name;
+                const trackName = track.name;
+
+                const key = `${trackName}::${artist}`;
+
+                if (trackPlays[key]) {
+                    trackPlays[key].plays += plays;
+                    trackPlays[key].cappedPlays += cappedPlays;
+                } else {
+                    trackPlays[key] = {
+                        artist,
+                        trackName,
+                        plays,
+                        cappedPlays,
+                        trackUrl,
+                        artistUrl,
+                        userCount: 0,
+                        users: {}
+                    };
+                }
+                trackPlays[key].users[username] = plays;
+                trackPlays[key].userCount++;
+            });
+            updateProgress();
+        })
+        .catch((error) => {
+            console.error("Error fetching user track data:", error);
+        });
+}
+
+// Update ticker (other than now playing, plays)
+async function updateTicker() {
+
     const blocks = blockContainer.getElementsByClassName("block");
 
-    const artistPromises = Array.from(blocks).map(block => {
-        const username = block.dataset.username;
-        artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${getKey()}&format=json`;
-        return fetch(artistsUrl)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Network error");
-                }
-                return response.json();
-            })
-            .then((data) => {
-                data.topartists.artist.forEach(artist => {
-                    const plays = parseInt(artist.playcount);
-                    const cappedPlays = Math.min(plays, 800);
-                    const url = artist.url;
-                    if (artistPlays[artist.name]) {
-                        artistPlays[artist.name].plays += plays;
-                        artistPlays[artist.name].cappedPlays += cappedPlays;
-                    } else {
-                        artistPlays[artist.name] = {
-                            plays,
-                            cappedPlays,
-                            url,
-                            userCount: 0,
-                            users: {}
-                        };
-                    }
-                    artistPlays[artist.name].users[username] = plays;
-                    artistPlays[artist.name].userCount++;
-                });
-                updateProgress();
-            })
-            .catch((error) => {
-                console.error("Error fetching user artist data:", error);
-            });
-    });
+    const blocksArr = Array.from(blocks);
 
-    const albumPromises = Array.from(blocks).map(block => {
-        const username = block.dataset.username;
-        albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${getKey()}&format=json`;
-        return fetch(albumsUrl)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Network error");
-                }
-                return response.json();
-            })
-            .then((data) => {
-                data.topalbums.album.forEach(album => {
-                    const plays = parseInt(album.playcount);
-                    const cappedPlays = Math.min(plays, 300);
-                    const url = album.url;
-                    const artist = album.artist.name;
-                    const albumName = album.name;
+    completed = 0;
 
-                    const key = `${albumName}::${artist}`;
-                    if (albumPlays[key]) {
-                        albumPlays[key].plays += plays;
-                        albumPlays[key].cappedPlays += cappedPlays;
-                    } else {
-                        albumPlays[key] = {
-                            artist,
-                            albumName,
-                            plays,
-                            cappedPlays,
-                            url,
-                            img: album.image[1]["#text"],
-                            userCount: 0,
-                            users: {}
-                        };
-                    }
-                    albumPlays[key].users[username] = plays;
-                    albumPlays[key].userCount++;
-                });
-                updateProgress();
-            })
-            .catch((error) => {
-                console.error("Error fetching user album data:", error);
-            });
-    });
+    const chunks = [];
 
-    const trackPromises = Array.from(blocks).map(block => {
-        const username = block.dataset.username;
-        tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${getKey()}&format=json`;
-        return fetch(tracksUrl)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Network error");
-                }
-                return response.json();
-            })
-            .then((data) => {
-                data.toptracks.track.forEach(track => {
-                    const plays = parseInt(track.playcount);
-                    const cappedPlays = Math.min(plays, 30);
-                    const trackUrl = track.url;
-                    const artistUrl = track.artist.url;
-                    const artist = track.artist.name;
-                    const trackName = track.name;
-
-                    const key = `${trackName}::${artist}`;
-
-                    if (trackPlays[key]) {
-                        trackPlays[key].plays += plays;
-                        trackPlays[key].cappedPlays += cappedPlays;
-                    } else {
-                        trackPlays[key] = {
-                            artist,
-                            trackName,
-                            plays,
-                            cappedPlays,
-                            trackUrl,
-                            artistUrl,
-                            userCount: 0,
-                            users: {}
-                        };
-                    }
-                    trackPlays[key].users[username] = plays;
-                    trackPlays[key].userCount++;
-                });
-                updateProgress();
-            })
-            .catch((error) => {
-                console.error("Error fetching user track data:", error);
-            });
-    });
-
+    chunks.push(blocksArr.slice(0, 250));
+    const artistPromises = Array.from(chunks[0]).map(block => fetchArtists(block));
+    const albumPromises = Array.from(chunks[0]).map(block => fetchAlbums(block));
+    const trackPromises = Array.from(chunks[0]).map(block => fetchTracks(block));
     await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
+
+    // Fetch second chunk if necessary
+    if (friendCount > 250) {
+        await new Promise(resolve => setTimeout(resolve, 8000));
+
+        chunks.push(blocksArr.slice(250, 500));
+        const artistPromises = Array.from(chunks[1]).map(block => fetchArtists(block, KEY2));
+        const albumPromises = Array.from(chunks[1]).map(block => fetchAlbums(block, KEY2));
+        const trackPromises = Array.from(chunks[1]).map(block => fetchTracks(block, KEY2));
+
+        await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
+    }
 
     const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
     const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
@@ -279,9 +302,26 @@ async function updateTicker(cache) {
         charts: chartsDiv.innerHTML,
         ticker: tickerDiv.innerHTML
     }
+    try {
+        localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+    } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota exceeded. Clearing storage...');
 
-    localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
-    
+            const scheduleData = localStorage.getItem(scheduleCacheKey);
+            const friendsData = localStorage.getItem(friendsCacheKey);
+            const blocksData = localStorage.getItem(blocksCacheKey);
+
+            localStorage.clear();
+
+            localStorage.setItem(scheduleCacheKey, scheduleData);
+            localStorage.setItem(friendsCacheKey, friendsData);
+            localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+            localStorage.setItem(blocksCacheKey, blocksData);
+            localStorage.setItem("visited", true);
+        }
+    }
+
     console.log("Stats refreshed!");
 }
 
