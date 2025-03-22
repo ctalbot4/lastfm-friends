@@ -313,7 +313,7 @@ function sortBlocks(blocks) {
     });
 }
 
-const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=150&api_key=${getKey()}&format=json`;
+const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=250&api_key=${getKey()}&format=json`;
 const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${getKey()}&format=json`;
 
 let friendCount = 0;

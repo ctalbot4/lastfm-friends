@@ -182,7 +182,7 @@ async function updateTicker(cache) {
         artistsMax = Math.max(artistsMax, artistInfo.plays);
 
         const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
-        const imageUrl = (await getJSONP(fetchUrl))?.data[0].picture;
+        const imageUrl = (await getJSONP(fetchUrl)).data[0]?.picture;
         return {
             name: artistName,
             plays: artistInfo.plays,
