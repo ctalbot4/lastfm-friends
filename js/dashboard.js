@@ -366,14 +366,23 @@ let KEY;
 let KEY2;
 
 // Get API key from backend
-async function getKey(cache = true) {
-    const cachedKey = sessionStorage.getItem("lfl_key");
-    if (cache && cachedKey) {
+async function getKey(secondary = false) {
+    let cachedKey;
+    if (!secondary) {
+        cachedKey = sessionStorage.getItem("lfl_key");
+    } else {
+        cachedKey = sessionStorage.getItem("lfl_key2"); 
+    }
+    if (cachedKey) {
         return cachedKey;
     }
     const response = await fetch("https://api-fetch.ctalbot4.workers.dev/");
     const data = await response.json();
-    sessionStorage.setItem("lfl_key", data.key);
+    if (!secondary) {
+        sessionStorage.setItem("lfl_key", data.key);
+    } else {
+        sessionStorage.setItem("lfl_key2", data.key);
+    }
     return data.key;
 }
 
@@ -421,7 +430,7 @@ async function initialFetch() {
 
         // Get secondary key if necessary
         if (friendCount > 250) {
-            KEY2 = await getKey(false);
+            KEY2 = await getKey(true);
         }
 
         const cachedFriends = localStorage.getItem(friendsCacheKey);
@@ -501,6 +510,7 @@ async function initialFetch() {
     } catch (error) {
         console.error("Error during initial fetch:", error);
         document.getElementById("error-popup").classList.remove("removed");
+        localStorage.clear();
     }
 }
 
