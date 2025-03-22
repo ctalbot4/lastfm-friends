@@ -68,8 +68,6 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
     }
 }
 
-const blockContainer = document.getElementById("block-container");
-
 // Check if touch screen to know which type of preview play to enable
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 

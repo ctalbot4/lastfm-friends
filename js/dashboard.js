@@ -194,9 +194,11 @@ async function updateBlock(block, retry = false) {
     return newBlock;
 }
 
+const blockContainer = document.getElementById("block-container");
+
 // Update all blocks
 async function updateAllBlocks() {
-    const blocks = document.getElementById("block-container").getElementsByClassName("block");
+    const blocks = blockContainer.getElementsByClassName("block");
 
     completed = 0;
 
@@ -240,7 +242,7 @@ async function updateAllBlocks() {
     const startPlays = parseInt(document.querySelector(".ticker-plays > .value").innerText);
     if (startPlays) {
         let startTime = null;
-        const duration = Math.max(10000, (friendCount / 5) * 1000) - 2000;
+        const duration = blocksIntervalTime;
 
         function updateCounter(currentTime) {
             if (!startTime) startTime = currentTime;
@@ -264,6 +266,17 @@ async function updateAllBlocks() {
     }
 
     lastBlocksUpdate = Date.now();
+
+    // Cache blocks, ticker, charts
+    localStorage.setItem(blocksCacheKey, blockContainer.innerHTML);
+    const chartsDiv = document.querySelector(".charts-scrollable");
+    const tickerDiv = document.querySelector(".ticker-stats");
+
+    const tickerData = {
+        charts: chartsDiv.innerHTML,
+        ticker: tickerDiv.innerHTML
+    }
+
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
@@ -307,56 +320,116 @@ let friendCount = 0;
 
 document.title = `${getUsernameFromURL()} | lastfmfriends.live`;
 
-// Fetch user data
-const userFetch = fetch(userUrl)
-    .then((response) => {
-        if (!response.ok) {
-            throw new Error("Network error");
-        }
-        return response.json();
-    })
-    .then((data) => {
-        const user = data.user;
+let friendsCacheKey;
+let blocksCacheKey;
+let tickerCacheKey;
+let foundBlocksCache = false;
+let foundTickerCache = false;
+
+// Initial fetch on load
+async function initialFetch() {
+    try {
+        // Fetch user data
+        const userResponse = await fetch(userUrl);
+        if (!userResponse.ok) throw new Error("Network error");
+
+        const userData = await userResponse.json();
+        const user = userData.user;
+
         document.title = `${user.name} | lastfmfriends.live`;
+
+        friendsCacheKey = `lfl_friends_${user.name}`;
+        blocksCacheKey = `lfl_blocks_${user.name}`;
+        tickerCacheKey = `lfl_ticker_${user.name}`;
+
         gtag('event', 'page_view', {
             'page_title': document.title,
             'page_location': window.location.href,
             'page_path': window.location.pathname
         });
 
-        const blockContainer = document.getElementById("block-container");
         blockContainer.appendChild(createBlock(user));
-    })
-    .catch((error) => {
-        console.error("Error fetching user data:", error);
-        document.getElementById("error-popup").classList.remove("removed");
-    });
 
-// Fetch friends data
-const friendsFetch = fetch(friendsUrl)
-    .then((response) => {
-        if (!response.ok) {
-            throw new Error("Network error");
+        // Fetch friends data
+        const friendsResponse = await fetch(friendsUrl);
+        if (!friendsResponse.ok) throw new Error("Network error");
+
+        const friendsData = await friendsResponse.json();
+        friendCount = Math.min(parseInt(friendsData.friends["@attr"].total, 10), parseInt(friendsData.friends["@attr"].perPage, 10));
+        const friends = friendsData.friends.user;
+
+        // Set conservative refreshes to try to avoid API rate limit
+        blocksIntervalTime = Math.max(10000, (friendCount / 5) * 1500);
+        tickerIntervalTime = Math.max(270000, (friendCount / 5) * 9 * 3000);
+
+        const cachedFriends = localStorage.getItem(friendsCacheKey);
+
+        if (cachedFriends) {
+            const parsedFriends = JSON.parse(cachedFriends);
+            if (JSON.stringify(friends) === JSON.stringify(parsedFriends)) {
+                const cachedSchedule = localStorage.getItem("lfl_schedule");
+                if (cachedSchedule) {
+                    const { blocks, ticker } = JSON.parse(cachedSchedule);
+                    lastBlocksUpdate = blocks;
+                    lastTickerUpdate = ticker;
+
+                    const now = Date.now();
+
+                    // Calculate time when the next update should occur
+                    let nextBlockUpdateTime = lastBlocksUpdate + blocksIntervalTime;
+                    let blocksDelay = nextBlockUpdateTime - now;
+
+                    if (blocksDelay > 0) {
+                        const cachedBlocks = localStorage.getItem(blocksCacheKey);
+                        blockContainer.innerHTML = cachedBlocks;
+                        console.log("Loaded blocks from cache");
+                        foundBlocksCache = true;
+                    }
+
+                    let nextTickerUpdateTime = lastTickerUpdate + tickerIntervalTime;
+                    let tickerDelay = nextTickerUpdateTime - now;
+
+                    if (tickerDelay > 0) {
+                        const tickerCache = JSON.parse(localStorage.getItem(tickerCacheKey));
+                        const ticker = tickerCache?.ticker || '';
+                        const charts = tickerCache?.charts || '';
+                        const tickerDiv = document.querySelector(".ticker-stats");
+                        const scrollDiv = document.querySelector(".ticker-scroll");
+                        const chartsDiv = document.querySelector(".charts-scrollable");
+
+                        tickerDiv.innerHTML = ticker;
+                        scrollDiv.innerHTML = ticker;
+                        chartsDiv.innerHTML = charts;
+
+                        foundTickerCache = true;
+                        console.log("Loaded ticker from cache");
+                    }
+                }
+
+            }
         }
-        return response.json();
-    })
-    .then((data) => {
-        friendCount = Math.min(parseInt(data.friends["@attr"].total, 10), parseInt(data.friends["@attr"].perPage, 10));
-        const friends = data.friends.user;
-        const blockContainer = document.getElementById("block-container");
-        friends.forEach((friend) => {
+        localStorage.setItem(friendsCacheKey, JSON.stringify(friends));
+
+        if (!foundBlocksCache) {
+            friends.forEach((friend) => {
             blockContainer.appendChild(createBlock(friend));
-        });
-    })
-    .catch((error) => {
-        console.error("Error fetching friends data:", error);
+            });
+        }
+    } catch (error) {
+        console.error("Error during initial fetch:", error);
         document.getElementById("error-popup").classList.remove("removed");
-    });
+    }
+}
+
+const initialPromise = initialFetch();
 
 // Call updateAllBlocks after both fetches have completed
-Promise.allSettled([userFetch, friendsFetch])
-    .then(async () => {
-        await Promise.all([updateTicker(), updateAllBlocks()]);
+Promise.allSettled([initialPromise])
+    .then(async () => {    
+        await Promise.all([
+            foundTickerCache ? null : updateTicker(),
+            foundBlocksCache ? null : updateAllBlocks()
+        ].filter(Boolean));
 
         rows = organizeBlocksIntoRows();
 
@@ -365,9 +438,6 @@ Promise.allSettled([userFetch, friendsFetch])
         document.getElementById("stats-ticker").classList.remove("hidden");
         document.getElementById("progress-container").classList.add("removed");
 
-        // Set conservative refreshes to try to avoid API rate limit
-        blocksIntervalTime = Math.max(10000, (friendCount / 5) * 1500);
-        tickerIntervalTime = Math.max(270000, (friendCount / 5) * 9 * 3000);
         scheduleUpdates();
 
         // Handle tooltips on first visit
@@ -442,6 +512,12 @@ async function scheduleUpdates() {
     } else {
         tickerTimeout = setTimeout(scheduleUpdates, tickerDelay);
     }
+
+    const scheduleData = {
+        blocks: lastBlocksUpdate,
+        ticker: lastTickerUpdate
+    }
+    localStorage.setItem("lfl_schedule", JSON.stringify(scheduleData));
 }
 
 function cancelUpdates() {

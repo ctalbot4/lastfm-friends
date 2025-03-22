@@ -1,10 +1,10 @@
 // Update ticker (other than now playing, plays)
-async function updateTicker() {
+async function updateTicker(cache) {
 
     const artistPlays = {};
     const albumPlays = {};
     const trackPlays = {};
-    const blocks = document.getElementById("block-container").getElementsByClassName("block");
+    const blocks = blockContainer.getElementsByClassName("block");
 
     const artistPromises = Array.from(blocks).map(block => {
         const username = block.dataset.username;
@@ -270,6 +270,18 @@ async function updateTicker() {
     });
 
     lastTickerUpdate = Date.now();
+
+    // Cache ticker and charts
+    const chartsDiv = document.querySelector(".charts-scrollable");
+    const tickerDiv = document.querySelector(".ticker-stats");
+
+    const tickerData = {
+        charts: chartsDiv.innerHTML,
+        ticker: tickerDiv.innerHTML
+    }
+
+    localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+    
     console.log("Stats refreshed!");
 }
 
