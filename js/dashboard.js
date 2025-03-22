@@ -277,6 +277,8 @@ async function updateAllBlocks() {
         ticker: tickerDiv.innerHTML
     }
 
+    localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
@@ -323,6 +325,7 @@ document.title = `${getUsernameFromURL()} | lastfmfriends.live`;
 let friendsCacheKey;
 let blocksCacheKey;
 let tickerCacheKey;
+let scheduleCacheKey;
 let foundBlocksCache = false;
 let foundTickerCache = false;
 
@@ -341,6 +344,8 @@ async function initialFetch() {
         friendsCacheKey = `lfl_friends_${user.name}`;
         blocksCacheKey = `lfl_blocks_${user.name}`;
         tickerCacheKey = `lfl_ticker_${user.name}`;
+        scheduleCacheKey = `lfl_schedule_${user.name}`;
+
 
         gtag('event', 'page_view', {
             'page_title': document.title,
@@ -367,7 +372,7 @@ async function initialFetch() {
         if (cachedFriends) {
             const parsedFriends = JSON.parse(cachedFriends);
             if (JSON.stringify(friends) === JSON.stringify(parsedFriends)) {
-                const cachedSchedule = localStorage.getItem("lfl_schedule");
+                const cachedSchedule = localStorage.getItem(scheduleCacheKey);
                 if (cachedSchedule) {
                     const { blocks, ticker } = JSON.parse(cachedSchedule);
                     lastBlocksUpdate = blocks;
@@ -517,7 +522,7 @@ async function scheduleUpdates() {
         blocks: lastBlocksUpdate,
         ticker: lastTickerUpdate
     }
-    localStorage.setItem("lfl_schedule", JSON.stringify(scheduleData));
+    localStorage.setItem(scheduleCacheKey, JSON.stringify(scheduleData));
 }
 
 function cancelUpdates() {
