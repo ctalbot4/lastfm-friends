@@ -1,6 +1,6 @@
-const artistPlays = {};
-const albumPlays = {};
-const trackPlays = {};
+let artistPlays = {};
+let albumPlays = {};
+let trackPlays = {};
 
 async function fetchArtists(block, key = KEY) {
     const username = block.dataset.username;
@@ -131,13 +131,13 @@ async function fetchTracks(block, key = KEY) {
 
 // Update ticker (other than now playing, plays)
 async function updateTicker() {
+    artistPlays = {};
+    albumPlays = {};
+    trackPlays = {};
 
     const blocks = blockContainer.getElementsByClassName("block");
-
     const blocksArr = Array.from(blocks);
-
     completed = 0;
-
     const chunks = [];
 
     chunks.push(blocksArr.slice(0, 250));
