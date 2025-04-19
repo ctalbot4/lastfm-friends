@@ -13,45 +13,62 @@ function updateProgress() {
 }
 
 // Create a block with user info
-function createBlock(user) {
+function createBlock(user, mainUser = false) {
     const username = user.name;
     const userUrl = user.url;
     const imageUrl = user.image[3]["#text"];
     const blockDiv = document.createElement("div");
-    blockDiv.className = "block";
+    blockDiv.classList.add("block");
+    if (mainUser) blockDiv.classList.add("main-user");
     blockDiv.setAttribute("data-username", username);
 
     const blockHTML = `
-        <div class="user-info">
-            <div class="profile-picture">
-                <a href="${userUrl}" target="_blank">
-                    <img id="pfp" src="${imageUrl || 'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png'}">
+    <div class="user-info">
+        <div class="profile-picture">
+            <a href="${userUrl}" target="_blank">
+                <img id="pfp" src="${imageUrl || 'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png'}">
+            </a>
+        </div>
+        <div class="username"><a href=${userUrl} target="_blank">${username}</a></div>
+            <div class="info-button">
+                 <img src="icons/friends.svg">
+            </div>
+    </div>
+    <div class="listeners-container">
+        <div class="listeners-header">
+            <div class="listeners-title">Who listens to this track?</div>
+            <div class="close-listeners">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="listeners-content">
+
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="track-info">
+            <div class="song-title">
+                <a href="" target="_blank">
+                    <span class="rest"></span>
+                    <span class="no-break">
+                        <svg class="heart-icon" viewBox="0 0 120 120" fill="white">
+                        <path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/>
+                        </svg>
+                    </span>
                 </a>
             </div>
-            <div class="username"><a href=${userUrl} target="_blank">${username}</a></div>
-        </div>
-        <div class="bottom">
-            <div class="track-info">
-                <div class="song-title">
-                    <a href="" target="_blank">
-                        <span class="rest"></span>
-                        <span class="no-break">
-                            <svg class="heart-icon" viewBox="0 0 120 120" fill="white">
-                            <path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/>
-                            </svg>
-                        </span>
-                    </a>
-                </div>
-                <div class="artist-title">
-                    <a href="" target="_blank"></a>
-                </div>
-            </div>
-            <div class="status">     
-                <span class="time"></span>               
-                <img src="icons/playing.gif" class="playing-icon">
+            <div class="artist-title">
+                <a href="" target="_blank"></a>
             </div>
         </div>
-    `;
+        <div class="status">     
+            <span class="time"></span>               
+            <img src="icons/playing.gif" class="playing-icon">
+        </div>
+    </div>
+`;
     blockDiv.innerHTML = blockHTML;
     return blockDiv;
 }
@@ -94,8 +111,12 @@ async function updateBlock(block, retry = false, key = KEY) {
         const trimmedName = recentTrack.name.trim();
         const oldName = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
 
+        // Reset block if track changes
         if (trimmedName != oldName) {
             newBlock.dataset.previewTime = 0;
+            newBlock.dataset.listenersLoaded = "0";
+            newBlock.dataset.reset = "true";
+            newBlock.querySelector(".listeners-container").classList.remove("active");
         }
 
         // Workaround for heart icon wrapping incorrectly
@@ -171,10 +192,7 @@ async function updateBlock(block, retry = false, key = KEY) {
             } else if (error.data?.error === 8 && retry == false) {
                 return updateBlock(block, true);
             } else if (error.data?.error === 29) {
-                gtag('event', 'exception', {
-                    'description': 'rate_limit',
-                    'fatal': false
-                });
+                gtag('event', 'rate_limit-general', {});
             }
         } else {
             console.error(`Error updating ${username}:`, error);
@@ -185,10 +203,161 @@ async function updateBlock(block, retry = false, key = KEY) {
     return newBlock;
 }
 
+let isFetchingListeners = false; // Wait to updateAllBlocks until listeners done
+let isScrolling = false; // Don't rebuild DOM in sortBlocks until scrolling has stopped
+let scrollIdleTimeout;
+
+async function fetchTrackListeners(block, key = KEY3) {
+    // Set listeners loaded value to intermediate "1" (loading in progress)
+    block.dataset.listenersLoaded = "1";
+    isFetchingListeners = true;
+
+    const artistName = block.querySelector(".artist-title > a").innerText;
+    const trackName = block.querySelector(".song-title > a").innerText.replace(/<svg.*<\/svg>/g, '').trim();
+    const username = block.dataset.username;
+
+    let listenersContent = block.querySelector(".listeners-content");
+
+    // Show loading message
+    listenersContent.innerHTML = `
+        <div class="listeners-loading">
+            <div>Loading listeners...</div>
+        </div>
+    `;
+
+    let rateLimited = false;
+
+    try {
+
+        const allBlocks = Array.from(document.querySelectorAll(".block"));
+
+        // Map blocks to a track fetch
+        const listenerPromises = allBlocks.map(async (friendBlock) => {
+            const friendUsername = friendBlock.dataset.username;
+            const friendTrackInfoUrl =
+                `https://ws.audioscrobbler.com/2.0/` +
+                `?method=track.getInfo` +
+                `&username=${encodeURIComponent(friendUsername)}` +
+                `&artist=${encodeURIComponent(artistName)}` +
+                `&track=${encodeURIComponent(trackName)}` +
+                `&api_key=${key}` +
+                `&format=json`;
+
+            try {
+                // If we've been rate limited already, return
+                if (rateLimited) return null;
+
+                const friendResponse = await fetch(friendTrackInfoUrl);
+                const friendData = await friendResponse.json();
+
+                // If we've been rate limited, show message
+                if (friendData?.error === 29) {
+                    rateLimited = true;
+                    listenersContent = block.querySelector(`.block[data-username="${username}"] .listeners-content`);
+                    listenersContent.innerHTML = `
+                      <div class="no-listeners">
+                        <div>You're making requests too quickly. Please try again in a moment.</div>
+                      </div>`;
+                    isFetchingListeners = false;
+                    gtag('event', 'rate_limit-listeners', {});
+                    return null;
+                }
+
+                if (
+                    !friendData.error &&
+                    parseInt(friendData?.track.userplaycount)
+                ) {
+                    const playCount = parseInt(friendData?.track.userplaycount);
+                    const friendImageUrl =
+                        friendBlock.querySelector("#pfp")?.src ||
+                        'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png';
+
+                    return {
+                        username: friendUsername,
+                        playCount,
+                        imageUrl: friendImageUrl,
+                        url: `https://www.last.fm/user/${friendUsername}/library/music/${encodeURIComponent(artistName)}/_/${encodeURIComponent(trackName)}`
+                    };
+                }
+            } catch (e) {
+                console.error(`Error checking listener ${friendUsername}:`, e);
+            }
+            return null;
+        });
+
+        const results = await Promise.all(listenerPromises);
+
+        // If rate limited, skip rest of function
+        if (rateLimited) {
+            return;
+        }
+
+        // Get only users who played track
+        const listeners = results.filter(item => item !== null);
+        listeners.sort((a, b) => b.playCount - a.playCount);
+
+        // Reselect listeners content container in case it changed from updateAllBlocks()
+        block = document.querySelector(`.block[data-username="${username}"]`);
+        listenersContent = block.querySelector(`.listeners-content`);
+
+        // Append to container
+        if (listeners.length > 0) {
+            listenersContent.innerHTML = `
+                <div class="listeners-list">
+                    ${listeners.map(listener => `
+                        <div class="listener-item">
+                            <img class="listener-pfp" src="${listener.imageUrl}">
+                            <div class="listener-info">
+                                <div class="listener-username">
+                                    <a href="${listener.url}" target="_blank">${listener.username}</a>
+                                </div>
+                                <div class="listener-playcount">${listener.playCount} play${listener.playcount !== 1 ? 's' : ''}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            listenersContent.innerHTML = `
+                <div class="no-listeners">
+                    <div>None of your friends have played this track yet.</div>
+                </div>
+            `;
+        }
+
+        isFetchingListeners = false;
+
+        // Add scroll listener to container to pause sortBlocks() when scrolling
+        block.querySelector('.listeners-list').addEventListener('scroll', () => {
+            isScrolling = true;
+            clearTimeout(scrollIdleTimeout);
+            scrollIdleTimeout = setTimeout(() => {
+                isScrolling = false;
+            }, 100);
+        }, {
+            passive: true
+        });
+
+        // Set listeners loaded dataset value to "2" (loading complete)
+        block.dataset.listenersLoaded = "2";
+    } catch (error) {
+        console.error("Error fetching track listeners:", error);
+
+        listenersContent.innerHTML = `
+       <div class="no-listeners">
+         <div>Couldn't load listener data.</div>
+       </div>`;
+    }
+}
+
 const blockContainer = document.getElementById("block-container");
 
 // Update all blocks
 async function updateAllBlocks() {
+    // Wait for listeners fetch to complete
+    while (isFetchingListeners) {
+        await new Promise(r => setTimeout(r, 100));
+    }
     const blocks = blockContainer.getElementsByClassName("block");
     const blocksArr = Array.from(blocks);
 
@@ -219,12 +388,20 @@ async function updateAllBlocks() {
             if (newBlock.dataset.previewTime != 0) {
                 newBlock.dataset.previewTime = originalBlock.dataset.previewTime;
             }
+            // Sync listeners-container status if listeners have been loaded (user has clicked info button, and track hasn't changed)
+            if (newBlock.dataset.reset == "true") {
+                delete newBlock.dataset.reset;
+            } else if (originalBlock.dataset.listenersLoaded != "0") {
+                newBlock.querySelector(".listeners-container").className = originalBlock.querySelector(".listeners-container").className;
+            }
+            newBlock.querySelector(".listeners-container").innerHTML = originalBlock.querySelector(".listeners-container").innerHTML;
+
             newerBlocks.push(newBlock);
         }
     });
 
     // Call sortBlocks after all updates are done
-    sortBlocks(newerBlocks);
+    await sortBlocks(newerBlocks);
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
@@ -274,7 +451,7 @@ async function updateAllBlocks() {
     } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
             console.warn('LocalStorage quota exceeded. Clearing storage...');
-            
+
             const scheduleData = localStorage.getItem(scheduleCacheKey);
             const friendsData = localStorage.getItem(friendsCacheKey);
             const tickerData = localStorage.getItem(tickerCacheKey);
@@ -300,7 +477,7 @@ async function updateAllBlocks() {
     } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
             console.warn('LocalStorage quota exceeded. Clearing storage...');
-            
+
             const scheduleData = localStorage.getItem(scheduleCacheKey);
             const friendsData = localStorage.getItem(friendsCacheKey);
             const blocksData = localStorage.getItem(blocksCacheKey);
@@ -314,12 +491,12 @@ async function updateAllBlocks() {
             localStorage.setItem("visited", true);
         }
     }
-
+    setupBlocks();
     console.log(`Refreshed ${friendCount + 1} users!`);
 }
 
 // Sort blocks then replace old ones
-function sortBlocks(blocks) {
+async function sortBlocks(blocks) {
     const username = getUsernameFromURL().toLowerCase();
     blocks.sort((x, y) => {
         const xUsername = x.dataset.username.toLowerCase();
@@ -344,10 +521,33 @@ function sortBlocks(blocks) {
         }
     });
 
+    // If user is scrolling, wait to rebuild DOM
+    while (isScrolling) {
+        await new Promise(r => setTimeout(r, 100));
+    }
+
+    // Save scroll positions inside listeners-container and reapply them after rebuilding
+    const scrollPositions = {};
+
+    document.querySelectorAll('.listeners-list').forEach(list => {
+        const block = list.closest('.block');
+        if (!block) return;
+        scrollPositions[block.dataset.username] = list.scrollTop;
+    });
+
     const container = document.getElementById("block-container");
     container.innerHTML = "";
     blocks.forEach(block => {
         container.appendChild(block);
+    });
+    blocks.forEach(block => {
+        const name = block.dataset.username;
+        const domList = document.querySelector(
+            `.block[data-username="${name}"] .listeners-list`
+        );
+        if (domList && scrollPositions[name] != null) {
+            domList.scrollTop = scrollPositions[name];
+        }
     });
 }
 
@@ -364,24 +564,34 @@ let foundTickerCache = false;
 
 let KEY;
 let KEY2;
+let KEY3;
 
 // Get API key from backend
-async function getKey(secondary = false) {
+async function getKey(n = 1) {
     let cachedKey;
-    if (!secondary) {
+    if (n == 1) {
         cachedKey = sessionStorage.getItem("lfl_key");
-    } else {
-        cachedKey = sessionStorage.getItem("lfl_key2"); 
+    } else if (n == 2) {
+        cachedKey = sessionStorage.getItem("lfl_key2");
+    } else if (n == 3) {
+        cachedKey = sessionStorage.getItem("lfl_key3");
     }
     if (cachedKey) {
         return cachedKey;
     }
-    const response = await fetch("https://api-fetch.ctalbot4.workers.dev/");
-    const data = await response.json();
-    if (!secondary) {
-        sessionStorage.setItem("lfl_key", data.key);
+    let response;
+    if (n < 3) {
+        response = await fetch("https://api-fetch.ctalbot4.workers.dev/");
     } else {
+        response = await fetch("https://api-fetch-secondary.ctalbot4.workers.dev/");
+    }
+    const data = await response.json();
+    if (n == 1) {
+        sessionStorage.setItem("lfl_key", data.key);
+    } else if (n == 2) {
         sessionStorage.setItem("lfl_key2", data.key);
+    } else if (n == 3) {
+        sessionStorage.setItem("lfl_key3", data.key);
     }
     return data.key;
 }
@@ -407,14 +617,13 @@ async function initialFetch() {
         tickerCacheKey = `lfl_ticker_${user.name}`;
         scheduleCacheKey = `lfl_schedule_${user.name}`;
 
-
         gtag('event', 'page_view', {
             'page_title': document.title,
             'page_location': window.location.href,
             'page_path': window.location.pathname
         });
 
-        blockContainer.appendChild(createBlock(user));
+        blockContainer.appendChild(createBlock(user, true));
 
         // Fetch friends data
         const friendsResponse = await fetch(friendsUrl);
@@ -430,7 +639,7 @@ async function initialFetch() {
 
         // Get secondary key if necessary
         if (friendCount > 250) {
-            KEY2 = await getKey(true);
+            KEY2 = await getKey(2);
         }
 
         const cachedFriends = localStorage.getItem(friendsCacheKey);
@@ -487,7 +696,7 @@ async function initialFetch() {
         } catch (e) {
             if (e instanceof DOMException && e.name === 'QuotaExceededError') {
                 console.warn('LocalStorage quota exceeded. Clearing storage...');
-            
+
                 const scheduleData = localStorage.getItem(scheduleCacheKey);
                 const tickerData = localStorage.getItem(tickerCacheKey);
                 const blocksData = localStorage.getItem(blocksCacheKey);
@@ -532,6 +741,7 @@ Promise.allSettled([initialPromise])
         document.getElementById("progress-container").classList.add("removed");
 
         scheduleUpdates();
+        setupBlocks();
 
         // Handle tooltips on first visit
         const chartsToggle = document.getElementById("charts-toggle");
@@ -669,6 +879,8 @@ document.body.addEventListener("click", function(event) {
                 click_type: "username",
                 user_target: target.textContent,
             });
+        } else if (target.closest(".info-button")) {
+            gtag("event", "info_click", {});
         }
     }
 
@@ -692,3 +904,52 @@ document.body.addEventListener("click", function(event) {
         }
     }
 });
+
+// Setup blocks on initial load and when blocks are rebuilt in sortBlocks()
+function setupBlocks() {
+    const blocks = document.querySelectorAll(`.block`);
+
+    blocks.forEach(block => {
+        if (!block) return;
+        const infoButton = block.querySelector(".info-button");
+        const closeButton = block.querySelector(".close-listeners");
+        const listenersContainer = block.querySelector(".listeners-container");
+
+        infoButton.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            listenersContainer.classList.add("active");
+            blocks.forEach(otherBlock => {
+                if (otherBlock == block) return;
+                otherBlock.querySelector(".listeners-container").classList.remove("active");
+            })
+
+            // Fetch listeners data if not already fetched
+            if (block.dataset.listenersLoaded != "2") {
+                if (!KEY3) KEY3 = await getKey(3);
+                await fetchTrackListeners(block);
+            }
+        });
+
+        closeButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            listenersContainer.classList.remove("active");
+        });
+
+        // Add scroll listeners to any active listeners-lists
+        document.querySelectorAll('.listeners-list').forEach(list => {
+            list.addEventListener('scroll', () => {
+                isScrolling = true;
+                clearTimeout(scrollIdleTimeout);
+                scrollIdleTimeout = setTimeout(() => {
+                    isScrolling = false;
+                }, 100);
+            }, {
+                passive: true
+            });
+        });
+    })
+}
