@@ -874,13 +874,14 @@ document.body.addEventListener("click", function(event) {
                 click_type: "track",
                 track_target: target.textContent,
             });
+        } else if (target.closest(".info-button")) {
+            console.log("logged");
+            gtag("event", "info_click", {});
         } else if (target.closest(".user-info")) {
             gtag("event", "block_click", {
                 click_type: "username",
                 user_target: target.textContent,
             });
-        } else if (target.closest(".info-button")) {
-            gtag("event", "info_click", {});
         }
     }
 
@@ -917,7 +918,6 @@ function setupBlocks() {
 
         infoButton.addEventListener("click", async (e) => {
             e.preventDefault();
-            e.stopPropagation();
 
             listenersContainer.classList.add("active");
             blocks.forEach(otherBlock => {
