@@ -317,6 +317,17 @@ async function fetchTrackListeners(block, key = KEY3) {
                     `).join('')}
                 </div>
             `;
+            
+            // Add scroll listener to container to pause sortBlocks() when scrolling
+            block.querySelector('.listeners-list').addEventListener('scroll', () => {
+                isScrolling = true;
+                clearTimeout(scrollIdleTimeout);
+                scrollIdleTimeout = setTimeout(() => {
+                    isScrolling = false;
+                }, 100);
+            }, {
+                passive: true
+            });
         } else {
             listenersContent.innerHTML = `
                 <div class="no-listeners">
@@ -326,17 +337,6 @@ async function fetchTrackListeners(block, key = KEY3) {
         }
 
         isFetchingListeners = false;
-
-        // Add scroll listener to container to pause sortBlocks() when scrolling
-        block.querySelector('.listeners-list').addEventListener('scroll', () => {
-            isScrolling = true;
-            clearTimeout(scrollIdleTimeout);
-            scrollIdleTimeout = setTimeout(() => {
-                isScrolling = false;
-            }, 100);
-        }, {
-            passive: true
-        });
 
         // Set listeners loaded dataset value to "2" (loading complete)
         block.dataset.listenersLoaded = "2";
@@ -875,7 +875,6 @@ document.body.addEventListener("click", function(event) {
                 track_target: target.textContent,
             });
         } else if (target.closest(".info-button")) {
-            console.log("logged");
             gtag("event", "info_click", {});
         } else if (target.closest(".user-info")) {
             gtag("event", "block_click", {
