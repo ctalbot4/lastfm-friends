@@ -1,8 +1,4 @@
-let artistPlays = {};
-let albumPlays = {};
-let trackPlays = {};
-
-async function fetchArtists(block, key = KEY) {
+async function fetchArtists(block, artistPlays, key = KEY) {
     const username = block.dataset.username;
     artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
     return fetch(artistsUrl)
@@ -39,7 +35,7 @@ async function fetchArtists(block, key = KEY) {
         });
 }
 
-async function fetchAlbums(block, key = KEY) {
+async function fetchAlbums(block, albumPlays, key = KEY) {
     const username = block.dataset.username;
     albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
     return fetch(albumsUrl)
@@ -83,7 +79,7 @@ async function fetchAlbums(block, key = KEY) {
         });
 }
 
-async function fetchTracks(block, key = KEY) {
+async function fetchTracks(block, trackPlays, key = KEY) {
     const username = block.dataset.username;
     tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
     return fetch(tracksUrl)
@@ -131,9 +127,9 @@ async function fetchTracks(block, key = KEY) {
 
 // Update ticker (other than now playing, plays)
 async function updateTicker() {
-    artistPlays = {};
-    albumPlays = {};
-    trackPlays = {};
+    const artistPlays = {};
+    const albumPlays = {};
+    const trackPlays = {};
 
     const blocks = blockContainer.getElementsByClassName("block");
     const blocksArr = Array.from(blocks);
@@ -141,9 +137,9 @@ async function updateTicker() {
     const chunks = [];
 
     chunks.push(blocksArr.slice(0, 250));
-    const artistPromises = Array.from(chunks[0]).map(block => fetchArtists(block));
-    const albumPromises = Array.from(chunks[0]).map(block => fetchAlbums(block));
-    const trackPromises = Array.from(chunks[0]).map(block => fetchTracks(block));
+    const artistPromises = Array.from(chunks[0]).map(block => fetchArtists(block, artistPlays));
+    const albumPromises = Array.from(chunks[0]).map(block => fetchAlbums(block, albumPlays));
+    const trackPromises = Array.from(chunks[0]).map(block => fetchTracks(block, trackPlays));
     await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
 
     // Fetch second chunk if necessary
@@ -151,18 +147,16 @@ async function updateTicker() {
         await new Promise(resolve => setTimeout(resolve, 8000));
 
         chunks.push(blocksArr.slice(250, 500));
-        const artistPromises = Array.from(chunks[1]).map(block => fetchArtists(block, KEY2));
-        const albumPromises = Array.from(chunks[1]).map(block => fetchAlbums(block, KEY2));
-        const trackPromises = Array.from(chunks[1]).map(block => fetchTracks(block, KEY2));
+        const artistPromises = Array.from(chunks[1]).map(block => fetchArtists(block, artistPlays, KEY2));
+        const albumPromises = Array.from(chunks[1]).map(block => fetchAlbums(block, albumPlays, KEY2));
+        const trackPromises = Array.from(chunks[1]).map(block => fetchTracks(block, trackPlays, KEY2));
 
         await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
     }
 
     const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
     const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
-    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => {
-        return (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays);
-    });
+    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
 
     document.querySelectorAll(".ticker-artist > .value > a").forEach(element => {
         element.innerText = sortedArtistPlays[0][0];
