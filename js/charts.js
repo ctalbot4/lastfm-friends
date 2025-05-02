@@ -1,5 +1,5 @@
 // Create list item in chart
-function createListItem(itemData, maxPlays, isTrack = false) {
+export function createListItem(itemData, maxPlays, isTrack = false) {
     const li = document.createElement("li");
     li.classList.add("list-item");
     li.innerHTML =

@@ -1,7 +1,11 @@
+import { getJSONP } from './ticker.js'
+
 let currentAudio = null;
 let currentBlock = null;
 let currentAudioBlock = null;
 let activeRequestId = 0;
+
+const blockContainer = document.getElementById("block-container");
 
 // Store timers across block clones
 const hoverTimers = {};
@@ -183,7 +187,7 @@ document.querySelectorAll('.sound').forEach(toggle => {
 // LOOK PLAY
 
 // Group blocks into rows and sort left-to-right
-function organizeBlocksIntoRows() {
+export function organizeBlocksIntoRows() {
     const blocks = Array.from(document.querySelectorAll('.block'));
     const rows = new Map();
 
@@ -209,7 +213,7 @@ function organizeBlocksIntoRows() {
 let rows;
 
 // Determine block to play preview on
-function handleScroll() {
+export function handleScroll() {
     if (!isTouchDevice) return;
     const requestId = activeRequestId;
 

@@ -1,3 +1,68 @@
+import { updateTicker } from './ticker.js';
+import { store } from './store.js';
+import { handleScroll, organizeBlocksIntoRows } from './hoverPlay.js';
+
+let foundBlocksCache = false;
+let foundTickerCache = false;
+
+export function initDashboard() {
+
+    document.title = `${getUsernameFromURL()} | lastfmfriends.live`;
+
+    const initialPromise = initialFetch();
+
+    // Call updateAllBlocks after both fetches have completed
+    Promise.allSettled([initialPromise])
+        .then(async () => {
+            await Promise.all([
+                foundTickerCache ? null : updateTicker(),
+                foundBlocksCache ? null : updateAllBlocks()
+            ].filter(Boolean));
+
+            const rows = organizeBlocksIntoRows();
+
+            document.getElementById("block-container").classList.remove("hidden");
+            document.getElementById("mobile-toggle").classList.remove("removed");
+            document.getElementById("stats-ticker").classList.remove("hidden");
+            document.getElementById("progress-container").classList.add("removed");
+
+            scheduleUpdates();
+            setupBlocks();
+
+            // Handle tooltips on first visit
+            const chartsToggle = document.getElementById("charts-toggle");
+            const soundToggle = document.getElementById("ticker-sound-toggle");
+            const mobileToggle = document.getElementById("mobile-toggle");
+
+            if (!localStorage.getItem("visited")) {
+                setTimeout(() => {
+                    chartsToggle.classList.add("tooltip");
+                }, 3000);
+                setTimeout(() => {
+                    chartsToggle.classList.remove("tooltip");
+                }, 7000);
+                setTimeout(() => {
+                    soundToggle.classList.add("tooltip");
+                    mobileToggle.classList.add("tooltip");
+                }, 9000);
+                setTimeout(() => {
+                    soundToggle.classList.remove("tooltip");
+                    mobileToggle.classList.remove("tooltip");
+                }, 13000);
+                setTimeout(() => {
+                    chartsToggle.classList.add("done");
+                    soundToggle.classList.add("done");
+                    mobileToggle.classList.add("done");
+                    localStorage.setItem("visited", "true");
+                }, 15000);
+            } else {
+                chartsToggle.classList.add("done");
+                soundToggle.classList.add("done");
+                mobileToggle.classList.add("done");
+            }
+        });
+}
+
 function getUsernameFromURL() {
     const hash = window.location.hash;
     const username = hash.substring(1);
@@ -6,9 +71,9 @@ function getUsernameFromURL() {
 
 const progressBar = document.getElementById("progress-bar");
 
-function updateProgress() {
-    completed++;
-    const progress = ((completed + 1) / ((friendCount + 1) * 4)) * 100;
+export function updateProgress() {
+    store.completed++;
+    const progress = ((store.completed + 1) / ((store.friendCount + 1) * 4)) * 100;
     progressBar.style.width = progress + "%";
 }
 
@@ -73,11 +138,10 @@ function createBlock(user, mainUser = false) {
     return blockDiv;
 }
 
-let completed = 0;
 const userPlayCounts = {};
 
 // Fetch data for a block and update
-async function updateBlock(block, retry = false, key = KEY) {
+async function updateBlock(block, retry = false, key = store.keys.KEY) {
     const username = block.dataset.username;
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
     const friendUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&limit=1&extended=1&from=${oneWeekAgo}&user=${username}&api_key=${key}&format=json`;
@@ -203,14 +267,12 @@ async function updateBlock(block, retry = false, key = KEY) {
     return newBlock;
 }
 
-let isFetchingListeners = false; // Wait to updateAllBlocks until listeners done
-let isScrolling = false; // Don't rebuild DOM in sortBlocks until scrolling has stopped
 let scrollIdleTimeout;
 
-async function fetchTrackListeners(block, key = KEY3) {
+async function fetchTrackListeners(block, key = store.keys.KEY3) {
     // Set listeners loaded value to intermediate "1" (loading in progress)
     block.dataset.listenersLoaded = "1";
-    isFetchingListeners = true;
+    store.isFetchingListeners = true;
 
     const artistName = block.querySelector(".artist-title > a").innerText;
     const trackName = block.querySelector(".song-title > a").innerText.replace(/<svg.*<\/svg>/g, '').trim();
@@ -258,7 +320,7 @@ async function fetchTrackListeners(block, key = KEY3) {
                       <div class="no-listeners">
                         <div>You're making requests too quickly. Please try again in a moment.</div>
                       </div>`;
-                    isFetchingListeners = false;
+                    store.isFetchingListeners = false;
                     gtag('event', 'rate_limit-listeners', {});
                     return null;
                 }
@@ -320,13 +382,13 @@ async function fetchTrackListeners(block, key = KEY3) {
                     `).join('')}
                 </div>
             `;
-            
+
             // Add scroll listener to container to pause sortBlocks() when scrolling
             block.querySelector('.listeners-list').addEventListener('scroll', () => {
-                isScrolling = true;
+                store.isScrolling = true;
                 clearTimeout(scrollIdleTimeout);
                 scrollIdleTimeout = setTimeout(() => {
-                    isScrolling = false;
+                    store.isScrolling = false;
                 }, 100);
             }, {
                 passive: true
@@ -339,7 +401,7 @@ async function fetchTrackListeners(block, key = KEY3) {
             `;
         }
 
-        isFetchingListeners = false;
+        store.isFetchingListeners = false;
 
         // Set listeners loaded dataset value to "2" (loading complete)
         block.dataset.listenersLoaded = "2";
@@ -358,13 +420,13 @@ const blockContainer = document.getElementById("block-container");
 // Update all blocks
 async function updateAllBlocks() {
     // Wait for listeners fetch to complete
-    while (isFetchingListeners) {
+    while (store.isFetchingListeners) {
         await new Promise(r => setTimeout(r, 100));
     }
     const blocks = blockContainer.getElementsByClassName("block");
     const blocksArr = Array.from(blocks);
 
-    completed = 0;
+    store.completed = 0;
 
     const chunks = [];
     const newBlocks = [];
@@ -374,10 +436,10 @@ async function updateAllBlocks() {
     newBlocks.push(...blockPromises);
 
     // Update second chunk if necessary
-    if (friendCount > 250) {
+    if (store.friendCount > 250) {
         await new Promise(resolve => setTimeout(resolve, 8000));
         chunks.push(blocksArr.slice(250, 500));
-        const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, false, KEY2)));
+        const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, false, store.keys.KEY2)));
         newBlocks.push(...blockPromises);
     }
 
@@ -423,7 +485,7 @@ async function updateAllBlocks() {
     const startPlays = parseInt(document.querySelector(".ticker-plays > .value").innerText);
     if (startPlays) {
         let startTime = null;
-        const duration = blocksIntervalTime;
+        const duration = store.updateTimers.blocks.interval;
 
         function updateCounter(currentTime) {
             if (!startTime) startTime = currentTime;
@@ -446,25 +508,25 @@ async function updateAllBlocks() {
         });
     }
 
-    lastBlocksUpdate = Date.now();
+    store.updateTimers.blocks.lastUpdate = Date.now();
 
     // Cache blocks, ticker, charts
     try {
-        localStorage.setItem(blocksCacheKey, blockContainer.innerHTML);
+        localStorage.setItem(store.cacheKeys.blocks, blockContainer.innerHTML);
     } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
             console.warn('LocalStorage quota exceeded. Clearing storage...');
 
-            const scheduleData = localStorage.getItem(scheduleCacheKey);
-            const friendsData = localStorage.getItem(friendsCacheKey);
-            const tickerData = localStorage.getItem(tickerCacheKey);
+            const scheduleData = localStorage.getItem(store.cacheKeys.schedule);
+            const friendsData = localStorage.getItem(store.cacheKeys.friends);
+            const tickerData = localStorage.getItem(store.cacheKeys.ticker);
 
             localStorage.clear();
 
-            localStorage.setItem(scheduleCacheKey, scheduleData);
-            localStorage.setItem(friendsCacheKey, friendsData);
-            localStorage.setItem(tickerCacheKey, tickerData);
-            localStorage.setItem(blocksCacheKey, blockContainer.innerHTML);
+            localStorage.setItem(store.cacheKeys.schedule, scheduleData);
+            localStorage.setItem(store.cacheKeys.friends, friendsData);
+            localStorage.setItem(store.cacheKeys.ticker, tickerData);
+            localStorage.setItem(store.cacheKeys.blocks, blockContainer.innerHTML);
             localStorage.setItem("visited", true);
         }
     }
@@ -476,26 +538,26 @@ async function updateAllBlocks() {
         ticker: tickerDiv.innerHTML
     }
     try {
-        localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+        localStorage.setItem(store.cacheKeys.ticker, JSON.stringify(tickerData));
     } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
             console.warn('LocalStorage quota exceeded. Clearing storage...');
 
-            const scheduleData = localStorage.getItem(scheduleCacheKey);
-            const friendsData = localStorage.getItem(friendsCacheKey);
-            const blocksData = localStorage.getItem(blocksCacheKey);
+            const scheduleData = localStorage.getItem(store.cacheKeys.schedule);
+            const friendsData = localStorage.getItem(store.cacheKeys.friends);
+            const blocksData = localStorage.getItem(store.cacheKeys.blocks);
 
             localStorage.clear();
 
-            localStorage.setItem(scheduleCacheKey, scheduleData);
-            localStorage.setItem(friendsCacheKey, friendsData);
-            localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
-            localStorage.setItem(blocksCacheKey, blocksData);
+            localStorage.setItem(store.cacheKeys.schedule, scheduleData);
+            localStorage.setItem(store.cacheKeys.friends, friendsData);
+            localStorage.setItem(store.cacheKeys.ticker, JSON.stringify(tickerData));
+            localStorage.setItem(store.cacheKeys.blocks, blocksData);
             localStorage.setItem("visited", true);
         }
     }
     setupBlocks();
-    console.log(`Refreshed ${friendCount + 1} users!`);
+    console.log(`Refreshed ${store.friendCount + 1} users!`);
 }
 
 // Sort blocks then replace old ones
@@ -525,7 +587,7 @@ async function sortBlocks(blocks) {
     });
 
     // If user is scrolling, wait to rebuild DOM
-    while (isScrolling) {
+    while (store.isScrolling) {
         await new Promise(r => setTimeout(r, 100));
     }
 
@@ -553,21 +615,6 @@ async function sortBlocks(blocks) {
         }
     });
 }
-
-let friendCount = 0;
-
-document.title = `${getUsernameFromURL()} | lastfmfriends.live`;
-
-let friendsCacheKey;
-let blocksCacheKey;
-let tickerCacheKey;
-let scheduleCacheKey;
-let foundBlocksCache = false;
-let foundTickerCache = false;
-
-let KEY;
-let KEY2;
-let KEY3;
 
 // Get API key from backend
 async function getKey(n = 1) {
@@ -601,10 +648,10 @@ async function getKey(n = 1) {
 
 // Initial fetch on load
 async function initialFetch() {
-    KEY = await getKey();
+    store.keys.KEY = await getKey();
 
-    const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=500&api_key=${KEY}&format=json`;
-    const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${KEY}&format=json`;
+    const friendsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=${getUsernameFromURL()}&limit=500&api_key=${store.keys.KEY}&format=json`;
+    const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${getUsernameFromURL()}&api_key=${store.keys.KEY}&format=json`;
     try {
         // Fetch user data
         const userResponse = await fetch(userUrl);
@@ -615,10 +662,10 @@ async function initialFetch() {
 
         document.title = `${user.name} | lastfmfriends.live`;
 
-        friendsCacheKey = `lfl_friends_${user.name}`;
-        blocksCacheKey = `lfl_blocks_${user.name}`;
-        tickerCacheKey = `lfl_ticker_${user.name}`;
-        scheduleCacheKey = `lfl_schedule_${user.name}`;
+        store.cacheKeys.friends = `lfl_friends_${user.name}`;
+        store.cacheKeys.blocks = `lfl_blocks_${user.name}`;
+        store.cacheKeys.ticker = `lfl_ticker_${user.name}`;
+        store.cacheKeys.schedule = `lfl_schedule_${user.name}`;
 
         gtag('event', 'page_view', {
             'page_title': document.title,
@@ -633,50 +680,50 @@ async function initialFetch() {
         if (!friendsResponse.ok) throw new Error("Network error");
 
         const friendsData = await friendsResponse.json();
-        friendCount = Math.min(parseInt(friendsData.friends["@attr"].total, 10), parseInt(friendsData.friends["@attr"].perPage, 10));
+        store.friendCount = Math.min(parseInt(friendsData.friends["@attr"].total, 10), parseInt(friendsData.friends["@attr"].perPage, 10));
         const friends = friendsData.friends.user;
 
         // Set conservative refreshes to try to avoid API rate limit
-        blocksIntervalTime = Math.max(10000, (friendCount / 5) * 1500);
-        tickerIntervalTime = Math.max(270000, (friendCount / 5) * 9 * 3000);
+        store.updateTimers.blocks.interval = Math.max(10000, (store.friendCount / 5) * 1500);
+        store.updateTimers.ticker.interval = Math.max(270000, (store.friendCount / 5) * 9 * 3000);
 
         // Get secondary key if necessary
-        if (friendCount > 250) {
-            KEY2 = await getKey(2);
+        if (store.friendCount > 250) {
+            store.keys.KEY2 = await getKey(2);
         }
 
-        const cachedFriends = localStorage.getItem(friendsCacheKey);
+        const cachedFriends = localStorage.getItem(store.cacheKeys.friends);
 
         if (cachedFriends) {
             const parsedFriends = JSON.parse(cachedFriends);
             if (JSON.stringify(friends) === JSON.stringify(parsedFriends)) {
-                const cachedSchedule = localStorage.getItem(scheduleCacheKey);
+                const cachedSchedule = localStorage.getItem(store.cacheKeys.schedule);
                 if (cachedSchedule) {
                     const {
                         blocks,
                         ticker
                     } = JSON.parse(cachedSchedule);
-                    lastBlocksUpdate = blocks;
-                    lastTickerUpdate = ticker;
+                    store.updateTimers.blocks.lastUpdate = blocks;
+                    store.updateTimers.ticker.lastUpdate = ticker;
 
                     const now = Date.now();
 
                     // Calculate time when the next update should occur
-                    let nextBlockUpdateTime = lastBlocksUpdate + blocksIntervalTime;
+                    let nextBlockUpdateTime = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval;
                     let blocksDelay = nextBlockUpdateTime - now;
 
                     if (blocksDelay > 0) {
-                        const cachedBlocks = localStorage.getItem(blocksCacheKey);
+                        const cachedBlocks = localStorage.getItem(store.cacheKeys.blocks);
                         blockContainer.innerHTML = cachedBlocks;
                         console.log("Loaded blocks from cache.");
                         foundBlocksCache = true;
                     }
 
-                    let nextTickerUpdateTime = lastTickerUpdate + tickerIntervalTime;
+                    let nextTickerUpdateTime = store.updateTimers.ticker.lastUpdate + store.updateTimers.ticker.interval;
                     let tickerDelay = nextTickerUpdateTime - now;
 
                     if (tickerDelay > 0) {
-                        const tickerCache = JSON.parse(localStorage.getItem(tickerCacheKey));
+                        const tickerCache = JSON.parse(localStorage.getItem(store.cacheKeys.ticker));
                         const ticker = tickerCache?.ticker || '';
                         const charts = tickerCache?.charts || '';
                         const tickerDiv = document.querySelector(".ticker-stats");
@@ -695,21 +742,21 @@ async function initialFetch() {
             }
         }
         try {
-            localStorage.setItem(friendsCacheKey, JSON.stringify(friends));
+            localStorage.setItem(store.cacheKeys.friends, JSON.stringify(friends));
         } catch (e) {
             if (e instanceof DOMException && e.name === 'QuotaExceededError') {
                 console.warn('LocalStorage quota exceeded. Clearing storage...');
 
-                const scheduleData = localStorage.getItem(scheduleCacheKey);
-                const tickerData = localStorage.getItem(tickerCacheKey);
-                const blocksData = localStorage.getItem(blocksCacheKey);
+                const scheduleData = localStorage.getItem(store.cacheKeys.schedule);
+                const tickerData = localStorage.getItem(store.cacheKeys.ticker);
+                const blocksData = localStorage.getItem(store.cacheKeys.blocks);
 
                 localStorage.clear();
 
-                localStorage.setItem(scheduleCacheKey, scheduleData);
-                localStorage.setItem(friendsCacheKey, JSON.stringify(friends));
-                localStorage.setItem(tickerCacheKey, tickerData);
-                localStorage.setItem(blocksCacheKey, blocksData);
+                localStorage.setItem(store.cacheKeys.schedule, scheduleData);
+                localStorage.setItem(store.cacheKeys.friends, JSON.stringify(friends));
+                localStorage.setItem(store.cacheKeys.ticker, tickerData);
+                localStorage.setItem(store.cacheKeys.blocks, blocksData);
                 localStorage.setItem("visited", true);
             }
         }
@@ -726,67 +773,6 @@ async function initialFetch() {
     }
 }
 
-const initialPromise = initialFetch();
-
-// Call updateAllBlocks after both fetches have completed
-Promise.allSettled([initialPromise])
-    .then(async () => {
-        await Promise.all([
-            foundTickerCache ? null : updateTicker(),
-            foundBlocksCache ? null : updateAllBlocks()
-        ].filter(Boolean));
-
-        rows = organizeBlocksIntoRows();
-
-        document.getElementById("block-container").classList.remove("hidden");
-        document.getElementById("mobile-toggle").classList.remove("removed");
-        document.getElementById("stats-ticker").classList.remove("hidden");
-        document.getElementById("progress-container").classList.add("removed");
-
-        scheduleUpdates();
-        setupBlocks();
-
-        // Handle tooltips on first visit
-        const chartsToggle = document.getElementById("charts-toggle");
-        const soundToggle = document.getElementById("ticker-sound-toggle");
-        const mobileToggle = document.getElementById("mobile-toggle");
-
-        if (!localStorage.getItem("visited")) {
-            setTimeout(() => {
-                chartsToggle.classList.add("tooltip");
-            }, 3000);
-            setTimeout(() => {
-                chartsToggle.classList.remove("tooltip");
-            }, 7000);
-            setTimeout(() => {
-                soundToggle.classList.add("tooltip");
-                mobileToggle.classList.add("tooltip");
-            }, 9000);
-            setTimeout(() => {
-                soundToggle.classList.remove("tooltip");
-                mobileToggle.classList.remove("tooltip");
-            }, 13000);
-            setTimeout(() => {
-                chartsToggle.classList.add("done");
-                soundToggle.classList.add("done");
-                mobileToggle.classList.add("done");
-                localStorage.setItem("visited", "true");
-            }, 15000);
-        } else {
-            chartsToggle.classList.add("done");
-            soundToggle.classList.add("done");
-            mobileToggle.classList.add("done");
-        }
-    });
-
-let lastBlocksUpdate;
-let blocksIntervalTime;
-let blocksTimeout;
-
-let lastTickerUpdate;
-let tickerIntervalTime;
-let tickerTimeout;
-
 // Schedule next ticker and block update
 async function scheduleUpdates() {
     // Cancel other timeouts because this will replace them
@@ -795,40 +781,40 @@ async function scheduleUpdates() {
     const now = Date.now();
 
     // Calculate time when the next update should occur
-    let nextBlockUpdateTime = lastBlocksUpdate + blocksIntervalTime;
+    let nextBlockUpdateTime = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval;
     let blocksDelay = nextBlockUpdateTime - now;
 
     if (blocksDelay <= 0) {
         await updateAllBlocks();
 
         // Schedule next update
-        blocksTimeout = setTimeout(scheduleUpdates, blocksIntervalTime);
+        store.updateTimers.blocks.timeoutId = setTimeout(scheduleUpdates, store.updateTimers.blocks.interval);
     } else {
-        blocksTimeout = setTimeout(scheduleUpdates, blocksDelay);
+        store.updateTimers.blocks.timeoutId = setTimeout(scheduleUpdates, blocksDelay);
     }
 
-    let nextTickerUpdateTime = lastTickerUpdate + tickerIntervalTime;
+    let nextTickerUpdateTime = store.updateTimers.ticker.lastUpdate + store.updateTimers.ticker.interval;
     let tickerDelay = nextTickerUpdateTime - now;
 
     if (tickerDelay <= 0) {
         await updateTicker();
 
         // Schedule next update
-        tickerTimeout = setTimeout(scheduleUpdates, tickerIntervalTime);
+        store.updateTimers.ticker.timeoutId = setTimeout(scheduleUpdates, store.updateTimers.ticker.interval);
     } else {
-        tickerTimeout = setTimeout(scheduleUpdates, tickerDelay);
+        store.updateTimers.ticker.timeoutId = setTimeout(scheduleUpdates, tickerDelay);
     }
 
     const scheduleData = {
-        blocks: lastBlocksUpdate,
-        ticker: lastTickerUpdate
+        blocks: store.updateTimers.blocks.lastUpdate,
+        ticker: store.updateTimers.ticker.lastUpdate
     }
-    localStorage.setItem(scheduleCacheKey, JSON.stringify(scheduleData));
+    localStorage.setItem(store.cacheKeys.schedule, JSON.stringify(scheduleData));
 }
 
 function cancelUpdates() {
-    clearTimeout(blocksTimeout);
-    clearTimeout(tickerTimeout);
+    clearTimeout(store.updateTimers.blocks.timeoutId);
+    clearTimeout(store.updateTimers.ticker.timeoutId);
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -929,7 +915,7 @@ function setupBlocks() {
 
             // Fetch listeners data if not already fetched
             if (block.dataset.listenersLoaded != "2") {
-                if (!KEY3) KEY3 = await getKey(3);
+                if (!store.keys.KEY3) store.keys.KEY3 = await getKey(3);
                 await fetchTrackListeners(block);
             }
         });
@@ -944,10 +930,10 @@ function setupBlocks() {
         // Add scroll listeners to any active listeners-lists
         document.querySelectorAll('.listeners-list').forEach(list => {
             list.addEventListener('scroll', () => {
-                isScrolling = true;
+                store.isScrolling = true;
                 clearTimeout(scrollIdleTimeout);
                 scrollIdleTimeout = setTimeout(() => {
-                    isScrolling = false;
+                    store.isScrolling = false;
                 }, 100);
             }, {
                 passive: true

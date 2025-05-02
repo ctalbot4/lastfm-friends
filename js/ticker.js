@@ -1,6 +1,10 @@
-async function fetchArtists(block, artistPlays, key = KEY) {
+import { store } from './store.js';
+import { updateProgress } from './dashboard.js';
+import { createListItem } from './charts.js';
+
+async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
-    artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
+    const artistsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
     return fetch(artistsUrl)
         .then((response) => {
             if (!response.ok) {
@@ -35,9 +39,9 @@ async function fetchArtists(block, artistPlays, key = KEY) {
         });
 }
 
-async function fetchAlbums(block, albumPlays, key = KEY) {
+async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
-    albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
+    const albumsUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
     return fetch(albumsUrl)
         .then((response) => {
             if (!response.ok) {
@@ -79,9 +83,9 @@ async function fetchAlbums(block, albumPlays, key = KEY) {
         });
 }
 
-async function fetchTracks(block, trackPlays, key = KEY) {
+async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
-    tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
+    const tracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&limit=100&period=7day&api_key=${key}&format=json`;
     return fetch(tracksUrl)
         .then((response) => {
             if (!response.ok) {
@@ -126,14 +130,15 @@ async function fetchTracks(block, trackPlays, key = KEY) {
 }
 
 // Update ticker (other than now playing, plays)
-async function updateTicker() {
+export async function updateTicker() {
     const artistPlays = {};
     const albumPlays = {};
     const trackPlays = {};
 
+    const blockContainer = document.getElementById("block-container");
     const blocks = blockContainer.getElementsByClassName("block");
     const blocksArr = Array.from(blocks);
-    completed = 0;
+    store.completed = 0;
     const chunks = [];
 
     chunks.push(blocksArr.slice(0, 250));
@@ -143,13 +148,13 @@ async function updateTicker() {
     await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
 
     // Fetch second chunk if necessary
-    if (friendCount > 250) {
+    if (store.friendCount > 250) {
         await new Promise(resolve => setTimeout(resolve, 8000));
 
         chunks.push(blocksArr.slice(250, 500));
-        const artistPromises = Array.from(chunks[1]).map(block => fetchArtists(block, artistPlays, KEY2));
-        const albumPromises = Array.from(chunks[1]).map(block => fetchAlbums(block, albumPlays, KEY2));
-        const trackPromises = Array.from(chunks[1]).map(block => fetchTracks(block, trackPlays, KEY2));
+        const artistPromises = Array.from(chunks[1]).map(block => fetchArtists(block, artistPlays, store.keys.KEY2));
+        const albumPromises = Array.from(chunks[1]).map(block => fetchAlbums(block, albumPlays, store.keys.KEY2));
+        const trackPromises = Array.from(chunks[1]).map(block => fetchTracks(block, trackPlays, store.keys.KEY2));
 
         await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
     }
@@ -286,7 +291,7 @@ async function updateTicker() {
         tracksList.appendChild(createListItem(data, tracksMax, true));
     });
 
-    lastTickerUpdate = Date.now();
+    store.updateTimers.ticker.lastUpdate = Date.now();
 
     // Cache ticker and charts
     const chartsDiv = document.querySelector(".charts-scrollable");
@@ -297,21 +302,21 @@ async function updateTicker() {
         ticker: tickerDiv.innerHTML
     }
     try {
-        localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
+        localStorage.setItem(store.cacheKeys.ticker, JSON.stringify(tickerData));
     } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
             console.warn('LocalStorage quota exceeded. Clearing storage...');
 
-            const scheduleData = localStorage.getItem(scheduleCacheKey);
-            const friendsData = localStorage.getItem(friendsCacheKey);
-            const blocksData = localStorage.getItem(blocksCacheKey);
+            const scheduleData = localStorage.getItem(store.cacheKeys.schedule);
+            const friendsData = localStorage.getItem(store.cacheKeys.friends);
+            const blocksData = localStorage.getItem(store.cacheKeys.blocks);
 
             localStorage.clear();
 
-            localStorage.setItem(scheduleCacheKey, scheduleData);
-            localStorage.setItem(friendsCacheKey, friendsData);
-            localStorage.setItem(tickerCacheKey, JSON.stringify(tickerData));
-            localStorage.setItem(blocksCacheKey, blocksData);
+            localStorage.setItem(store.cacheKeys.schedule, scheduleData);
+            localStorage.setItem(store.cacheKeys.friends, friendsData);
+            localStorage.setItem(store.cacheKeys.ticker, JSON.stringify(tickerData));
+            localStorage.setItem(store.cacheKeys.blocks, blocksData);
             localStorage.setItem("visited", true);
         }
     }
@@ -320,7 +325,7 @@ async function updateTicker() {
 }
 
 // JSONP helper
-function getJSONP(url) {
+export function getJSONP(url) {
     return new Promise((resolve, reject) => {
         const callbackName = "jsonp_callback_" + Math.round(100000 * Math.random());
         const timeout = setTimeout(() => {
