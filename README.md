@@ -2,7 +2,9 @@
 
 A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends are currently listening to and discover weekly listening trends. 
 
-![Dashboard Preview](assets/blocks-preview.png)
+<div style="text-align: center">
+  <img src="assets/blocks-preview.png" width="800"/>
+</div>
 
 ## Implementation details
 
@@ -29,13 +31,14 @@ A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends
 - Visual indicators for now playing status
 
 ### Weekly Charts
-
-![Charts Preview](assets/charts-preview.png)
-
 - Track top artists, albums, and tracks among your friends
 - See who the top listeners are for each entry
 - Hover to view individual play counts
 - Updates in real-time as friends listen
+
+<div style="text-align: center">
+  <img src="assets/charts-preview.png" width="600"/>
+</div>
 
 ### Listen Along
 - Preview tracks by hovering over friends' blocks on desktop
@@ -44,11 +47,12 @@ A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends
 - Automatic track preview as you scroll on mobile
 
 ### Friends Who Listen
-
-![FWL Preview](assets/friends-who-listen.png)
-
 - View play counts for each friend per track
 - See who has loved each tracks
+
+<div style="text-align: center">
+  <img src="assets/friends-who-listen.png" width="200"/>
+</div>
 
 ### Trending Ticker
 - Real-time overview of trending music
@@ -61,7 +65,9 @@ A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends
 
 ## Getting Started
 
-![Index Preview](assets/index-preview.png)
+<div style="text-align: center">
+  <img src="assets/index-preview.png" width="800"/>
+</div>
 
 1. Visit [lastfmfriends.live](https://lastfmfriends.live)
 2. Enter your Last.fm username
