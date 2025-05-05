@@ -65,14 +65,14 @@ A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends
 
 ## Getting Started
 
-<div>
-  <img src="assets/index-preview.png" width="800"/>
-</div>
-
 1. Visit [lastfmfriends.live](https://lastfmfriends.live)
 2. Enter your Last.fm username
 3. Your dashboard will load automatically
 4. Bookmark the page for quick access later
+
+<div>
+  <img src="assets/index-preview.png" width="800"/>
+</div>
 
 ## Notes
 
