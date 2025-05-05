@@ -2,7 +2,7 @@
 
 A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends are currently listening to and discover weekly listening trends. 
 
-<div style="text-align: center">
+<div>
   <img src="assets/blocks-preview.png" width="800"/>
 </div>
 
@@ -36,8 +36,8 @@ A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends
 - Hover to view individual play counts
 - Updates in real-time as friends listen
 
-<div style="text-align: center">
-  <img src="assets/charts-preview.png" width="600"/>
+<div>
+  <img src="assets/charts-preview.png" width="800"/>
 </div>
 
 ### Listen Along
@@ -50,7 +50,7 @@ A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends
 - View play counts for each friend per track
 - See who has loved each tracks
 
-<div style="text-align: center">
+<div>
   <img src="assets/friends-who-listen.png" width="200"/>
 </div>
 
@@ -65,7 +65,7 @@ A real-time dashboard for [Last.fm](last.fm) that lets you see what your friends
 
 ## Getting Started
 
-<div style="text-align: center">
+<div>
   <img src="assets/index-preview.png" width="800"/>
 </div>
 
