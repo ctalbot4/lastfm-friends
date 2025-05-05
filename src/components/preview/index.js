@@ -1,5 +1,11 @@
+// State
 import { store } from "../../state/store.js";
+
+// API
 import { getJSONP } from "../../api/deezer.js";
+
+// UI
+import { organizeBlocksIntoRows } from "../../ui/dom.js";
 
 let currentAudio = null;
 let currentBlock = null;
@@ -12,10 +18,9 @@ const previewTimers = {};
 
 const blockContainer = document.getElementById("block-container");
 
-export function initPreview() {
+export { currentAudio, currentAudioBlock, activeRequestId, previewTimers };
 
-    // Check if touch screen to know which type of preview play to enable
-    store.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+export function initPreview() {
 
     if (store.isTouchDevice) {
 
@@ -238,7 +243,7 @@ export function handleScroll() {
         const col = Math.floor(closestRow.length * ((scrollCenter - upper) / blockHeight));
         const block = closestRow[col];
 
-        if (!isSoundOn || !charts.classList.contains("collapsed")) return;
+        if (!store.isSoundOn || !charts.classList.contains("collapsed")) return;
 
         // If same track, don't restart
         if (currentBlock && currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&

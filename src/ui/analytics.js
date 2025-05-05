@@ -1,4 +1,5 @@
 // Google analytics events
+export function initAnalytics() {
 document.body.addEventListener("click", function(event) {
     let target = event.target;
 
@@ -62,3 +63,4 @@ document.body.addEventListener("click", function(event) {
         }
     }
 });
+}

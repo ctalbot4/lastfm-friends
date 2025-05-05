@@ -1,3 +1,4 @@
+// State
 import { store } from "../state/store.js";
 
 const API_BASE = "https://ws.audioscrobbler.com/2.0/";

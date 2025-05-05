@@ -1,6 +1,9 @@
-import { store } from "../../state/store.js";
-import { updateAllBlocks } from "./blocks.js";
-import { updateTicker } from "../ticker/update.js";
+// State
+import { store } from "../state/store.js";
+
+// Components
+import { updateAllBlocks } from "./blocks/update.js";
+import { updateTicker } from "./ticker/update.js";
 
 // Schedule next ticker and block update
 export async function scheduleUpdates() {

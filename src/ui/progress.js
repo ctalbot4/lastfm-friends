@@ -1,4 +1,5 @@
-import { store } from '../../state/store.js';
+// State
+import { store } from '../state/store.js';
 
 const progressBar = document.getElementById("progress-bar");
 

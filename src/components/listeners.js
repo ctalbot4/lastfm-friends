@@ -1,5 +1,8 @@
-import { store } from "../../state/store.js";
-import * as lastfm from "../../api/lastfm.js";
+// State
+import { store } from "../state/store.js";
+
+// API
+import * as lastfm from "../api/lastfm.js";
 
 export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     // Set listeners loaded value to intermediate "1" (loading in progress)
@@ -64,6 +67,8 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                       </div>`;
                     store.isFetchingListeners = false;
                     gtag('event', 'rate_limit-listeners', {});
+                    return null;
+                } else if (e.code == 6) {
                     return null;
                 } else {
                     console.error(`Error checking listener ${friendUsername}:`, e);

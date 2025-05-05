@@ -32,6 +32,9 @@ export const store = {
     }
 }
 
+// Check if touch screen to know which type of preview play to enable
+store.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 // Get API key from backend
 export async function getKey(n = 1) {
   let cachedKey;

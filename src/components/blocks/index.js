@@ -1,12 +1,19 @@
+// State
 import { store, getKey } from "../../state/store.js";
-import { getUsernameFromURL } from "../../ui/dom.js";
-import { updateTicker } from "../ticker/update.js";
-import { updateAllBlocks } from "./blocks.js";
-import { createBlock } from "./blocks.js";
+
+// API
 import * as lastfm from "../../api/lastfm.js";
-import { organizeBlocksIntoRows } from "../../ui/dom.js";
-import { scheduleUpdates, cancelUpdates } from "./schedule.js";
-import { fetchTrackListeners } from "./listeners.js";
+
+// UI
+import { getUsernameFromURL, organizeBlocksIntoRows } from "../../ui/dom.js";
+
+// Components
+import { updateTicker } from "../ticker/update.js";
+import { updateAllBlocks } from "./update.js";
+import { createBlock } from "./create.js";
+import { scheduleUpdates, cancelUpdates } from "../schedule.js";
+import { fetchTrackListeners } from "../listeners.js";
+import { cacheFriends } from "../cache.js";
 
 const blockContainer = document.getElementById("block-container");
 
@@ -163,26 +170,7 @@ async function initialFetch() {
 
             }
         }
-        try {
-            localStorage.setItem(store.cacheKeys.friends, JSON.stringify(friends));
-        } catch (e) {
-            if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-                console.warn('LocalStorage quota exceeded. Clearing storage...');
-
-                const scheduleData = localStorage.getItem(store.cacheKeys.schedule);
-                const tickerData = localStorage.getItem(store.cacheKeys.ticker);
-                const blocksData = localStorage.getItem(store.cacheKeys.blocks);
-
-                localStorage.clear();
-
-                localStorage.setItem(store.cacheKeys.schedule, scheduleData);
-                localStorage.setItem(store.cacheKeys.friends, JSON.stringify(friends));
-                localStorage.setItem(store.cacheKeys.ticker, tickerData);
-                localStorage.setItem(store.cacheKeys.blocks, blocksData);
-                localStorage.setItem("visited", true);
-            }
-        }
-
+        cacheFriends(friends);
         if (!store.foundBlocksCache) {
             friends.forEach((friend) => {
                 blockContainer.appendChild(createBlock(friend));
