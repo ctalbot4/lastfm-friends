@@ -1,15 +1,144 @@
-import { getJSONP } from './ticker.js'
+import { store } from "../../state/store.js";
+import { getJSONP } from "../../api/deezer.js";
 
 let currentAudio = null;
 let currentBlock = null;
 let currentAudioBlock = null;
 let activeRequestId = 0;
 
-const blockContainer = document.getElementById("block-container");
-
 // Store timers across block clones
 const hoverTimers = {};
 const previewTimers = {};
+
+const blockContainer = document.getElementById("block-container");
+
+export function initPreview() {
+
+    // Check if touch screen to know which type of preview play to enable
+    store.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (store.isTouchDevice) {
+
+        // Reset rows on resize
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                rows = organizeBlocksIntoRows();
+            }, 250);
+        });
+
+        // Start scroll listener
+        window.addEventListener('scroll', handleScroll);
+    }
+
+    if (!store.isTouchDevice) {
+        blockContainer.addEventListener("mouseover", function(e) {
+            if (!store.isSoundOn || !charts.classList.contains("collapsed")) return;
+            const block = e.target.closest(".block");
+            if (!block) return;
+
+            // If same track, don't restart
+            if (currentBlock && currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
+                currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
+                return;
+            }
+
+            // Clear previous timeout on hovered block
+            if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
+                clearTimeout(hoverTimers[block.dataset.username]);
+                clearTimeout(previewTimers[block.dataset.username]);
+            }
+
+            // Clear previous timeout and save preview time on previous block if mouseout wasn't triggered
+            if (currentBlock) {
+                // Need to get block again, might have old copy after refresh
+                const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`);
+                updatedCurrentBlock.dataset.previewPlaying = "false";
+                clearTimeout(hoverTimers[currentBlock.dataset.username]);
+                clearTimeout(previewTimers[currentBlock.dataset.username]);
+
+                // Check if currentBlock is the block playing audio
+                if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {
+                    updatedCurrentBlock.dataset.previewTime = currentAudio.currentTime;
+                }
+            }
+
+            // Cancel previous interactions
+            activeRequestId++;
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudioBlock = null;
+            }
+
+            currentBlock = block;
+
+            // Wait for 200 ms then start song search
+            hoverTimers[block.dataset.username] = setTimeout(() => {
+                // Combine two spans for track title
+                const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
+                const artistName = block.querySelector('.artist-title a').textContent;
+                searchPreview(trackTitle, artistName, block);
+            }, 200);
+        });
+    }
+
+    // Stop when mouse leaves the block
+    if (!store.isTouchDevice) {
+        blockContainer.addEventListener("mouseout", function(e) {
+            const block = e.target.closest(".block");
+            if (!block || e.relatedTarget?.closest('.block') === block) return;
+
+            // Clear any previous timeout
+            if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
+                clearTimeout(hoverTimers[block.dataset.username]);
+                clearTimeout(previewTimers[block.dataset.username]);
+            }
+
+            // Cancel audio and save preview time
+            activeRequestId++;
+            if (currentAudio) {
+                currentAudio.pause();
+                // Check if block is the block playing audio
+                if (currentAudioBlock?.dataset.username == block.dataset.username) {
+                    block.dataset.previewTime = currentAudio.currentTime;
+                }
+                currentAudioBlock = null;
+            }
+            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+            currentBlock = null;
+        });
+    }
+
+    // Sound toggle
+        document.querySelectorAll('.sound').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                store.isSoundOn = !store.isSoundOn;
+                document.querySelectorAll('.sound').forEach(toggle => {
+                    toggle.classList.toggle('muted', !store.isSoundOn);
+                });
+                if (store.isSoundOn) {
+                    handleScroll();
+                } else if (!store.isSoundOn) {
+    
+                    activeRequestId++;
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                    }
+                    document.querySelectorAll(`.block`).forEach(block => {
+                        block.dataset.previewPlaying = "false";
+                    });
+                    currentBlock = null;
+                }
+    
+                gtag('event', 'sound_toggle', {
+                    sound_state: store.isSoundOn ? 'unmuted' : 'muted'
+                });
+            });
+        });
+
+}
 
 // Search for preview and retry if not found
 async function searchPreview(trackTitle, artistName, block, retried = false) {
@@ -59,7 +188,7 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
         }, (30 - currentAudio.currentTime) * 1000);
 
         gtag('event', 'song_play', {
-            preview_trigger: isTouchDevice ? 'onscreen' : 'hover',
+            preview_trigger: store.isTouchDevice ? 'onscreen' : 'hover',
             preview_track: trackTitle || 'unknown',
             preview_artist: artistName || 'unknown'
         });
@@ -72,149 +201,11 @@ async function searchPreview(trackTitle, artistName, block, retried = false) {
     }
 }
 
-// Check if touch screen to know which type of preview play to enable
-const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-if (!isTouchDevice) {
-    blockContainer.addEventListener("mouseover", function(e) {
-        if (!isSoundOn || !charts.classList.contains("collapsed")) return;
-        const block = e.target.closest(".block");
-        if (!block) return;
-
-        // If same track, don't restart
-        if (currentBlock && currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
-            currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
-            return;
-        }
-
-        // Clear previous timeout on hovered block
-        if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
-            clearTimeout(hoverTimers[block.dataset.username]);
-            clearTimeout(previewTimers[block.dataset.username]);
-        }
-
-        // Clear previous timeout and save preview time on previous block if mouseout wasn't triggered
-        if (currentBlock) {
-            // Need to get block again, might have old copy after refresh
-            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`);
-            updatedCurrentBlock.dataset.previewPlaying = "false";
-            clearTimeout(hoverTimers[currentBlock.dataset.username]);
-            clearTimeout(previewTimers[currentBlock.dataset.username]);
-
-            // Check if currentBlock is the block playing audio
-            if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {
-                updatedCurrentBlock.dataset.previewTime = currentAudio.currentTime;
-            }
-        }
-
-        // Cancel previous interactions
-        activeRequestId++;
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudioBlock = null;
-        }
-
-        currentBlock = block;
-
-        // Wait for 200 ms then start song search
-        hoverTimers[block.dataset.username] = setTimeout(() => {
-            // Combine two spans for track title
-            const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
-            const artistName = block.querySelector('.artist-title a').textContent;
-            searchPreview(trackTitle, artistName, block);
-        }, 200);
-    });
-}
-
-// Stop when mouse leaves the block
-if (!isTouchDevice) {
-    blockContainer.addEventListener("mouseout", function(e) {
-        const block = e.target.closest(".block");
-        if (!block || e.relatedTarget?.closest('.block') === block) return;
-
-        // Clear any previous timeout
-        if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
-            clearTimeout(hoverTimers[block.dataset.username]);
-            clearTimeout(previewTimers[block.dataset.username]);
-        }
-
-        // Cancel audio and save preview time
-        activeRequestId++;
-        if (currentAudio) {
-            currentAudio.pause();
-            // Check if block is the block playing audio
-            if (currentAudioBlock?.dataset.username == block.dataset.username) {
-                block.dataset.previewTime = currentAudio.currentTime;
-            }
-            currentAudioBlock = null;
-        }
-        document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
-        currentBlock = null;
-    });
-}
-
-
-// Sound toggle
-let isSoundOn = false;
-
-document.querySelectorAll('.sound').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-        isSoundOn = !isSoundOn;
-        document.querySelectorAll('.sound').forEach(toggle => {
-            toggle.classList.toggle('muted', !isSoundOn);
-        });
-        if (isSoundOn) {
-            handleScroll();
-        } else if (!isSoundOn) {
-
-            activeRequestId++;
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-            }
-            document.querySelectorAll(`.block`).forEach(block => {
-                block.dataset.previewPlaying = "false";
-            });
-            currentBlock = null;
-        }
-
-        gtag('event', 'sound_toggle', {
-            sound_state: isSoundOn ? 'unmuted' : 'muted'
-        });
-    });
-});
-
-// LOOK PLAY
-
-// Group blocks into rows and sort left-to-right
-export function organizeBlocksIntoRows() {
-    const blocks = Array.from(document.querySelectorAll('.block'));
-    const rows = new Map();
-
-    // Group blocks by their top position (same row)
-    blocks.forEach(block => {
-        const rect = block.getBoundingClientRect();
-        const topKey = Math.round(rect.top); // Round to handle subpixel differences
-
-        if (!rows.has(topKey)) {
-            rows.set(topKey, []);
-        }
-        rows.get(topKey).push(block);
-    });
-
-    // Sort each row's blocks left-to-right and return as array
-    return Array.from(rows.values()).map(row =>
-        row.sort((a, b) =>
-            a.getBoundingClientRect().left - b.getBoundingClientRect().left
-        )
-    );
-}
-
 let rows;
 
 // Determine block to play preview on
 export function handleScroll() {
-    if (!isTouchDevice) return;
+    if (!store.isTouchDevice) return;
     const requestId = activeRequestId;
 
     rows = organizeBlocksIntoRows();
@@ -286,21 +277,4 @@ export function handleScroll() {
         const artistName = block.querySelector('.artist-title a').textContent;
         searchPreview(trackTitle, artistName, block);
     }
-
-}
-
-
-if (isTouchDevice) {
-
-    // Reset rows on resize
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            rows = organizeBlocksIntoRows();
-        }, 250);
-    });
-
-    // Start scroll listener
-    window.addEventListener('scroll', handleScroll);
 }
