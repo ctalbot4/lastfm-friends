@@ -1,3 +1,6 @@
+// State
+import { audioState } from "../preview/index.js";
+
 export function initTicker() {
     // Open/close charts
     const chartToggle = document.getElementById('charts-toggle');
@@ -6,16 +9,34 @@ export function initTicker() {
 
     function toggleCharts() {
         const charts = document.querySelector('#charts');
+        const isCollapsed = charts.classList.contains('collapsed');
+        
+        // Stop any playing audio when closing charts
+        if (!isCollapsed && audioState.currentChartAudio) {
+            audioState.currentChartAudio.pause();
+            audioState.currentChartAudio.currentTime = 0;
+            // Reset any playing buttons
+            document.querySelectorAll('.play-button.playing').forEach(button => {
+                button.classList.remove('playing');
+                button.querySelector('.play-icon').style.display = 'block';
+                button.querySelector('.pause-icon').style.display = 'none';
+            });
+        }
+        
         charts.classList.toggle('collapsed');
 
-        const isCollapsed = charts.classList.contains('collapsed');
         gtag('event', 'charts_toggle', {
-            chart_state: isCollapsed ? 'collapsed' : 'expanded'
+            chart_state: isCollapsed ? 'expanded' : 'collapsed'
         });
     }
 
     // Toggle charts on toggle click
     chartToggle.addEventListener('click', () => {
+        toggleCharts();
+    });
+
+    // Toggle charts on collapse handle click
+    document.querySelector('.charts-collapse-handle').addEventListener('click', () => {
         toggleCharts();
     });
 

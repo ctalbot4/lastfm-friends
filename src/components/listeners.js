@@ -4,6 +4,7 @@ import { store } from "../state/store.js";
 // API
 import * as lastfm from "../api/lastfm.js";
 
+// Fetch track listeners
 export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     // Set listeners loaded value to intermediate "1" (loading in progress)
     block.dataset.listenersLoaded = "1";

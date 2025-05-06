@@ -174,6 +174,14 @@ export async function updateAllBlocks() {
             }
             newBlock.querySelector(".listeners-container").innerHTML = originalBlock.querySelector(".listeners-container").innerHTML;
 
+            // Preserve info button hover state
+            if (originalBlock.matches(':hover')) {
+                newBlock.querySelector(".info-button").style.opacity = "1";
+                newBlock.addEventListener('mouseout', () => {
+                    newBlock.querySelector(".info-button").style.opacity = "";
+                }, { once: true });
+            }
+
             newerBlocks.push(newBlock);
         }
     });

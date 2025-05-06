@@ -1,4 +1,3 @@
-
 // Create a block with user info
 export function createBlock(user, mainUser = false) {
     const username = user.name;

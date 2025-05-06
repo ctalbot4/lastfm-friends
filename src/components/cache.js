@@ -1,3 +1,4 @@
+// State
 import { store } from "../state/store.js";
 
 const blockContainer = document.getElementById("block-container");

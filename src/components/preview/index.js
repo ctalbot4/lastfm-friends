@@ -7,23 +7,22 @@ import { getJSONP } from "../../api/deezer.js";
 // UI
 import { organizeBlocksIntoRows } from "../../ui/dom.js";
 
-let currentAudio = null;
-let currentBlock = null;
-let currentAudioBlock = null;
-let activeRequestId = 0;
+// Components
+import { playBlockPreview } from "./blocks.js";
 
-// Store timers across block clones
-const hoverTimers = {};
-const previewTimers = {};
+export const audioState = {
+    currentAudio: new Audio(),
+    currentChartAudio: null,
+    currentBlock: null,
+    currentAudioBlock: null,
+    activeRequestId: 0,
+    hoverTimers: {}
+};
 
 const blockContainer = document.getElementById("block-container");
 
-export { currentAudio, currentAudioBlock, activeRequestId, previewTimers };
-
 export function initPreview() {
-
     if (store.isTouchDevice) {
-
         // Reset rows on resize
         let resizeTimer;
         window.addEventListener('resize', () => {
@@ -44,46 +43,44 @@ export function initPreview() {
             if (!block) return;
 
             // If same track, don't restart
-            if (currentBlock && currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
-                currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
+            if (audioState.currentBlock && audioState.currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
+                audioState.currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
                 return;
             }
 
             // Clear previous timeout on hovered block
-            if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
-                clearTimeout(hoverTimers[block.dataset.username]);
-                clearTimeout(previewTimers[block.dataset.username]);
+            if (audioState.hoverTimers[block.dataset.username]) {
+                clearTimeout(audioState.hoverTimers[block.dataset.username]);
             }
 
             // Clear previous timeout and save preview time on previous block if mouseout wasn't triggered
-            if (currentBlock) {
+            if (audioState.currentBlock) {
                 // Need to get block again, might have old copy after refresh
-                const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`);
+                const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${audioState.currentBlock.dataset.username}"]`);
                 updatedCurrentBlock.dataset.previewPlaying = "false";
-                clearTimeout(hoverTimers[currentBlock.dataset.username]);
-                clearTimeout(previewTimers[currentBlock.dataset.username]);
+                clearTimeout(audioState.hoverTimers[audioState.currentBlock.dataset.username]);
 
                 // Check if currentBlock is the block playing audio
-                if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {
-                    updatedCurrentBlock.dataset.previewTime = currentAudio.currentTime;
+                if (audioState.currentAudioBlock?.dataset.username == audioState.currentBlock?.dataset.username) {
+                    updatedCurrentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
                 }
             }
 
             // Cancel previous interactions
-            activeRequestId++;
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudioBlock = null;
+            audioState.activeRequestId++;
+            if (audioState.currentAudio) {
+                audioState.currentAudio.pause();
+                audioState.currentAudioBlock = null;
             }
 
-            currentBlock = block;
+            audioState.currentBlock = block;
 
             // Wait for 200 ms then start song search
-            hoverTimers[block.dataset.username] = setTimeout(() => {
+            audioState.hoverTimers[block.dataset.username] = setTimeout(() => {
                 // Combine two spans for track title
                 const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
                 const artistName = block.querySelector('.artist-title a').textContent;
-                searchPreview(trackTitle, artistName, block);
+                playBlockPreview(trackTitle, artistName, block);
             }, 200);
         });
     }
@@ -95,114 +92,116 @@ export function initPreview() {
             if (!block || e.relatedTarget?.closest('.block') === block) return;
 
             // Clear any previous timeout
-            if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
-                clearTimeout(hoverTimers[block.dataset.username]);
-                clearTimeout(previewTimers[block.dataset.username]);
+            if (audioState.hoverTimers[block.dataset.username]) {
+                clearTimeout(audioState.hoverTimers[block.dataset.username]);
             }
 
             // Cancel audio and save preview time
-            activeRequestId++;
-            if (currentAudio) {
-                currentAudio.pause();
+            audioState.activeRequestId++;
+            if (audioState.currentAudio) {
+                audioState.currentAudio.pause();
                 // Check if block is the block playing audio
-                if (currentAudioBlock?.dataset.username == block.dataset.username) {
-                    block.dataset.previewTime = currentAudio.currentTime;
+                if (audioState.currentAudioBlock?.dataset.username == block.dataset.username) {
+                    block.dataset.previewTime = audioState.currentAudio.currentTime;
                 }
-                currentAudioBlock = null;
+                audioState.currentAudioBlock = null;
             }
             document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
-            currentBlock = null;
+            audioState.currentBlock = null;
         });
     }
 
     // Sound toggle
-        document.querySelectorAll('.sound').forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                store.isSoundOn = !store.isSoundOn;
-                document.querySelectorAll('.sound').forEach(toggle => {
-                    toggle.classList.toggle('muted', !store.isSoundOn);
-                });
-                if (store.isSoundOn) {
-                    handleScroll();
-                } else if (!store.isSoundOn) {
-    
-                    activeRequestId++;
-                    if (currentAudio) {
-                        currentAudio.pause();
-                        currentAudio.currentTime = 0;
-                    }
-                    document.querySelectorAll(`.block`).forEach(block => {
-                        block.dataset.previewPlaying = "false";
-                    });
-                    currentBlock = null;
+    document.querySelectorAll('.sound').forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            store.isSoundOn = !store.isSoundOn;
+            document.querySelectorAll('.sound').forEach(toggle => {
+                toggle.classList.toggle('muted', !store.isSoundOn);
+            });
+            if (store.isSoundOn) {
+                handleScroll();
+            } else if (!store.isSoundOn) {
+                audioState.activeRequestId++;
+                if (audioState.currentAudio) {
+                    audioState.currentAudio.pause();
+                    audioState.currentAudio.currentTime = 0;
                 }
-    
-                gtag('event', 'sound_toggle', {
-                    sound_state: store.isSoundOn ? 'unmuted' : 'muted'
+                document.querySelectorAll(`.block`).forEach(block => {
+                    block.dataset.previewPlaying = "false";
                 });
+                audioState.currentBlock = null;
+            }
+
+            gtag('event', 'sound_toggle', {
+                sound_state: store.isSoundOn ? 'unmuted' : 'muted'
             });
         });
-
+    });
 }
 
-// Search for preview and retry if not found
-async function searchPreview(trackTitle, artistName, block, retried = false) {
-    // Remove any question marks (causes issues with Deezer API)
-    const sanitizedTrackTitle = trackTitle.replace(/\?/g, '');
-
-    const query = `artist:"${artistName}" track:"${sanitizedTrackTitle}"`;
+// Check if preview exists
+export async function hasPreview(name, artistName, isArtist = false, isAlbum = false) {
+    const sanitizedName = name.replace(/\?/g, '');
+    let url;
+    
+    if (isAlbum) {
+        // For albums, search for the album and check if it has any tracks with previews
+        const query = `album:"${sanitizedName}" artist:"${artistName}"`;
+        const encodedQuery = encodeURIComponent(query);
+        url = `https://api.deezer.com/search/album?q=${encodedQuery}&output=jsonp`;
+        try {
+            const result = await getJSONP(url);
+            return result.data[0]?.id != null;
+        } catch (e) {
+            console.error('Error checking album preview:', e);
+            return false;
+        }
+    } else if (isArtist) {
+        // Find artist ID
+        const encodedQuery = encodeURIComponent(sanitizedName);
+        url = `https://api.deezer.com/search/artist?q=${encodedQuery}&output=jsonp`;
+        try {
+            const result = await getJSONP(url);
+            return result.data[0]?.id != null;
+        } catch (e) {
+            console.error('Error checking artist preview:', e);
+            return false;
+        }
+    }
+    // For tracks, search with both artist and track name
+    const query = `artist:"${artistName}" track:"${sanitizedName}"`;
     const encodedQuery = encodeURIComponent(query);
-    const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+    url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+    try {
+        const result = await getJSONP(url);
+        
+        // Find first result that contains matching word in artist and song name
+        const trackWords = name.toLowerCase().split(/\s+/);
+        const artistWords = artistName.toLowerCase().split(/\s+/);
+        let foundTrack = null;
+        
+        for (let track of result.data) {
+            const resultTrackTitle = track.title.toLowerCase();
+            const resultArtistName = track.artist.name.toLowerCase();
+            const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
+            const artistMatches = artistWords.some(word => resultArtistName.includes(word));
 
-    const requestId = activeRequestId;
-    const result = await getJSONP(url);
-    if (requestId !== activeRequestId) {
-        return;
-    }
-    // Find first fesult that contains matching word in artist and song name
-    const trackWords = trackTitle.toLowerCase().split(/\s+/);
-    const artistWords = artistName.toLowerCase().split(/\s+/);
-    let foundTrack = null;
-    for (let track of result.data) {
-        const resultTrackTitle = track.title.toLowerCase();
-        const resultArtistName = track.artist.name.toLowerCase();
-        const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-        const artistMatches = artistWords.some(word => resultArtistName.includes(word));
-
-        if (trackMatches && artistMatches) {
-            foundTrack = track;
-            break;
-        }
-    }
-
-    if (foundTrack && foundTrack.preview) {
-        if (!currentAudio) {
-            currentAudio = new Audio();
+            if (trackMatches && artistMatches) {
+                foundTrack = track;
+                return true;
+            }
         }
 
-        const previousAudioTime = parseFloat(block.dataset.previewTime);
-
-        currentAudio.src = foundTrack.preview;
-        currentAudio.currentTime = previousAudioTime > 27 ? 0 : previousAudioTime;
-        currentAudio.play();
-
-        currentAudioBlock = block;
-        document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
-        previewTimers[block.dataset.username] = setTimeout(() => {
-            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
-        }, (30 - currentAudio.currentTime) * 1000);
-
-        gtag('event', 'song_play', {
-            preview_trigger: store.isTouchDevice ? 'onscreen' : 'hover',
-            preview_track: trackTitle || 'unknown',
-            preview_artist: artistName || 'unknown'
-        });
-    } else if (!retried && trackTitle.includes('(')) {
-        const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
-        console.log(`Retrying search without parentheses: "${newTitle}"`);
-        searchPreview(newTitle, artistName, block, true);
-    } else {
-        console.log(`No preview found for "${trackTitle}" by "${artistName}"`);
+        // If no match found and title has parentheses, try without them
+        if (!foundTrack && name.includes('(')) {
+            const newTitle = name.replace(/\(.*?\)/g, '').trim();
+            return hasPreview(newTitle, artistName, isArtist, isAlbum);
+        }
+        
+        return false;
+    } catch (e) {
+        console.error('Error checking track preview:', e);
+        return false;
     }
 }
 
@@ -211,7 +210,7 @@ let rows;
 // Determine block to play preview on
 export function handleScroll() {
     if (!store.isTouchDevice) return;
-    const requestId = activeRequestId;
+    const requestId = audioState.activeRequestId;
 
     rows = organizeBlocksIntoRows();
     const viewportTop = window.scrollY;
@@ -246,40 +245,34 @@ export function handleScroll() {
         if (!store.isSoundOn || !charts.classList.contains("collapsed")) return;
 
         // If same track, don't restart
-        if (currentBlock && currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
-            currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
+        if (audioState.currentBlock && audioState.currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
+            audioState.currentBlock.querySelector('.artist-title a')?.textContent.trim() == block.querySelector('.artist-title a')?.textContent.trim()) {
             return;
         }
 
-        // Clear previous timeout on current block
-        if (hoverTimers[block.dataset.username] || previewTimers[block.dataset.username]) {
-            clearTimeout(previewTimers[block.dataset.username]);
-        }
-
         // Clear previous timeout on previous block 
-        if (currentBlock) {
+        if (audioState.currentBlock) {
             // Need to get block again, might have old copy after refresh
-            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${currentBlock.dataset.username}"]`);
+            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${audioState.currentBlock.dataset.username}"]`);
             updatedCurrentBlock.dataset.previewPlaying = "false";
-            clearTimeout(previewTimers[currentBlock.dataset.username]);
 
             // Check if currentBlock is the block playing audio
-            if (currentAudioBlock?.dataset.username == currentBlock?.dataset.username) {   
-                updatedCurrentBlock.dataset.previewTime = currentAudio.currentTime;
+            if (audioState.currentAudioBlock?.dataset.username == audioState.currentBlock?.dataset.username) {   
+                updatedCurrentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
             }
         }
 
         // Cancel previous interactions
-        activeRequestId++;
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudioBlock = null;
+        audioState.activeRequestId++;
+        if (audioState.currentAudio) {
+            audioState.currentAudio.pause();
+            audioState.currentAudioBlock = null;
         }
 
-        currentBlock = block;
+        audioState.currentBlock = block;
 
-        const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();        
+        const trackTitle = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
         const artistName = block.querySelector('.artist-title a').textContent;
-        searchPreview(trackTitle, artistName, block);
+        playBlockPreview(trackTitle, artistName, block);
     }
 }

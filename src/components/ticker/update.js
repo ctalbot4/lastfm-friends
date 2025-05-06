@@ -2,19 +2,18 @@
 import { store } from '../../state/store.js';
 
 // API
-import { getJSONP } from '../../api/deezer.js';
 import * as lastfm from '../../api/lastfm.js';
 
 // Cache
 import { cacheCharts } from '../cache.js';
 
-// UI utilities
+// UI
 import { updateProgress } from '../../ui/progress.js';
 
 // Components
-import { createListItem } from './charts.js';
+import { createArtistCharts, createAlbumCharts, createTrackCharts } from './charts.js';
 
-async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
+export async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
     try {
         const data = await lastfm.getTopArtists(username, key);
@@ -43,7 +42,7 @@ async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
     }
 }
 
-async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
+export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
     try {
         const data = await lastfm.getTopAlbums(username, key);
@@ -79,7 +78,7 @@ async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
     }
 }
 
-async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
+export async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
     try {
         const data = await lastfm.getTopTracks(username, key);
@@ -115,110 +114,6 @@ async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
     } catch (error) {
         console.error("Error fetching user track data:", error);
     }
-}
-
-async function createArtistCharts(sortedArtistPlays) {
-    let artistsMax = 0;
-    const artistsList = document.getElementById("artists-list");
-
-    const artistChartPromises = sortedArtistPlays.slice(0, 9).map(async (artistData) => {
-        const [artistName, artistInfo] = artistData;
-        const artistUsers = Object.entries(artistInfo.users);
-        artistUsers.sort((a, b) => b[1] - a[1]);
-
-        artistsMax = Math.max(artistsMax, artistInfo.plays);
-
-        const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
-        const imageUrl = (await getJSONP(fetchUrl)).data[0]?.picture;
-        return {
-            name: artistName,
-            plays: artistInfo.plays,
-            image: imageUrl,
-            url: artistInfo.url,
-            listeners: artistUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
-        };
-    });
-
-    const artistResults = await Promise.all(artistChartPromises);
-    artistsList.innerHTML = '';
-    artistResults.forEach(data => {
-        artistsList.appendChild(createListItem(data, artistsMax));
-    });
-}
-
-async function createAlbumCharts(sortedAlbumPlays) {
-    let albumsMax = 0;
-    const albumsList = document.getElementById("albums-list");
-
-    const albumChartPromises = sortedAlbumPlays.slice(0, 9).map(async (albumData) => {
-        const [key, albumInfo] = albumData;
-        const albumUsers = Object.entries(albumInfo.users);
-
-        albumsMax = Math.max(albumsMax, albumInfo.plays);
-
-        const sortedAlbumUsers = albumUsers.sort((a, b) => b[1] - a[1]);
-
-        return {
-            name: albumInfo.albumName,
-            plays: albumInfo.plays,
-            image: albumInfo.img,
-            url: albumInfo.url,
-            listeners: sortedAlbumUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
-        };
-    });
-
-    const albumResults = await Promise.all(albumChartPromises);
-    albumsList.innerHTML = '';
-    albumResults.forEach(data => {
-        albumsList.appendChild(createListItem(data, albumsMax));
-    });
-}
-
-async function createTrackCharts(sortedTrackPlays) {
-    let tracksMax = 0;
-    const tracksList = document.getElementById("tracks-list");
-
-    const trackChartPromises = sortedTrackPlays.slice(0, 9).map(async (trackData) => {
-        const trackInfo = trackData[1];
-        const trackUsers = Object.entries(trackInfo.users);
-
-        tracksMax = Math.max(tracksMax, trackInfo.plays);
-
-        const sortedTrackUsers = trackUsers.sort((a, b) => b[1] - a[1]);
-
-        return {
-            name: trackInfo.trackName,
-            artist: trackInfo.artist,
-            plays: trackInfo.plays,
-            url: trackInfo.trackUrl,
-            artistUrl: trackInfo.artistUrl,
-            listeners: sortedTrackUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
-        };
-    });
-
-    const trackResults = await Promise.all(trackChartPromises);
-    tracksList.innerHTML = '';
-    trackResults.forEach(data => {
-        tracksList.appendChild(createListItem(data, tracksMax, true));
-    });
 }
 
 function updateTickerDisplay(sortedArtistPlays, sortedAlbumPlays, sortedTrackPlays) {
@@ -286,22 +181,18 @@ export async function updateTicker() {
         await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
     }
 
-    // Sort the results
     const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
     const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
     const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => (b[1].userCount * b[1].cappedPlays) - (a[1].userCount * a[1].cappedPlays));
 
-    // Update the display
     updateTickerDisplay(sortedArtistPlays, sortedAlbumPlays, sortedTrackPlays);
 
-    // Create charts
     await Promise.all([
         createArtistCharts(sortedArtistPlays),
         createAlbumCharts(sortedAlbumPlays),
         createTrackCharts(sortedTrackPlays)
     ]);
 
-    // Update timestamp and cache
     store.updateTimers.ticker.lastUpdate = Date.now();
     cacheCharts();
 

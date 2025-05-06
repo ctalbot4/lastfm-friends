@@ -143,9 +143,11 @@ async function initialFetch() {
 
                     if (blocksDelay > 0) {
                         const cachedBlocks = localStorage.getItem(store.cacheKeys.blocks);
-                        blockContainer.innerHTML = cachedBlocks;
-                        console.log("Loaded blocks from cache.");
-                        store.foundBlocksCache = true;
+                        if (cachedBlocks) {
+                            blockContainer.innerHTML = cachedBlocks;
+                            console.log("Loaded blocks from cache.");
+                            store.foundBlocksCache = true;
+                        }
                     }
 
                     let nextTickerUpdateTime = store.updateTimers.ticker.lastUpdate + store.updateTimers.ticker.interval;
@@ -153,21 +155,22 @@ async function initialFetch() {
 
                     if (tickerDelay > 0) {
                         const tickerCache = JSON.parse(localStorage.getItem(store.cacheKeys.ticker));
-                        const ticker = tickerCache?.ticker || '';
-                        const charts = tickerCache?.charts || '';
-                        const tickerDiv = document.querySelector(".ticker-stats");
-                        const scrollDiv = document.querySelector(".ticker-scroll");
-                        const chartsDiv = document.querySelector(".charts-scrollable");
+                        if (tickerCache) {
+                            const ticker = tickerCache?.ticker || '';
+                            const charts = tickerCache?.charts || '';
+                            const tickerDiv = document.querySelector(".ticker-stats");
+                            const scrollDiv = document.querySelector(".ticker-scroll");
+                            const chartsDiv = document.querySelector(".charts-scrollable");
 
-                        tickerDiv.innerHTML = ticker;
-                        scrollDiv.innerHTML = ticker;
-                        chartsDiv.innerHTML = charts;
+                            tickerDiv.innerHTML = ticker;
+                            scrollDiv.innerHTML = ticker;
+                            chartsDiv.innerHTML = charts;
 
-                        store.foundTickerCache = true;
-                        console.log("Loaded ticker from cache.");
+                            store.foundTickerCache = true;
+                            console.log("Loaded ticker from cache.");
+                        }
                     }
                 }
-
             }
         }
         cacheFriends(friends);
