@@ -1,35 +1,35 @@
 export const store = {
-    friendCount: 0,
-    completed: 0,
-    isSoundOn: false,
-    isScrolling: false,
-    scrollTimeoutId: null,
-    isFetchingListeners: false,
-    keys: {
-        KEY: null,
-        KEY2: null,
-        KEY3: null
-    },
-    updateTimers: {
-        blocks: {
+  friendCount: 0,
+  completed: 0,
+  isSoundOn: false,
+  isScrolling: false,
+  scrollTimeoutId: null,
+  isFetchingListeners: false,
+  keys: {
+      KEY: null,
+      KEY2: null,
+      KEY3: null
+  },
+  updateTimers: {
+      blocks: {
           lastUpdate: 0,
           interval: 0,
           timeoutId: null
-        },
-        ticker: {
+      },
+      ticker: {
           lastUpdate: 0,
           interval: 0,
           timeoutId: null
-        }
-    },
-    foundBlocksCache: false,
-    foundTickerCache: false,
-    cacheKeys: {
-        friends: null,
-        blocks: null,
-        ticker: null,
-        schedule: null
-    }
+      }
+  },
+  foundBlocksCache: false,
+  foundTickerCache: false,
+  cacheKeys: {
+      friends: null,
+      blocks: null,
+      ticker: null,
+      schedule: null
+  }
 }
 
 // Check if touch screen to know which type of preview play to enable

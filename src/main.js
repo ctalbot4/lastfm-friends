@@ -10,3 +10,7 @@ initDashboard();
 initPreview();
 initTicker();
 initAnalytics();
+
+window.addEventListener("hashchange", function() {
+    location.reload();
+});

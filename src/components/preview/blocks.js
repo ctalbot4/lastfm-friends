@@ -60,7 +60,7 @@ export async function playBlockPreview(trackTitle, artistName, block) {
 
         audioState.currentAudioBlock = block;
         document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
-        
+
         // Reset preview state when audio ends
         audioState.currentAudio.onended = () => {
             document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";

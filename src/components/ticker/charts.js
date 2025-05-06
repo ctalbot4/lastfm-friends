@@ -53,7 +53,7 @@ async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = fa
         const playButton = li.querySelector('.play-button.overlay');
         const playIcon = playButton.querySelector('.play-icon');
         const pauseIcon = playButton.querySelector('.pause-icon');
-        
+
         playButton.addEventListener('click', async () => {
             if (playButton.classList.contains('playing')) {
                 // Pause the preview
@@ -186,13 +186,13 @@ export async function createTrackCharts(sortedTrackPlays) {
         const query = `artist:"${trackInfo.artist}" track:"${sanitizedTrackTitle}"`;
         const encodedQuery = encodeURIComponent(query);
         const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
-        
+
         const result = await getJSONP(url);
-        
+
         // Find first result that contains matching word in artist and song name
         const trackWords = trackInfo.trackName.toLowerCase().split(/\s+/);
         const artistWords = trackInfo.artist.toLowerCase().split(/\s+/);
-        
+
         let foundTrack = null;
         for (let track of result.data) {
             const resultTrackTitle = track.title.toLowerCase();
@@ -212,10 +212,9 @@ export async function createTrackCharts(sortedTrackPlays) {
             const newQuery = `artist:"${trackInfo.artist}" track:"${newTitle}"`;
             const newEncodedQuery = encodeURIComponent(newQuery);
             const newUrl = `https://api.deezer.com/search/track/?q=${newEncodedQuery}&output=jsonp`;
-            
+
             const newResult = await getJSONP(newUrl);
 
-            
             const newTrackWords = newTitle.toLowerCase().split(/\s+/);
             for (let track of newResult.data) {
                 const resultTrackTitle = track.title.toLowerCase();

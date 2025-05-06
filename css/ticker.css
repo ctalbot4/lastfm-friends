@@ -194,7 +194,8 @@
 }
 
 /* Tooltip styling */
-#charts-toggle:after, #ticker-sound-toggle:after {
+#charts-toggle:after,
+#ticker-sound-toggle:after {
     position: absolute;
     right: 0;
     background: rgba(255, 255, 255, 0.9);
@@ -210,7 +211,8 @@
 }
 
 /* Arrow pointer on tooltip */
-#charts-toggle:before, #ticker-sound-toggle:before {
+#charts-toggle:before,
+#ticker-sound-toggle:before {
     content: "";
     position: absolute;
     top: calc(100% + 4px);
@@ -272,7 +274,6 @@
 #mobile-toggle.done:after {
     display: none;
 }
-
 
 #charts-toggle img {
     width: 22px;

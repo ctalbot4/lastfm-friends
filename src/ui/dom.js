@@ -4,10 +4,6 @@ export function getUsernameFromURL() {
     return username;
 }
 
-window.addEventListener("hashchange", function() {
-    location.reload();
-});
-
 // Group blocks into rows and sort left-to-right
 export function organizeBlocksIntoRows() {
     const blocks = Array.from(document.querySelectorAll('.block'));

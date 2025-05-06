@@ -143,9 +143,9 @@ export function initPreview() {
 export async function hasPreview(name, artistName, isArtist = false, isAlbum = false) {
     const sanitizedName = name.replace(/\?/g, '');
     let url;
-    
+
     if (isAlbum) {
-        // For albums, search for the album and check if it has any tracks with previews
+        // Search for album and check if it has previews
         const query = `album:"${sanitizedName}" artist:"${artistName}"`;
         const encodedQuery = encodeURIComponent(query);
         url = `https://api.deezer.com/search/album?q=${encodedQuery}&output=jsonp`;
@@ -167,41 +167,41 @@ export async function hasPreview(name, artistName, isArtist = false, isAlbum = f
             console.error('Error checking artist preview:', e);
             return false;
         }
-    }
-    // For tracks, search with both artist and track name
-    const query = `artist:"${artistName}" track:"${sanitizedName}"`;
-    const encodedQuery = encodeURIComponent(query);
-    url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
-    try {
-        const result = await getJSONP(url);
-        
-        // Find first result that contains matching word in artist and song name
-        const trackWords = name.toLowerCase().split(/\s+/);
-        const artistWords = artistName.toLowerCase().split(/\s+/);
-        let foundTrack = null;
-        
-        for (let track of result.data) {
-            const resultTrackTitle = track.title.toLowerCase();
-            const resultArtistName = track.artist.name.toLowerCase();
-            const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-            const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+    } else {
+        const query = `artist:"${artistName}" track:"${sanitizedName}"`;
+        const encodedQuery = encodeURIComponent(query);
+        url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+        try {
+            const result = await getJSONP(url);
 
-            if (trackMatches && artistMatches) {
-                foundTrack = track;
-                return true;
+            // Find first result that contains matching word in artist and song name
+            const trackWords = name.toLowerCase().split(/\s+/);
+            const artistWords = artistName.toLowerCase().split(/\s+/);
+            let foundTrack = null;
+
+            for (let track of result.data) {
+                const resultTrackTitle = track.title.toLowerCase();
+                const resultArtistName = track.artist.name.toLowerCase();
+                const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
+                const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+                if (trackMatches && artistMatches) {
+                    foundTrack = track;
+                    return true;
+                }
             }
-        }
 
-        // If no match found and title has parentheses, try without them
-        if (!foundTrack && name.includes('(')) {
-            const newTitle = name.replace(/\(.*?\)/g, '').trim();
-            return hasPreview(newTitle, artistName, isArtist, isAlbum);
+            // If no match found and title has parentheses, try without them
+            if (!foundTrack && name.includes('(')) {
+                const newTitle = name.replace(/\(.*?\)/g, '').trim();
+                return hasPreview(newTitle, artistName, isArtist, isAlbum);
+            }
+
+            return false;
+        } catch (e) {
+            console.error('Error checking track preview:', e);
+            return false;
         }
-        
-        return false;
-    } catch (e) {
-        console.error('Error checking track preview:', e);
-        return false;
     }
 }
 
@@ -257,7 +257,7 @@ export function handleScroll() {
             updatedCurrentBlock.dataset.previewPlaying = "false";
 
             // Check if currentBlock is the block playing audio
-            if (audioState.currentAudioBlock?.dataset.username == audioState.currentBlock?.dataset.username) {   
+            if (audioState.currentAudioBlock?.dataset.username == audioState.currentBlock?.dataset.username) {
                 updatedCurrentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
             }
         }

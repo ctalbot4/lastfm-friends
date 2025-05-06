@@ -115,12 +115,12 @@ h2 {
         opacity: 0.7;
         background: rgba(0, 0, 0, 0.6);
     }
-    
+
     .play-button.overlay img {
         width: 24px;
         height: 24px;
     }
-    
+
     .play-button.overlay.playing {
         opacity: 1;
         background: rgba(0, 0, 0, 0.8);

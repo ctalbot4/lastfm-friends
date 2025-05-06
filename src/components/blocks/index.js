@@ -73,13 +73,13 @@ export function initDashboard() {
             }
         });
 
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-                scheduleUpdates();
-            } else {
-                cancelUpdates();
-            }
-        });
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            scheduleUpdates();
+        } else {
+            cancelUpdates();
+        }
+    });
 }
 
 // Initial fetch on load

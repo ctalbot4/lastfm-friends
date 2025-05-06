@@ -18,7 +18,7 @@ export async function playChartPreview(trackTitle, artistName, listItem, isArtis
         url = `https://api.deezer.com/search/track?q=${encodedQuery}&order=rank&output=jsonp`;
         try {
             const result = await getJSONP(url);
-            
+
             // Get the most popular track with a preview
             foundTrack = result.data[0];
         } catch (e) {
@@ -34,7 +34,7 @@ export async function playChartPreview(trackTitle, artistName, listItem, isArtis
                 const artistId = result.data[0].id;
                 const tracksUrl = `https://api.deezer.com/artist/${artistId}/top?limit=5&output=jsonp`;
                 const tracksResult = await getJSONP(tracksUrl);
-                
+
                 foundTrack = tracksResult.data[0];
             }
         } catch (e) {
@@ -46,7 +46,7 @@ export async function playChartPreview(trackTitle, artistName, listItem, isArtis
         url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
 
         const result = await getJSONP(url);
-        
+
         // Find first result that contains matching word in artist and song name
         const trackWords = trackTitle.toLowerCase().split(/\s+/);
         const artistWords = artistName.toLowerCase().split(/\s+/);
@@ -100,7 +100,7 @@ export async function playChartPreview(trackTitle, artistName, listItem, isArtis
 
         const playButton = listItem.querySelector('.play-button');
         playButton.classList.add('playing');
-        
+
         // Reset button state when preview ends
         audioState.currentChartAudio.onended = () => {
             playButton.classList.remove('playing');

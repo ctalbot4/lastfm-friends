@@ -10,7 +10,7 @@ export function initTicker() {
     function toggleCharts() {
         const charts = document.querySelector('#charts');
         const isCollapsed = charts.classList.contains('collapsed');
-        
+
         // Stop any playing audio when closing charts
         if (!isCollapsed && audioState.currentChartAudio) {
             audioState.currentChartAudio.pause();
@@ -22,7 +22,7 @@ export function initTicker() {
                 button.querySelector('.pause-icon').style.display = 'none';
             });
         }
-        
+
         charts.classList.toggle('collapsed');
 
         gtag('event', 'charts_toggle', {

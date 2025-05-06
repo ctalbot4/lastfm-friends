@@ -59,23 +59,22 @@ export function cacheCharts() {
 
 export function cacheFriends(friends) {
     try {
+        localStorage.setItem(store.cacheKeys.friends, JSON.stringify(friends));
+    } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota exceeded. Clearing storage...');
+
+            const scheduleData = localStorage.getItem(store.cacheKeys.schedule);
+            const tickerData = localStorage.getItem(store.cacheKeys.ticker);
+            const blocksData = localStorage.getItem(store.cacheKeys.blocks);
+
+            localStorage.clear();
+
+            localStorage.setItem(store.cacheKeys.schedule, scheduleData);
             localStorage.setItem(store.cacheKeys.friends, JSON.stringify(friends));
-        } catch (e) {
-            if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-                console.warn('LocalStorage quota exceeded. Clearing storage...');
-
-                const scheduleData = localStorage.getItem(store.cacheKeys.schedule);
-                const tickerData = localStorage.getItem(store.cacheKeys.ticker);
-                const blocksData = localStorage.getItem(store.cacheKeys.blocks);
-
-                localStorage.clear();
-
-                localStorage.setItem(store.cacheKeys.schedule, scheduleData);
-                localStorage.setItem(store.cacheKeys.friends, JSON.stringify(friends));
-                localStorage.setItem(store.cacheKeys.ticker, tickerData);
-                localStorage.setItem(store.cacheKeys.blocks, blocksData);
-                localStorage.setItem("visited", true);
-            }
+            localStorage.setItem(store.cacheKeys.ticker, tickerData);
+            localStorage.setItem(store.cacheKeys.blocks, blocksData);
+            localStorage.setItem("visited", true);
         }
+    }
 }
-
