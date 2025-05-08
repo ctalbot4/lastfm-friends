@@ -2,7 +2,7 @@
     position: fixed;
     top: 0;
     width: 100%;
-    height: min(82%, 575px);
+    height: min(82%, 555px);
     display: flex;
     flex-direction: column;
     background: rgba(21, 21, 21);
@@ -14,6 +14,8 @@
 
 .charts-scrollable {
     width: 100%;
+    height: calc(100% / 0.98);
+    margin-bottom: -2%;
     display: flex;
     flex-flow: row wrap;
     background: rgba(21, 21, 21);
@@ -22,13 +24,15 @@
     scrollbar-gutter: stable;
     overflow-x: hidden;
     row-gap: 30px;
-    column-gap: 100px;
-    padding: 53px 40px 25px 40px;
+    column-gap: 60px;
+    padding: 53px 25px 25px 25px;
     align-items: flex-start;
     justify-content: center;
     box-sizing: border-box;
     position: relative;
     overscroll-behavior: contain;
+    transform: scale(0.98);
+    transform-origin: top center;
 
     mask-image: linear-gradient(to bottom,
             transparent 0%,
@@ -38,13 +42,25 @@
 }
 
 .chart-section {
-    min-width: 284px;
+    min-width: 350px;
+    max-width: 30%;
     margin: 0;
     display: flex;
     flex-flow: column;
-    flex: 1 1 30%;
-    max-width: 350px;
+    flex: 1 1 0;
     scroll-snap-align: start;
+}
+
+#listeners-section {
+    min-width: 150px;
+    max-width: 200px;
+    flex-shrink: 2;
+}
+
+#artists-section {
+    min-width: 225px;
+    max-width: 260px;
+    flex-shrink: 1.5;
 }
 
 h2 {
@@ -77,6 +93,11 @@ h2 {
     height: 40px;
 }
 
+#listeners-list .list-item {
+    grid-template-columns: 40px 1fr;
+    padding-right: 5px;
+}
+
 .item-image {
     width: 40px;
     height: 40px;
@@ -86,12 +107,33 @@ h2 {
     grid-column: 1;
 }
 
+.listener-profile {
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+}
+
 .image-container {
     position: relative;
     width: 40px;
     height: 40px;
     grid-column: 1;
     flex-shrink: 0;
+}
+
+.listener-image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    margin-left: 8px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .play-button.overlay {
@@ -382,10 +424,17 @@ body:has(#charts:not(.collapsed)) {
     height: 100vh;
 }
 
-/* Enlarge charts to highlight ability to scroll to user */
-@media (max-width: 1337px) {
+@media (max-width: 1311px) {
+    /* Enlarge charts to highlight ability to scroll to user */
     #charts {
-        height: min(90%, 600px);
+        height: min(90%, 582px);
         max-height: 90%;
+    }
+
+    /* Return all chart sections to default size */
+    #listeners-section,
+    #artists-section {
+        min-width: 284px;
+        max-width: 350px;
     }
 }

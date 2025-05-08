@@ -187,11 +187,23 @@ export async function updateTicker() {
 
     updateTickerDisplay(sortedArtistPlays, sortedAlbumPlays, sortedTrackPlays);
 
-    await Promise.all([
+    const [artists, albums, tracks] = await Promise.all([
         createArtistCharts(sortedArtistPlays),
         createAlbumCharts(sortedAlbumPlays),
         createTrackCharts(sortedTrackPlays)
     ]);
+
+    const artistsList = document.getElementById("artists-list");
+    const albumsList = document.getElementById("albums-list");
+    const tracksList = document.getElementById("tracks-list");
+
+    artistsList.innerHTML = '';
+    albumsList.innerHTML = '';
+    tracksList.innerHTML = '';
+
+    artists.forEach(item => artistsList.appendChild(item));
+    albums.forEach(item => albumsList.appendChild(item));
+    tracks.forEach(item => tracksList.appendChild(item));
 
     store.updateTimers.ticker.lastUpdate = Date.now();
     cacheCharts();

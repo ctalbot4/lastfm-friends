@@ -5,6 +5,7 @@ import { getJSONP } from "../../api/deezer.js";
 import { hasPreview, audioState } from "../preview/index.js";
 import { playChartPreview } from "../preview/charts.js";
 
+
 // Create list item in chart
 async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = false) {
     const li = document.createElement("li");
@@ -99,6 +100,40 @@ async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = fa
     return li;
 }
 
+export function createTopListenersChart(userPlayCounts) {
+    const sortedListeners = Object.entries(userPlayCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 9);
+
+    const maxPlays = sortedListeners[0][1];
+
+    const listenerItems = sortedListeners.map(([username, plays]) => {
+        const li = document.createElement("li");
+        li.classList.add("list-item");
+
+        const userBlock = document.querySelector(`[data-username="${username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img').src;
+        const userUrl = `https://www.last.fm/user/${username}`;
+
+        li.innerHTML = `
+            <div class="bar" style="width: ${15 + (plays / maxPlays) * 85}%;"></div>
+            <div class="image-container listener-image-container" style="background-image: url('${profilePic}');">
+            </div>
+            <div class="item-info">
+                <div class="item-name">
+                    <a href="${userUrl}" target="_blank">${username}</a>
+                </div>
+                <div class="item-subtext">
+                    <span class="plays">${plays.toLocaleString()} plays</span>
+                </div>
+            </div>
+        `;
+
+        return li;
+    });
+    return listenerItems;
+}
+
 export async function createArtistCharts(sortedArtistPlays) {
     let artistsMax = 0;
     const artistsList = document.getElementById("artists-list");
@@ -128,10 +163,8 @@ export async function createArtistCharts(sortedArtistPlays) {
     });
 
     const artistResults = await Promise.all(artistChartPromises);
-    artistsList.innerHTML = '';
     const listItemPromises = artistResults.map(data => createChartItem(data, artistsMax));
-    const listItems = await Promise.all(listItemPromises);
-    listItems.forEach(item => artistsList.appendChild(item));
+    return await Promise.all(listItemPromises);
 }
 
 export async function createAlbumCharts(sortedAlbumPlays) {
@@ -163,10 +196,8 @@ export async function createAlbumCharts(sortedAlbumPlays) {
     });
 
     const albumResults = await Promise.all(albumChartPromises);
-    albumsList.innerHTML = '';
     const listItemPromises = albumResults.map(data => createChartItem(data, albumsMax, false, true));
-    const listItems = await Promise.all(listItemPromises);
-    listItems.forEach(item => albumsList.appendChild(item));
+    return await Promise.all(listItemPromises);
 }
 
 export async function createTrackCharts(sortedTrackPlays) {
@@ -247,8 +278,6 @@ export async function createTrackCharts(sortedTrackPlays) {
     });
 
     const trackResults = await Promise.all(trackChartPromises);
-    tracksList.innerHTML = '';
     const listItemPromises = trackResults.map(data => createChartItem(data, tracksMax, true));
-    const listItems = await Promise.all(listItemPromises);
-    listItems.forEach(item => tracksList.appendChild(item));
+    return await Promise.all(listItemPromises);
 }

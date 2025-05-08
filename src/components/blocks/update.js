@@ -15,6 +15,9 @@ import { handleScroll } from "../preview/index.js";
 import { sortBlocks } from "./sort.js";
 import { setupBlocks } from "./index.js";
 
+
+import { createTopListenersChart } from "../ticker/charts.js";
+
 const userPlayCounts = {};
 
 // Fetch data for a block and update
@@ -198,6 +201,12 @@ export async function updateAllBlocks() {
 
     // Update total plays
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
+
+    // Update top listeners chart
+    const listenersList = document.getElementById("listeners-list");
+    listenersList.innerHTML = '';
+    const listeners = createTopListenersChart(userPlayCounts);
+    listeners.forEach(item => listenersList.appendChild(item));
 
     // Trigger mobile scroll handler
     handleScroll();
