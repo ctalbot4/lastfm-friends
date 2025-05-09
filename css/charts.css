@@ -2,7 +2,8 @@
     position: fixed;
     top: 0;
     width: 100%;
-    height: min(82%, 555px);
+    height: min(90%, 582px);
+    max-height: 90%;
     display: flex;
     flex-direction: column;
     background: rgba(21, 21, 21);
@@ -43,24 +44,11 @@
 
 .chart-section {
     min-width: 350px;
-    max-width: 30%;
     margin: 0;
     display: flex;
     flex-flow: column;
-    flex: 1 1 0;
+    flex: 1 1 30%;
     scroll-snap-align: start;
-}
-
-#listeners-section {
-    min-width: 150px;
-    max-width: 200px;
-    flex-shrink: 2;
-}
-
-#artists-section {
-    min-width: 225px;
-    max-width: 260px;
-    flex-shrink: 1.5;
 }
 
 h2 {
@@ -70,6 +58,18 @@ h2 {
     display: block;
     text-align: start;
     align-self: flex-start;
+}
+
+.activity-chart {
+    width: 100%;
+    height: 370px;
+    position: relative;
+    padding-top: 50px;
+}
+
+.activity-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .top-list {
@@ -422,19 +422,4 @@ h2 {
 body:has(#charts:not(.collapsed)) {
     overflow: hidden;
     height: 100vh;
-}
-
-@media (max-width: 1311px) {
-    /* Enlarge charts to highlight ability to scroll to user */
-    #charts {
-        height: min(90%, 582px);
-        max-height: 90%;
-    }
-
-    /* Return all chart sections to default size */
-    #listeners-section,
-    #artists-section {
-        min-width: 284px;
-        max-width: 350px;
-    }
 }

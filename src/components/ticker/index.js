@@ -23,6 +23,12 @@ export function initTicker() {
             });
         }
 
+        // Clear any tooltips on activity graphs
+        const tooltip = document.querySelector('.chart-tooltip');
+        if (tooltip) {
+            tooltip.remove();
+        }
+
         charts.classList.toggle('collapsed');
 
         gtag('event', 'charts_toggle', {

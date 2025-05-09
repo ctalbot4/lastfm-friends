@@ -15,6 +15,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="lastfmfriends.live" />
     <link rel="manifest" href="favicon/site.webmanifest" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2QMKX3VH8T"></script>
@@ -117,13 +118,21 @@
                 <h2>Top Albums</h2>
                 <ul class="top-list" id="albums-list"></ul>
             </div>
-            <div class="chart-section">
+            <div class="chart-section" id="tracks-section">
                 <h2>Top Tracks</h2>
                 <ul class="top-list" id="tracks-list"></ul>
             </div>
             <div id="listeners-section" class="chart-section">
                 <h2>Top Listeners</h2>
                 <ul class="top-list" id="listeners-list"></ul>
+            </div>
+            <div class="chart-section" id="activity-section">
+                <h2>Activity by Hour</h2>
+                <div class="activity-chart" id="activity-chart"></div>
+            </div>
+            <div class="chart-section" id="daily-section">
+                <h2>Activity by Day</h2>
+                <div class="activity-chart" id="daily-chart"></div>
             </div>
         </div>
         <div class="charts-collapse-handle" data-action="toggle-charts">

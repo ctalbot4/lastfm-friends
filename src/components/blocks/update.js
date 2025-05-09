@@ -14,9 +14,8 @@ import { handleScroll } from "../preview/index.js";
 // Components
 import { sortBlocks } from "./sort.js";
 import { setupBlocks } from "./index.js";
-
-
 import { createTopListenersChart } from "../ticker/charts.js";
+import { updateActivityData, updateActivityChart, resetActivityData } from "../ticker/graphs.js";
 
 const userPlayCounts = {};
 
@@ -27,6 +26,10 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
     const newBlock = block.cloneNode(true);
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
+
+        // Pass user's tracks to updateActivityData
+        updateActivityData(data.recenttracks.track, username);
+        
         updateProgress();
         if (data.recenttracks["@attr"]["total"] == 0) {
             // Remove if no tracks played
@@ -144,6 +147,9 @@ export async function updateAllBlocks() {
 
     store.completed = 0;
 
+    // Start activity graphs processing
+    resetActivityData();
+
     const chunks = [];
     const newBlocks = [];
 
@@ -191,6 +197,9 @@ export async function updateAllBlocks() {
 
     // Call sortBlocks after all updates are done
     await sortBlocks(newerBlocks);
+
+    // Signal that activity charts ready to update
+    updateActivityChart();
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;

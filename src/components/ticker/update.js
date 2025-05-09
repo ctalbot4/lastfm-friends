@@ -150,6 +150,7 @@ function updateTickerDisplay(sortedArtistPlays, sortedAlbumPlays, sortedTrackPla
         element.href = sortedTrackPlays[0][1].trackUrl;
     });
 }
+
 // Update ticker (other than now playing, plays)
 export async function updateTicker() {
     const artistPlays = {};

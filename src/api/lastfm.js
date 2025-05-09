@@ -51,7 +51,7 @@ export function getRecentTracks(user, key = store.keys.KEY, from) {
     return callApi("user.getrecenttracks", {
         user,
         extended: 1,
-        limit: 1,
+        limit: 1000,
         from
     }, key);
 }
@@ -67,7 +67,7 @@ export function getTrackInfo(user, key = store.keys.KEY, artist, track) {
 export function getTopArtists(user, key = store.keys.KEY) {
     return callApi("user.gettopartists", {
         user,
-        limit: 100,
+        limit: 1000,
         period: "7day"
     }, key);
 }
@@ -75,7 +75,7 @@ export function getTopArtists(user, key = store.keys.KEY) {
 export function getTopAlbums(user, key = store.keys.KEY) {
     return callApi("user.gettopalbums", {
         user,
-        limit: 100,
+        limit: 1000,
         period: "7day"
     }, key);
 }
@@ -83,7 +83,7 @@ export function getTopAlbums(user, key = store.keys.KEY) {
 export function getTopTracks(user, key = store.keys.KEY) {
     return callApi("user.gettoptracks", {
         user,
-        limit: 100,
+        limit: 1000,
         period: "7day"
     }, key);
 }
