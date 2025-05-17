@@ -1,48 +1,32 @@
-const hourlyActivity = new Array(24).fill(0);
-const tempHourlyActivity = new Array(24).fill(0);
-const hourlyListeners = Array.from({ length: 24 }, () => new Map());
-const tempHourlyListeners = Array.from({ length: 24 }, () => new Map());
+// "Activity by Day" and "Activity by Hour" charts
 
-const dailyActivity = new Array(7).fill(0);
-const tempDailyActivity = new Array(7).fill(0);
-const dailyListeners = Array.from({ length: 7 }, () => new Map());
-const tempDailyListeners = Array.from({ length: 7 }, () => new Map());
+// Charts - Graphs
+import { hourlyActivity, dailyActivity, hourlyListeners, dailyListeners } from "./data.js";
 
-let activityChart = null;
-let dailyChart = null;
+export let hourlyChart = null;
+export let dailyChart = null;
 
-function processTrack(timestamp, username) {
-    const date = new Date(timestamp * 1000);
-    const hour = date.getHours();
-    const day = date.getDay();
-    
-    tempHourlyActivity[hour]++;
-    const hourlyListenersMap = tempHourlyListeners[hour];
-    hourlyListenersMap.set(username, (hourlyListenersMap.get(username) || 0) + 1);
-    
-    tempDailyActivity[day]++;
-    const dailyListenersMap = tempDailyListeners[day];
-    dailyListenersMap.set(username, (dailyListenersMap.get(username) || 0) + 1);
-}
-
+// Create hourly activity bar chart
 export function createHourlyChart() {
-    const chartContainer = document.getElementById("activity-chart");
+    const chartContainer = document.getElementById("hourly-chart");
     chartContainer.innerHTML = '<canvas></canvas>';
-    
+
     const ctx = chartContainer.querySelector('canvas').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (activityChart) {
-        activityChart.destroy();
+
+    if (hourlyChart) {
+        hourlyChart.destroy();
     }
-    
-    // Create labels for hours
-    const labels = Array.from({length: 24}, (_, i) => `${i}:00`);
-    
-    activityChart = new Chart(ctx, {
+
+    hourlyChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: Array.from({length: 24}, (_, i) => {
+                const date = new Date();
+                date.setHours(i, 0, 0, 0);
+                return date.toLocaleTimeString([], {
+                    hour: 'numeric'
+                });
+            }),
             datasets: [{
                 data: hourlyActivity,
                 backgroundColor: 'rgba(100, 100, 255, 0.5)',
@@ -62,7 +46,6 @@ export function createHourlyChart() {
                     usePointStyle: true,
                     enabled: false,
                     external: function(context) {
-                        
                         const tooltipEl = document.createElement('div');
                         tooltipEl.style.background = 'rgba(0, 0, 0, 0.8)';
                         tooltipEl.style.borderRadius = '4px';
@@ -79,27 +62,32 @@ export function createHourlyChart() {
                         tooltipEl.style.zIndex = '1000';
                         tooltipEl.style.marginTop = '-15px';
 
+                        // Get hovered hour
                         const hour = context.tooltip.dataPoints[0].dataIndex;
                         const listeners = hourlyListeners[hour];
                         const totalPlays = context.tooltip.dataPoints[0].raw;
-                        
-                        // Format hour for display
-                        const hourDisplay = `${hour.toString().padStart(2, '0')}:00`;
-                        
-                        // Convert map to array and sort by play count
+
+                        const date = new Date();
+                        date.setHours(hour, 0, 0, 0);
+                        const timeStr = date.toLocaleTimeString([], {
+                            hour: 'numeric'
+                        });
+
+                        // Get top 3 listeners for this hour
                         const sortedListeners = Array.from(listeners.entries())
                             .sort((a, b) => b[1] - a[1])
                             .slice(0, 3);
-                        
-                        let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${hourDisplay} - ${totalPlays} plays</div>`;
-                        
+
+                        // Build tooltip content, looping through listeners
+                        let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${timeStr} - ${totalPlays} plays</div>`;
+
                         if (sortedListeners.length > 0) {
                             sortedListeners.forEach(([username, count]) => {
                                 const userBlock = document.querySelector(`[data-username="${username}"]`);
-                                const profileUrl = userBlock ? 
+                                const profileUrl = userBlock ?
                                     userBlock.querySelector('#pfp').src :
                                     `https://lastfm.freetls.fastly.net/i/u/300x300/5c66a0d6f81115c6d551493c9298b43b.png`;
-                                
+
                                 tooltipContent += `
                                     <div style="display: flex; align-items: center; margin: 2px 0;">
                                         <img src="${profileUrl}" style="width: 16px; height: 16px; border-radius: 50%; margin-right: 6px;">
@@ -108,38 +96,65 @@ export function createHourlyChart() {
                                 `;
                             });
                         }
-                        
+
                         tooltipEl.innerHTML = tooltipContent;
-                        
+
+                        // Position tooltip based on cursor
                         const position = context.chart.canvas.getBoundingClientRect();
-                        tooltipEl.style.left = position.left + context.tooltip.caretX + 'px';
+                        const cursorX = context.tooltip.caretX;
+                        const chartWidth = context.chart.width;
+
+                        const shouldShowOnLeft = cursorX > (chartWidth / 2);
+
+                        if (shouldShowOnLeft) {
+                            tooltipEl.style.right = (window.innerWidth - (position.left + cursorX) + 10) + 'px';
+                            tooltipEl.style.left = 'auto';
+                            tooltipEl.style.transform = 'translateY(-50%)';
+                        } else {
+                            tooltipEl.style.left = (position.left + cursorX + 10) + 'px';
+                            tooltipEl.style.right = 'auto';
+                            tooltipEl.style.transform = 'translateY(-50%)';
+                        }
+
                         tooltipEl.style.top = position.top + context.tooltip.caretY + 'px';
-                        
+
                         // Remove any existing tooltips
                         const existingTooltip = document.querySelector('.chart-tooltip');
                         if (existingTooltip) {
                             existingTooltip.remove();
                         }
-                        
+
                         tooltipEl.classList.add('chart-tooltip');
                         document.body.appendChild(tooltipEl);
-                        
+
                         // Add event listeners to remove tooltip
-                        const chart = context.chart.canvas;
                         const removeTooltip = () => {
                             const tooltip = document.querySelector('.chart-tooltip');
                             if (tooltip) {
                                 tooltip.remove();
                             }
-                            chart.removeEventListener('mouseleave', removeTooltip);
+                            window.removeEventListener('mousemove', handleMouseMove);
                             window.removeEventListener('scroll', removeTooltip);
                             window.removeEventListener('touchmove', removeTooltip);
                         };
-                        
-                        chart.addEventListener('mouseleave', removeTooltip);
-                        window.addEventListener('scroll', removeTooltip, { passive: true });
-                        window.addEventListener('touchmove', removeTooltip, { passive: true });
-                        
+
+                        const handleMouseMove = (e) => {
+                            const points = context.chart.getElementsAtEventForMode(e, 'point', {
+                                intersect: true
+                            });
+                            if (points.length === 0) {
+                                removeTooltip();
+                            }
+                        };
+
+                        window.addEventListener('mousemove', handleMouseMove);
+                        window.addEventListener('scroll', removeTooltip, {
+                            passive: true
+                        });
+                        window.addEventListener('touchmove', removeTooltip, {
+                            passive: true
+                        });
+
                         return removeTooltip;
                     }
                 }
@@ -182,20 +197,19 @@ export function createHourlyChart() {
     });
 }
 
+// Create daily activity polar area chart
 export function createDailyChart() {
     const chartContainer = document.getElementById("daily-chart");
     chartContainer.innerHTML = '<canvas></canvas>';
-    
+
     const ctx = chartContainer.querySelector('canvas').getContext('2d');
-    
-    // Destroy existing chart if it exists
+
     if (dailyChart) {
         dailyChart.destroy();
     }
-    
-    // Create labels for days
+
     const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
+
     dailyChart = new Chart(ctx, {
         type: 'polarArea',
         data: {
@@ -227,7 +241,6 @@ export function createDailyChart() {
                     usePointStyle: true,
                     enabled: false,
                     external: function(context) {
-
                         const tooltipEl = document.createElement('div');
                         tooltipEl.style.background = 'rgba(0, 0, 0, 0.8)';
                         tooltipEl.style.borderRadius = '4px';
@@ -244,27 +257,28 @@ export function createDailyChart() {
                         tooltipEl.style.zIndex = '1000';
                         tooltipEl.style.marginTop = '-8px';
 
+                        // Get hovered day
                         const day = context.tooltip.dataPoints[0].dataIndex;
                         const listeners = dailyListeners[day];
                         const totalPlays = context.tooltip.dataPoints[0].raw;
-                        
-                        // Format day for display
+
                         const dayDisplay = labels[day];
-                        
-                        // Convert map to array and sort by play count
+
+                        // Get top 3 listeners
                         const sortedListeners = Array.from(listeners.entries())
                             .sort((a, b) => b[1] - a[1])
                             .slice(0, 3);
-                        
+
+                        // Build tooltip content, looping through listeners
                         let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${dayDisplay} - ${totalPlays} plays</div>`;
-                        
+
                         if (sortedListeners.length > 0) {
                             sortedListeners.forEach(([username, count]) => {
                                 const userBlock = document.querySelector(`[data-username="${username}"]`);
-                                const profileUrl = userBlock ? 
+                                const profileUrl = userBlock ?
                                     userBlock.querySelector('#pfp').src :
                                     `https://lastfm.freetls.fastly.net/i/u/300x300/5c66a0d6f81115c6d551493c9298b43b.png`;
-                                
+
                                 tooltipContent += `
                                     <div style="display: flex; align-items: center; margin: 2px 0;">
                                         <img src="${profileUrl}" style="width: 16px; height: 16px; border-radius: 50%; margin-right: 6px;">
@@ -273,38 +287,51 @@ export function createDailyChart() {
                                 `;
                             });
                         }
-                        
+
                         tooltipEl.innerHTML = tooltipContent;
-                        
+
+                        // Position tooltip
                         const position = context.chart.canvas.getBoundingClientRect();
                         tooltipEl.style.left = position.left + context.tooltip.caretX + 'px';
                         tooltipEl.style.top = position.top + context.tooltip.caretY + 'px';
-                        
+
                         // Remove any existing tooltips
                         const existingTooltip = document.querySelector('.chart-tooltip');
                         if (existingTooltip) {
                             existingTooltip.remove();
                         }
-                        
+
                         tooltipEl.classList.add('chart-tooltip');
                         document.body.appendChild(tooltipEl);
-                        
+
                         // Add event listeners to remove tooltip
-                        const chart = context.chart.canvas;
                         const removeTooltip = () => {
                             const tooltip = document.querySelector('.chart-tooltip');
                             if (tooltip) {
                                 tooltip.remove();
                             }
-                            chart.removeEventListener('mouseleave', removeTooltip);
+                            window.removeEventListener('mousemove', handleMouseMove);
                             window.removeEventListener('scroll', removeTooltip);
                             window.removeEventListener('touchmove', removeTooltip);
                         };
-                        
-                        chart.addEventListener('mouseleave', removeTooltip);
-                        window.addEventListener('scroll', removeTooltip, { passive: true });
-                        window.addEventListener('touchmove', removeTooltip, { passive: true });
-                        
+
+                        const handleMouseMove = (e) => {
+                            const points = context.chart.getElementsAtEventForMode(e, 'point', {
+                                intersect: true
+                            });
+                            if (points.length === 0) {
+                                removeTooltip();
+                            }
+                        };
+
+                        window.addEventListener('mousemove', handleMouseMove);
+                        window.addEventListener('scroll', removeTooltip, {
+                            passive: true
+                        });
+                        window.addEventListener('touchmove', removeTooltip, {
+                            passive: true
+                        });
+
                         return removeTooltip;
                     }
                 }
@@ -335,60 +362,4 @@ export function createDailyChart() {
             }
         }
     });
-}
-
-export function resetActivityData() {
-    tempHourlyActivity.fill(0);
-    tempDailyActivity.fill(0);
-    tempHourlyListeners.forEach(listeners => listeners.clear());
-    tempDailyListeners.forEach(listeners => listeners.clear());
-}
-
-export function updateActivityData(tracks, username) {
-    tracks.forEach(track => {
-        if (track.date?.uts) {
-            processTrack(parseInt(track.date.uts), username);
-        }
-    });
-}
-
-export function updateActivityChart() {
-    // Copy temp data
-    hourlyActivity.fill(0);
-    tempHourlyActivity.forEach((count, hour) => {
-        hourlyActivity[hour] = count;
-    });
-    
-    dailyActivity.fill(0);
-    tempDailyActivity.forEach((count, day) => {
-        dailyActivity[day] = count;
-    });
-    
-    hourlyListeners.forEach((listeners, hour) => {
-        listeners.clear();
-        tempHourlyListeners[hour].forEach((count, username) => {
-            listeners.set(username, count);
-        });
-    });
-    
-    dailyListeners.forEach((listeners, day) => {
-        listeners.clear();
-        tempDailyListeners[day].forEach((count, username) => {
-            listeners.set(username, count);
-        });
-    });
-    
-    if (activityChart) {
-        activityChart.data.datasets[0].data = hourlyActivity;
-        activityChart.update();
-    } else {
-        createHourlyChart();
-    }
-    
-    if (dailyChart) {
-        dailyChart.data.datasets[0].data = dailyActivity;
-        dailyChart.update();
-    } else {
-        createDailyChart();
-    }
 }

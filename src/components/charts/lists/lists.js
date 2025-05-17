@@ -1,13 +1,20 @@
+// "Top Artists", "Top Albums", "Top Tracks", "Unique Artists", "Unique Tracks" charts
+
 // API
-import { getJSONP } from "../../api/deezer.js";
+import { getJSONP } from "../../../api/deezer.js";
 
-// Components
-import { hasPreview, audioState } from "../preview/index.js";
-import { playChartPreview } from "../preview/charts.js";
+// Blocks
+import { userPlayCounts } from "../../blocks/update.js";
 
+// Charts
+import { userStats } from "../update.js";
+
+// Preview
+import { audioState, hasPreview } from "../../preview/index.js";
+import { playChartPreview } from "../../preview/charts.js";
 
 // Create list item in chart
-async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = false) {
+async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = false) {
     const li = document.createElement("li");
     li.classList.add("list-item");
 
@@ -15,7 +22,7 @@ async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = fa
     let hasPreviewAvailable = false;
     try {
         if (isTrack) {
-            hasPreviewAvailable = await hasPreview(itemData.name, itemData.artist, null, null);
+            hasPreviewAvailable = itemData.preview ? true : false;
         } else if (isAlbum) {
             hasPreviewAvailable = await hasPreview(itemData.name, itemData.artist, false, true);
         } else {
@@ -50,6 +57,7 @@ async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = fa
         <div class="listeners">
         </div>`
 
+    // Add preview functionality if available
     if (hasPreviewAvailable) {
         const playButton = li.querySelector('.play-button.overlay');
         const playIcon = playButton.querySelector('.play-icon');
@@ -71,6 +79,7 @@ async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = fa
         });
     }
 
+    // Add listener avatars
     let imgIndex = 2;
     const count = itemData.listeners.length;
     for (let i = 2; i >= 0; i--) {
@@ -100,6 +109,173 @@ async function createChartItem(itemData, maxPlays, isTrack = false, isAlbum = fa
     return li;
 }
 
+// Create artist charts with Deezer images and previews
+export async function createArtistCharts(sortedArtistPlays) {
+    let artistsMax = 0;
+
+    // Process top 9 artists
+    const artistChartPromises = sortedArtistPlays.slice(0, 9).map(async (artistData) => {
+        const [artistName, artistInfo] = artistData;
+        const artistUsers = Object.entries(artistInfo.users);
+        artistUsers.sort((a, b) => b[1] - a[1]);
+
+        artistsMax = Math.max(artistsMax, artistInfo.plays);
+
+        // Fetch artist image from Deezer
+        let imageUrl;
+        try {
+            const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
+            const response = await getJSONP(fetchUrl);
+            imageUrl = response.data[0]?.picture;
+        } catch (error) {
+            console.error(`Error fetching artist image for ${artistName}:`, error);
+            imageUrl = null;
+        }
+
+        return {
+            name: artistName,
+            plays: artistInfo.plays,
+            image: imageUrl,
+            url: artistInfo.url,
+            listeners: artistUsers.map(([username, plays]) => ({
+                user: username,
+                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                plays: plays,
+                url: ``
+            }))
+        };
+    });
+
+    const artistResults = await Promise.all(artistChartPromises);
+    const listItemPromises = artistResults.map(data => createListItem(data, artistsMax));
+    return await Promise.all(listItemPromises);
+}
+
+// Create album charts with previews
+export async function createAlbumCharts(sortedAlbumPlays) {
+    let albumsMax = 0;
+
+    // Process top 9 albums
+    const albumChartPromises = sortedAlbumPlays.slice(0, 9).map(async (albumData) => {
+        const [key, albumInfo] = albumData;
+        const albumUsers = Object.entries(albumInfo.users);
+
+        albumsMax = Math.max(albumsMax, albumInfo.plays);
+
+        const sortedAlbumUsers = albumUsers.sort((a, b) => b[1] - a[1]);
+
+        return {
+            name: albumInfo.albumName,
+            artist: albumInfo.artist,
+            plays: albumInfo.plays,
+            image: albumInfo.img,
+            url: albumInfo.url,
+            listeners: sortedAlbumUsers.map(([username, plays]) => ({
+                user: username,
+                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                plays: plays,
+                url: ``
+            }))
+        };
+    });
+
+    const albumResults = await Promise.all(albumChartPromises);
+    const listItemPromises = albumResults.map(data => createListItem(data, albumsMax, false, true));
+    return await Promise.all(listItemPromises);
+}
+
+// Create track charts with Deezer images and previews
+export async function createTrackCharts(sortedTrackPlays) {
+    let tracksMax = 0;
+
+    // Process top 9 tracks
+    const trackChartPromises = sortedTrackPlays.slice(0, 9).map(async (trackData) => {
+        const trackInfo = trackData[1];
+        const trackUsers = Object.entries(trackInfo.users);
+
+        tracksMax = Math.max(tracksMax, trackInfo.plays);
+
+        const sortedTrackUsers = trackUsers.sort((a, b) => b[1] - a[1]);
+
+        // Search for track on Deezer to get album image and preview
+        const sanitizedTrackTitle = trackInfo.trackName.replace(/\?/g, '');
+        const query = `artist:"${trackInfo.artist}" track:"${sanitizedTrackTitle}"`;
+        const encodedQuery = encodeURIComponent(query);
+        const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+
+        let foundTrack = null;
+        try {
+            const result = await getJSONP(url);
+
+            // Find first result that contains matching word in artist and song name
+            const trackWords = trackInfo.trackName.toLowerCase().split(/\s+/);
+            const artistWords = trackInfo.artist.toLowerCase().split(/\s+/);
+
+            for (let track of result.data) {
+                const resultTrackTitle = track.title.toLowerCase();
+                const resultArtistName = track.artist.name.toLowerCase();
+                const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
+                const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+                if (trackMatches && artistMatches) {
+                    foundTrack = track;
+                    break;
+                }
+            }
+
+            // If no match found and title has parentheses, try without
+            if (!foundTrack && trackInfo.trackName.includes('(')) {
+                const newTitle = trackInfo.trackName.replace(/\(.*?\)/g, '').trim();
+                const newQuery = `artist:"${trackInfo.artist}" track:"${newTitle}"`;
+                const newEncodedQuery = encodeURIComponent(newQuery);
+                const newUrl = `https://api.deezer.com/search/track/?q=${newEncodedQuery}&output=jsonp`;
+
+                const newResult = await getJSONP(newUrl);
+
+                const newTrackWords = newTitle.toLowerCase().split(/\s+/);
+                for (let track of newResult.data) {
+                    const resultTrackTitle = track.title.toLowerCase();
+                    const resultArtistName = track.artist.name.toLowerCase();
+                    const trackMatches = newTrackWords.some(word => resultTrackTitle.includes(word));
+                    const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+                    if (trackMatches && artistMatches) {
+                        foundTrack = track;
+                        break;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(`Error fetching track data for ${trackInfo.trackName}:`, error);
+            foundTrack = null;
+        }
+
+        return {
+            name: trackInfo.trackName,
+            artist: trackInfo.artist,
+            plays: trackInfo.plays,
+            url: trackInfo.trackUrl,
+            artistUrl: trackInfo.artistUrl,
+            image: foundTrack?.album?.cover_medium,
+            preview: foundTrack?.preview,
+            listeners: sortedTrackUsers.map(([username, plays]) => ({
+                user: username,
+                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                plays: plays,
+                url: ``
+            }))
+        };
+    });
+
+    const trackResults = await Promise.all(trackChartPromises);
+    const listItemPromises = trackResults.map(data => createListItem(data, tracksMax, true));
+    return await Promise.all(listItemPromises);
+}
+
+// Create top listeners chart
 export function createTopListenersChart(userPlayCounts) {
     const sortedListeners = Object.entries(userPlayCounts)
         .sort((a, b) => b[1] - a[1])
@@ -134,150 +310,76 @@ export function createTopListenersChart(userPlayCounts) {
     return listenerItems;
 }
 
-export async function createArtistCharts(sortedArtistPlays) {
-    let artistsMax = 0;
-    const artistsList = document.getElementById("artists-list");
+// Create unique artists chart with plays per artist
+export function createUniqueArtistsChart() {
+    // Sort users by number of unique artists
+    const sortedUsers = Object.entries(userStats)
+        .sort((a, b) => b[1].totalArtists - a[1].totalArtists)
+        .slice(0, 9);
 
-    const artistChartPromises = sortedArtistPlays.slice(0, 9).map(async (artistData) => {
-        const [artistName, artistInfo] = artistData;
-        const artistUsers = Object.entries(artistInfo.users);
-        artistUsers.sort((a, b) => b[1] - a[1]);
+    const maxArtists = sortedUsers[0][1].totalArtists;
 
-        artistsMax = Math.max(artistsMax, artistInfo.plays);
+    const listenerItems = sortedUsers.map(([username, stats]) => {
+        const li = document.createElement("li");
+        li.classList.add("list-item");
 
-        const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
-        const imageUrl = (await getJSONP(fetchUrl)).data[0]?.picture;
-        return {
-            name: artistName,
-            plays: artistInfo.plays,
-            image: imageUrl,
-            url: artistInfo.url,
-            listeners: artistUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
-        };
+        const userBlock = document.querySelector(`[data-username="${username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img').src;
+        const userUrl = `https://www.last.fm/user/${username}`;
+        const totalPlays = userPlayCounts[username] || 0;
+
+        li.innerHTML = `
+            <div class="bar" style="width: ${15 + (stats.totalArtists / maxArtists) * 85}%;"></div>
+            <div class="image-container listener-image-container" style="background-image: url('${profilePic}');">
+            </div>
+            <div class="item-info">
+                <div class="item-name">
+                    <a href="${userUrl}" target="_blank">${username}</a>
+                </div>
+                <div class="item-subtext">
+                    <span class="plays">${stats.totalArtists.toLocaleString()} artists${totalPlays > 0 ? ` - ${(totalPlays / stats.totalArtists).toFixed(2).toLocaleString()} plays per artist` : ""}</span>
+                </div>
+            </div>
+        `;
+
+        return li;
     });
-
-    const artistResults = await Promise.all(artistChartPromises);
-    const listItemPromises = artistResults.map(data => createChartItem(data, artistsMax));
-    return await Promise.all(listItemPromises);
+    return listenerItems;
 }
 
-export async function createAlbumCharts(sortedAlbumPlays) {
-    let albumsMax = 0;
-    const albumsList = document.getElementById("albums-list");
+// Create unique tracks chart with plays per track
+export function createUniqueTracksChart() {
+    // Sort users by number of unique tracks
+    const sortedUsers = Object.entries(userStats)
+        .sort((a, b) => b[1].totalTracks - a[1].totalTracks)
+        .slice(0, 9);
 
-    const albumChartPromises = sortedAlbumPlays.slice(0, 9).map(async (albumData) => {
-        const [key, albumInfo] = albumData;
-        const albumUsers = Object.entries(albumInfo.users);
+    const maxTracks = sortedUsers[0][1].totalTracks;
 
-        albumsMax = Math.max(albumsMax, albumInfo.plays);
+    const listenerItems = sortedUsers.map(([username, stats]) => {
+        const li = document.createElement("li");
+        li.classList.add("list-item");
 
-        const sortedAlbumUsers = albumUsers.sort((a, b) => b[1] - a[1]);
+        const userBlock = document.querySelector(`[data-username="${username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img').src;
+        const userUrl = `https://www.last.fm/user/${username}`;
+        const totalPlays = userPlayCounts[username] || 0;
 
-        return {
-            name: albumInfo.albumName,
-            artist: albumInfo.artist,
-            plays: albumInfo.plays,
-            image: albumInfo.img,
-            url: albumInfo.url,
-            listeners: sortedAlbumUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
-        };
+        li.innerHTML = `
+            <div class="bar" style="width: ${15 + (stats.totalTracks / maxTracks) * 85}%;"></div>
+            <div class="image-container listener-image-container" style="background-image: url('${profilePic}');">
+            </div>
+            <div class="item-info">
+                <div class="item-name">
+                    <a href="${userUrl}" target="_blank">${username}</a>
+                </div>
+                <div class="item-subtext">
+                    <span class="plays">${stats.totalTracks.toLocaleString()} tracks${totalPlays > 0 ? ` - ${(totalPlays / stats.totalTracks).toFixed(2).toLocaleString()} plays per track` : ""}</span>
+                </div>
+            </div>
+        `;
+
+        return li;
     });
-
-    const albumResults = await Promise.all(albumChartPromises);
-    const listItemPromises = albumResults.map(data => createChartItem(data, albumsMax, false, true));
-    return await Promise.all(listItemPromises);
-}
-
-export async function createTrackCharts(sortedTrackPlays) {
-    let tracksMax = 0;
-    const tracksList = document.getElementById("tracks-list");
-
-    const trackChartPromises = sortedTrackPlays.slice(0, 9).map(async (trackData) => {
-        const trackInfo = trackData[1];
-        const trackUsers = Object.entries(trackInfo.users);
-
-        tracksMax = Math.max(tracksMax, trackInfo.plays);
-
-        const sortedTrackUsers = trackUsers.sort((a, b) => b[1] - a[1]);
-
-        // Search for the track on Deezer to get album image
-        const sanitizedTrackTitle = trackInfo.trackName.replace(/\?/g, '');
-        const query = `artist:"${trackInfo.artist}" track:"${sanitizedTrackTitle}"`;
-        const encodedQuery = encodeURIComponent(query);
-        const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
-
-        const result = await getJSONP(url);
-
-        // Find first result that contains matching word in artist and song name
-        const trackWords = trackInfo.trackName.toLowerCase().split(/\s+/);
-        const artistWords = trackInfo.artist.toLowerCase().split(/\s+/);
-
-        let foundTrack = null;
-        for (let track of result.data) {
-            const resultTrackTitle = track.title.toLowerCase();
-            const resultArtistName = track.artist.name.toLowerCase();
-            const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-            const artistMatches = artistWords.some(word => resultArtistName.includes(word));
-
-            if (trackMatches && artistMatches) {
-                foundTrack = track;
-                break;
-            }
-        }
-
-        // If no match found and title has parentheses, try without
-        if (!foundTrack && trackInfo.trackName.includes('(')) {
-            const newTitle = trackInfo.trackName.replace(/\(.*?\)/g, '').trim();
-            const newQuery = `artist:"${trackInfo.artist}" track:"${newTitle}"`;
-            const newEncodedQuery = encodeURIComponent(newQuery);
-            const newUrl = `https://api.deezer.com/search/track/?q=${newEncodedQuery}&output=jsonp`;
-
-            const newResult = await getJSONP(newUrl);
-
-            const newTrackWords = newTitle.toLowerCase().split(/\s+/);
-            for (let track of newResult.data) {
-                const resultTrackTitle = track.title.toLowerCase();
-                const resultArtistName = track.artist.name.toLowerCase();
-                const trackMatches = newTrackWords.some(word => resultTrackTitle.includes(word));
-                const artistMatches = artistWords.some(word => resultArtistName.includes(word));
-
-                if (trackMatches && artistMatches) {
-                    foundTrack = track;
-                    break;
-                }
-            }
-        }
-
-        return {
-            name: trackInfo.trackName,
-            artist: trackInfo.artist,
-            plays: trackInfo.plays,
-            url: trackInfo.trackUrl,
-            artistUrl: trackInfo.artistUrl,
-            image: foundTrack?.album?.cover_medium,
-            listeners: sortedTrackUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
-        };
-    });
-
-    const trackResults = await Promise.all(trackChartPromises);
-    const listItemPromises = trackResults.map(data => createChartItem(data, tracksMax, true));
-    return await Promise.all(listItemPromises);
+    return listenerItems;
 }

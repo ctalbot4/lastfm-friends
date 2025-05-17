@@ -4,20 +4,27 @@ import { store } from "../../state/store.js";
 // API
 import * as lastfm from "../../api/lastfm.js";
 
-// Caching
-import { cacheBlocks, cacheCharts } from "../cache.js";
+// Blocks
+import { setupBlocks } from "./index.js";
+import { sortBlocks } from "./sort.js";
+
+// Cache
+import { cacheBlocks, cacheChartsHTML } from "../cache.js";
+
+// Charts - Graphs
+import { updateActivityCharts, updateActivityData, resetActivityData } from "../charts/graphs/data.js";
+
+// Charts - Lists
+import { createTopListenersChart } from "../charts/lists/lists.js";
+
+// Charts - Scatter
+import { resetScatterData, tryScatterUpdate, updateScatterData } from "../charts/scatter/data.js";
 
 // UI
-import { updateProgress } from "../../ui/progress.js";
 import { handleScroll } from "../preview/index.js";
+import { updateProgress } from "../../ui/progress.js";
 
-// Components
-import { sortBlocks } from "./sort.js";
-import { setupBlocks } from "./index.js";
-import { createTopListenersChart } from "../ticker/charts.js";
-import { updateActivityData, updateActivityChart, resetActivityData } from "../ticker/graphs.js";
-
-const userPlayCounts = {};
+export const userPlayCounts = {};
 
 // Fetch data for a block and update
 async function updateBlock(block, retry = false, key = store.keys.KEY) {
@@ -27,16 +34,19 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
 
-        // Pass user's tracks to updateActivityData
-        updateActivityData(data.recenttracks.track, username);
-        
         updateProgress();
+
         if (data.recenttracks["@attr"]["total"] == 0) {
             // Remove if no tracks played
             return null;
         } else {
             newBlock.classList.remove("removed");
         }
+
+        // Pass user's tracks to charts
+        updateActivityData(data.recenttracks.track, username);
+        updateScatterData(data.recenttracks.track, username);
+
         userPlayCounts[username] = parseInt(data.recenttracks["@attr"].total);
 
         const recentTrack = data.recenttracks.track[0];
@@ -146,9 +156,11 @@ export async function updateAllBlocks() {
     const blocksArr = Array.from(blocks);
 
     store.completed = 0;
+    store.isUpdatingBlocks = true;
 
-    // Start activity graphs processing
+    // Start charts processing
     resetActivityData();
+    resetScatterData();
 
     const chunks = [];
     const newBlocks = [];
@@ -175,20 +187,25 @@ export async function updateAllBlocks() {
             if (newBlock.dataset.previewTime != 0) {
                 newBlock.dataset.previewTime = originalBlock.dataset.previewTime;
             }
-            // Sync listeners-container status if listeners have been loaded (user has clicked info button, and track hasn't changed)
+            // Sync listeners-container status if listeners have been loaded 
+            // (user has clicked info button, and track hasn't changed)
             if (newBlock.dataset.reset == "true") {
                 delete newBlock.dataset.reset;
             } else if (originalBlock.dataset.listenersLoaded != "0") {
-                newBlock.querySelector(".listeners-container").className = originalBlock.querySelector(".listeners-container").className;
+                newBlock.querySelector(".listeners-container").className =
+                    originalBlock.querySelector(".listeners-container").className;
             }
-            newBlock.querySelector(".listeners-container").innerHTML = originalBlock.querySelector(".listeners-container").innerHTML;
+            newBlock.querySelector(".listeners-container").innerHTML =
+                originalBlock.querySelector(".listeners-container").innerHTML;
 
             // Preserve info button hover state
             if (originalBlock.matches(':hover')) {
                 newBlock.querySelector(".info-button").style.opacity = "1";
                 newBlock.addEventListener('mouseout', () => {
                     newBlock.querySelector(".info-button").style.opacity = "";
-                }, { once: true });
+                }, {
+                    once: true
+                });
             }
 
             newerBlocks.push(newBlock);
@@ -198,8 +215,11 @@ export async function updateAllBlocks() {
     // Call sortBlocks after all updates are done
     await sortBlocks(newerBlocks);
 
-    // Signal that activity charts ready to update
-    updateActivityChart();
+    store.isUpdatingBlocks = false;
+
+    // Signal that charts ready to update
+    updateActivityCharts();
+    tryScatterUpdate();
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
@@ -212,7 +232,7 @@ export async function updateAllBlocks() {
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
 
     // Update top listeners chart
-    const listenersList = document.getElementById("listeners-list");
+    const listenersList = document.querySelector("#listeners-section .users-list");
     listenersList.innerHTML = '';
     const listeners = createTopListenersChart(userPlayCounts);
     listeners.forEach(item => listenersList.appendChild(item));
@@ -220,9 +240,9 @@ export async function updateAllBlocks() {
     // Trigger mobile scroll handler
     handleScroll();
 
-    // Counting animation
+    // Counting animation if % change < 5%
     const startPlays = parseInt(document.querySelector(".ticker-plays > .value").innerText);
-    if (startPlays) {
+    if (startPlays && Math.abs((totalPlays - startPlays) / (1 + startPlays)) < 0.05) {
         let startTime = null;
         const duration = store.updateTimers.blocks.interval;
 
@@ -250,7 +270,7 @@ export async function updateAllBlocks() {
     store.updateTimers.blocks.lastUpdate = Date.now();
 
     cacheBlocks();
-    cacheCharts();
+    cacheChartsHTML();
     setupBlocks();
     console.log(`Refreshed ${store.friendCount + 1} users!`);
 }

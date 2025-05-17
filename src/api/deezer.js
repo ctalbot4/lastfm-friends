@@ -4,8 +4,6 @@ export function getJSONP(url) {
         const callbackName = "jsonp_callback_" + Math.round(100000 * Math.random());
         const timeout = setTimeout(() => {
             reject(new Error('JSONP request timed out'));
-            delete window[callbackName];
-            document.removeChild(script);
         }, 5000);
 
         window[callbackName] = function(data) {

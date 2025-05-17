@@ -5,28 +5,39 @@ import { getJSONP } from "../../api/deezer.js";
 import { audioState } from "./index.js";
 
 // Play preview for chart items
-export async function playChartPreview(trackTitle, artistName, listItem, isArtist = false, isAlbum = false) {
+export async function playChartPreview(title, artistName, listItem, isArtist = false, isAlbum = false) {
     // Remove any question marks (causes issues with Deezer API)
-    const sanitizedTrackTitle = trackTitle.replace(/\?/g, '');
+    const sanitizedTitle = title.replace(/\?/g, '');
     let url;
     let foundTrack;
 
     if (isAlbum) {
         // Search for tracks from this album and play the most popular one
-        const query = `album:"${sanitizedTrackTitle}" artist:"${artistName}"`;
+        const query = `album:"${sanitizedTitle}" artist:"${artistName}"`;
         const encodedQuery = encodeURIComponent(query);
         url = `https://api.deezer.com/search/track?q=${encodedQuery}&order=rank&output=jsonp`;
         try {
             const result = await getJSONP(url);
 
-            // Get the most popular track with a preview
-            foundTrack = result.data[0];
+            const albumWords = title.toLowerCase().split(/\s+/);
+            const artistWords = artistName.toLowerCase().split(/\s+/);
+            for (let track of result.data) {
+                const resultAlbumTitle = track.album.title.toLowerCase();
+                const resultArtistName = track.artist.name.toLowerCase();
+                const albumMatches = albumWords.some(word => resultAlbumTitle.includes(word));
+                const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+                if (albumMatches && artistMatches) {
+                    foundTrack = track;
+                    break;
+                }
+            }
         } catch (e) {
             console.error('Error playing album preview:', e);
         }
     } else if (isArtist) {
         // Search for artist ID then get top tracks
-        const encodedQuery = encodeURIComponent(sanitizedTrackTitle);
+        const encodedQuery = encodeURIComponent(sanitizedTitle);
         url = `https://api.deezer.com/search/artist?q=${encodedQuery}&output=jsonp`;
         try {
             const result = await getJSONP(url);
@@ -41,14 +52,14 @@ export async function playChartPreview(trackTitle, artistName, listItem, isArtis
             console.error('Error checking artist preview:', e);
         }
     } else {
-        const query = `artist:"${artistName}" track:"${sanitizedTrackTitle}"`;
+        const query = `artist:"${artistName}" track:"${sanitizedTitle}"`;
         const encodedQuery = encodeURIComponent(query);
         url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
 
         const result = await getJSONP(url);
 
         // Find first result that contains matching word in artist and song name
-        const trackWords = trackTitle.toLowerCase().split(/\s+/);
+        const trackWords = title.toLowerCase().split(/\s+/);
         const artistWords = artistName.toLowerCase().split(/\s+/);
         for (let track of result.data) {
             const resultTrackTitle = track.title.toLowerCase();
@@ -61,8 +72,8 @@ export async function playChartPreview(trackTitle, artistName, listItem, isArtis
                 break;
             }
         }
-        if (trackTitle.includes('(') && !foundTrack) {
-            const newTitle = trackTitle.replace(/\(.*?\)/g, '').trim();
+        if (title.includes('(') && !foundTrack) {
+            const newTitle = title.replace(/\(.*?\)/g, '').trim();
             playChartPreview(newTitle, artistName, listItem, false, false);
         }
     }

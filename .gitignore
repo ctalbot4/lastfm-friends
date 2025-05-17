@@ -5,3 +5,4 @@ Gemfile.lock
 /.bundle
 /vendor
 test.html
+.jekyll-metadata

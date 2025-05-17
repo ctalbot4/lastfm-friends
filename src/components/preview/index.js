@@ -4,11 +4,11 @@ import { store } from "../../state/store.js";
 // API
 import { getJSONP } from "../../api/deezer.js";
 
+// Blocks
+import { playBlockPreview } from "./blocks.js";
+
 // UI
 import { organizeBlocksIntoRows } from "../../ui/dom.js";
-
-// Components
-import { playBlockPreview } from "./blocks.js";
 
 export const audioState = {
     currentAudio: new Audio(),
@@ -140,42 +140,57 @@ export function initPreview() {
 }
 
 // Check if preview exists
-export async function hasPreview(name, artistName, isArtist = false, isAlbum = false) {
-    const sanitizedName = name.replace(/\?/g, '');
+export async function hasPreview(title, artistName, isArtist = false, isAlbum = false) {
+    const sanitizedTitle = title.replace(/\?/g, '');
     let url;
 
     if (isAlbum) {
         // Search for album and check if it has previews
-        const query = `album:"${sanitizedName}" artist:"${artistName}"`;
+        const query = `album:"${sanitizedTitle}" artist:"${artistName}"`;
         const encodedQuery = encodeURIComponent(query);
-        url = `https://api.deezer.com/search/album?q=${encodedQuery}&output=jsonp`;
+        url = `https://api.deezer.com/search/track?q=${encodedQuery}&output=jsonp`;
         try {
             const result = await getJSONP(url);
-            return result.data[0]?.id != null;
+            if (!result.data) return false;
+            const albumWords = title.toLowerCase().split(/\s+/);
+            const artistWords = artistName.toLowerCase().split(/\s+/);
+            for (let track of result.data) {
+                const resultAlbumTitle = track.album.title.toLowerCase();
+                const resultArtistName = track.artist.name.toLowerCase();
+                const albumMatches = albumWords.some(word => resultAlbumTitle.includes(word));
+                const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+                if (albumMatches && artistMatches) {
+                    return true;
+                }
+            }
+            return false;
         } catch (e) {
             console.error('Error checking album preview:', e);
             return false;
         }
     } else if (isArtist) {
         // Find artist ID
-        const encodedQuery = encodeURIComponent(sanitizedName);
+        const encodedQuery = encodeURIComponent(sanitizedTitle);
         url = `https://api.deezer.com/search/artist?q=${encodedQuery}&output=jsonp`;
         try {
             const result = await getJSONP(url);
+            if (!result.data) return false;
             return result.data[0]?.id != null;
         } catch (e) {
             console.error('Error checking artist preview:', e);
             return false;
         }
     } else {
-        const query = `artist:"${artistName}" track:"${sanitizedName}"`;
+        const query = `artist:"${artistName}" track:"${sanitizedTitle}"`;
         const encodedQuery = encodeURIComponent(query);
         url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
         try {
             const result = await getJSONP(url);
+            if (!result.data) return false;
 
             // Find first result that contains matching word in artist and song name
-            const trackWords = name.toLowerCase().split(/\s+/);
+            const trackWords = title.toLowerCase().split(/\s+/);
             const artistWords = artistName.toLowerCase().split(/\s+/);
             let foundTrack = null;
 
@@ -192,8 +207,8 @@ export async function hasPreview(name, artistName, isArtist = false, isAlbum = f
             }
 
             // If no match found and title has parentheses, try without them
-            if (!foundTrack && name.includes('(')) {
-                const newTitle = name.replace(/\(.*?\)/g, '').trim();
+            if (!foundTrack && title.includes('(')) {
+                const newTitle = sanitizedTitle.replace(/\(.*?\)/g, '').trim();
                 return hasPreview(newTitle, artistName, isArtist, isAlbum);
             }
 
@@ -210,11 +225,9 @@ let rows;
 // Determine block to play preview on
 export function handleScroll() {
     if (!store.isTouchDevice) return;
-    const requestId = audioState.activeRequestId;
 
     rows = organizeBlocksIntoRows();
     const viewportTop = window.scrollY;
-    const viewportBottom = viewportTop + window.innerHeight;
 
     // Find the row closest to the center of the viewport
     let closestRow = null;

@@ -1,9 +1,11 @@
+// State
+import { store } from "../../state/store.js";
+
 // API
 import { getJSONP } from "../../api/deezer.js";
 
-// State
+// Preview
 import { audioState } from "./index.js";
-import { store } from "../../state/store.js";
 
 // Search for block preview
 export async function playBlockPreview(trackTitle, artistName, block) {

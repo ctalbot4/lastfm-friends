@@ -1,8 +1,8 @@
-// State
-import { store } from "../state/store.js";
-
 // API
 import * as lastfm from "../api/lastfm.js";
+
+// State
+import { store } from "../state/store.js";
 
 // Fetch track listeners
 export async function fetchTrackListeners(block, key = store.keys.KEY3) {
@@ -112,7 +112,7 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                 </div>
             `;
 
-            // Add scroll listener to container to pause sortBlocks() when scrolling
+            // Add scroll listener to container to pause sortBlocks when scrolling
             block.querySelector('.listeners-list').addEventListener('scroll', () => {
                 store.isScrolling = true;
                 clearTimeout(store.scrollTimeoutId);

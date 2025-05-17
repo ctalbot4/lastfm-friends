@@ -1,9 +1,14 @@
+// Cache
+import { setData } from "./cache.js";
+
+// Charts
+import { updateCharts } from "./charts/update.js";
+
+// Blocks
+import { updateAllBlocks } from "./blocks/update.js";
+
 // State
 import { store } from "../state/store.js";
-
-// Components
-import { updateAllBlocks } from "./blocks/update.js";
-import { updateTicker } from "./ticker/update.js";
 
 // Schedule updates for blocks and ticker
 export async function scheduleUpdates() {
@@ -24,7 +29,7 @@ export async function scheduleUpdates() {
 
     // Schedule ticker update
     if (tickerDelay <= 0) {
-        await updateTicker();
+        await updateCharts();
         store.updateTimers.ticker.timeoutId = setTimeout(scheduleUpdates, store.updateTimers.ticker.interval);
     } else {
         store.updateTimers.ticker.timeoutId = setTimeout(scheduleUpdates, tickerDelay);
@@ -34,7 +39,7 @@ export async function scheduleUpdates() {
         blocks: store.updateTimers.blocks.lastUpdate,
         ticker: store.updateTimers.ticker.lastUpdate
     }
-    localStorage.setItem(store.cacheKeys.schedule, JSON.stringify(scheduleData));
+    setData('schedule', store.username, scheduleData);
 }
 
 export function cancelUpdates() {
