@@ -7,11 +7,30 @@ import { getJSONP } from "../../../api/deezer.js";
 import { userPlayCounts } from "../../blocks/update.js";
 
 // Charts
-import { userStats } from "../update.js";
+import { userStats, userListeningTime } from "../update.js";
 
 // Preview
 import { audioState, hasPreview } from "../../preview/index.js";
 import { playChartPreview } from "../../preview/charts.js";
+
+// Helper function to format duration
+function formatDuration(totalSeconds) {
+    if (!totalSeconds) return "0s";
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    let string = "";
+    if (days > 0) string += `${days}d `;
+    if (hours > 0) {
+        string += `${hours}h `;
+    } else if (days === 0 && minutes > 0) {
+        string += `${minutes}m `;
+    } else if (days === 0 && seconds > 0) {
+        string += `${seconds}s`;
+    }
+    return string || "0s";
+}
 
 // Create list item in chart
 async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = false) {
@@ -99,7 +118,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         }
         const listener = itemData.listeners[i];
         span.dataset.user = listener.user;
-        span.dataset.plays = listener.plays;
+        span.dataset.plays = listener.plays.toLocaleString();
 
         span.innerHTML = `<img class="listener-img" src="${listener.img}">`;
         li.querySelector(".listeners").appendChild(span);
@@ -276,23 +295,24 @@ export async function createTrackCharts(sortedTrackPlays) {
 }
 
 // Create top listeners chart
-export function createTopListenersChart(userPlayCounts) {
-    const sortedListeners = Object.entries(userPlayCounts)
+export function createTopListenersChart() {
+    const sortedListeners = Object.entries(userListeningTime)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 9);
 
-    const maxPlays = sortedListeners[0][1];
+    const maxDuration = sortedListeners[0][1];
 
-    const listenerItems = sortedListeners.map(([username, plays]) => {
+    const listenerItems = sortedListeners.map(([username, totalSeconds]) => {
         const li = document.createElement("li");
         li.classList.add("list-item");
 
         const userBlock = document.querySelector(`[data-username="${username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src;
+        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         const userUrl = `https://www.last.fm/user/${username}`;
+        const totalPlays = userPlayCounts[username] || 0;
 
         li.innerHTML = `
-            <div class="bar" style="width: ${15 + (plays / maxPlays) * 85}%;"></div>
+            <div class="bar" style="width: ${15 + (totalSeconds / maxDuration) * 85}%;"></div>
             <div class="image-container listener-image-container" style="background-image: url('${profilePic}');">
             </div>
             <div class="item-info">
@@ -300,7 +320,7 @@ export function createTopListenersChart(userPlayCounts) {
                     <a href="${userUrl}" target="_blank">${username}</a>
                 </div>
                 <div class="item-subtext">
-                    <span class="plays">${plays.toLocaleString()} plays</span>
+                    <span class="plays">${formatDuration(totalSeconds)}${totalPlays > 0 ? ` - ${totalPlays.toLocaleString()} plays` : ""}</span>
                 </div>
             </div>
         `;
@@ -324,7 +344,7 @@ export function createUniqueArtistsChart() {
         li.classList.add("list-item");
 
         const userBlock = document.querySelector(`[data-username="${username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src;
+        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         const userUrl = `https://www.last.fm/user/${username}`;
         const totalPlays = userPlayCounts[username] || 0;
 
@@ -337,7 +357,7 @@ export function createUniqueArtistsChart() {
                     <a href="${userUrl}" target="_blank">${username}</a>
                 </div>
                 <div class="item-subtext">
-                    <span class="plays">${stats.totalArtists.toLocaleString()} artists${totalPlays > 0 ? ` - ${(totalPlays / stats.totalArtists).toFixed(2).toLocaleString()} plays per artist` : ""}</span>
+                    <span class="plays">${stats?.totalArtists.toLocaleString()} artists${totalPlays > 0 ? ` - ${(totalPlays / stats.totalArtists).toFixed(2).toLocaleString()} plays per artist` : ""}</span>
                 </div>
             </div>
         `;
@@ -361,7 +381,7 @@ export function createUniqueTracksChart() {
         li.classList.add("list-item");
 
         const userBlock = document.querySelector(`[data-username="${username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src;
+        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         const userUrl = `https://www.last.fm/user/${username}`;
         const totalPlays = userPlayCounts[username] || 0;
 
@@ -374,7 +394,7 @@ export function createUniqueTracksChart() {
                     <a href="${userUrl}" target="_blank">${username}</a>
                 </div>
                 <div class="item-subtext">
-                    <span class="plays">${stats.totalTracks.toLocaleString()} tracks${totalPlays > 0 ? ` - ${(totalPlays / stats.totalTracks).toFixed(2).toLocaleString()} plays per track` : ""}</span>
+                    <span class="plays">${stats?.totalTracks.toLocaleString()} tracks${totalPlays > 0 ? ` - ${(totalPlays / stats.totalTracks).toFixed(2).toLocaleString()} plays per track` : ""}</span>
                 </div>
             </div>
         `;

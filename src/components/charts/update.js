@@ -18,6 +18,7 @@ import { updateProgress } from '../../ui/progress.js';
 
 export let userStats = {};
 export let trackData = {};
+export let userListeningTime = {};
 
 // Update charts and ticker
 export async function updateCharts(useCache = false) {
@@ -29,7 +30,8 @@ export async function updateCharts(useCache = false) {
     if (useCache) {
         const cachedPlays = await getCachedPlays();
         if (cachedPlays) {
-            trackData = cachedPlays;
+            trackData = cachedPlays.trackPlays;
+            userListeningTime = cachedPlays.userListeningTime;
             store.foundTickerCache = true;
         }
         return;
@@ -37,14 +39,16 @@ export async function updateCharts(useCache = false) {
 
     // Only fetch if data wasn't provided
     if (!artistPlays || !albumPlays || !trackPlays) {
-        artistPlays = artistPlays || {};
-        albumPlays = albumPlays || {};
-        trackPlays = trackPlays || {};
+        artistPlays = {};
+        albumPlays = {};
+        trackPlays = {};
+        userListeningTime = {};
 
         const blockContainer = document.getElementById("block-container");
         const blocks = blockContainer.getElementsByClassName("block");
         const blocksArr = Array.from(blocks);
         store.completed = 0;
+        store.isUpdatingCharts = true;
         const chunks = [];
 
         // Fetch first chunk
@@ -95,6 +99,7 @@ export async function updateCharts(useCache = false) {
 
     updateTickerDisplay(sortedArtistPlays, sortedAlbumPlays, sortedTrackPlays);
 
+    // Wait for blocks to finish updating
     while (store.isUpdatingBlocks) {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -127,9 +132,10 @@ export async function updateCharts(useCache = false) {
 
     store.updateTimers.ticker.lastUpdate = Date.now();
 
-    cachePlays(trackPlays);
+    cachePlays(trackPlays, userListeningTime);
 
     trackData = trackPlays;
+    store.isUpdatingCharts = false;
 }
 
 export async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
@@ -208,37 +214,48 @@ export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
 export async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
     try {
-        const data = await lastfm.getTopTracks(username, key);
+        let data = await lastfm.getTopTracks(username, key);
         const totalTracks = parseInt(data.toptracks["@attr"].total);
+        const totalPages = parseInt(data.toptracks["@attr"].totalPages);
 
-        data.toptracks.track.forEach(track => {
-            const plays = parseInt(track.playcount);
-            const cappedPlays = Math.min(plays, 30);
-            const trackUrl = track.url;
-            const artistUrl = track.artist.url;
-            const artist = track.artist.name;
-            const trackName = track.name;
-
-            const key = `${trackName}::${artist}`;
-
-            if (trackPlays[key]) {
-                trackPlays[key].plays += plays;
-                trackPlays[key].cappedPlays += cappedPlays;
-            } else {
-                trackPlays[key] = {
-                    artist,
-                    trackName,
-                    plays,
-                    cappedPlays,
-                    trackUrl,
-                    artistUrl,
-                    userCount: 0,
-                    users: {}
-                };
+        for (let page = 1; page <= totalPages && page <= 5; page++) {
+            if (page > 1) {
+                data = await lastfm.getTopTracks(username, key, page);
             }
-            trackPlays[key].users[username] = plays;
-            trackPlays[key].userCount++;
-        });
+            data.toptracks.track.forEach(track => {
+                const plays = parseInt(track.playcount);
+                const cappedPlays = Math.min(plays, 30);
+                const trackUrl = track.url;
+                const artistUrl = track.artist.url;
+                const artist = track.artist.name;
+                const trackName = track.name;
+
+                // If no duration data, default to 220 seconds
+                const duration = parseInt(track.duration) || 220;
+
+                userListeningTime[username] = (userListeningTime[username] || 0) + (duration * plays);
+
+                const key = `${trackName}::${artist}`;
+
+                if (trackPlays[key]) {
+                    trackPlays[key].plays += plays;
+                    trackPlays[key].cappedPlays += cappedPlays;
+                } else {
+                    trackPlays[key] = {
+                        artist,
+                        trackName,
+                        plays,
+                        cappedPlays,
+                        trackUrl,
+                        artistUrl,
+                        userCount: 0,
+                        users: {}
+                    };
+                }
+                trackPlays[key].users[username] = plays;
+                trackPlays[key].userCount++;
+            });
+        }
 
         userStats[username] = {
             ...userStats[username],

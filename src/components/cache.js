@@ -4,7 +4,7 @@ import { store } from "../state/store.js";
 const blockContainer = document.getElementById("block-container");
 
 const dbName = 'lastfmfriends';
-const dbVersion = 1;
+const dbVersion = 2;
 let db;
 
 export function initCache() {
@@ -19,21 +19,17 @@ export function initCache() {
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
-            if (!db.objectStoreNames.contains('blocks')) {
-                db.createObjectStore('blocks');
+
+            const stores = Array.from(db.objectStoreNames);
+            for (const name of stores) {
+                db.deleteObjectStore(name);
             }
-            if (!db.objectStoreNames.contains('play-data')) {
-                db.createObjectStore('play-data');
-            }
-            if (!db.objectStoreNames.contains('charts-html')) {
-                db.createObjectStore('charts-html');
-            }
-            if (!db.objectStoreNames.contains('friends')) {
-                db.createObjectStore('friends');
-            }
-            if (!db.objectStoreNames.contains('schedule')) {
-                db.createObjectStore('schedule');
-            }
+
+            db.createObjectStore('blocks');
+            db.createObjectStore('play-data');
+            db.createObjectStore('charts-html');
+            db.createObjectStore('friends');
+            db.createObjectStore('schedule');
         };
     });
 }
@@ -67,8 +63,12 @@ export function cacheChartsHTML() {
     setData('charts-html', store.username, data);
 }
 
-export function cachePlays(trackPlays) {
-    setData('play-data', store.username, trackPlays);
+export function cachePlays(trackPlays, userListeningTime) {
+    const data = {
+        trackPlays,
+        userListeningTime
+    }
+    setData('play-data', store.username, data);
 }
 
 export function cacheFriends(friends) {

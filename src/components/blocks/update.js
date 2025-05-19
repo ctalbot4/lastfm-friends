@@ -215,11 +215,17 @@ export async function updateAllBlocks() {
     // Call sortBlocks after all updates are done
     await sortBlocks(newerBlocks);
 
+    // Async functions all done
     store.isUpdatingBlocks = false;
 
     // Signal that charts ready to update
     updateActivityCharts();
     tryScatterUpdate();
+
+    // Wait for charts to finish updating
+    while (store.isUpdatingCharts) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
@@ -234,7 +240,7 @@ export async function updateAllBlocks() {
     // Update top listeners chart
     const listenersList = document.querySelector("#listeners-section .users-list");
     listenersList.innerHTML = '';
-    const listeners = createTopListenersChart(userPlayCounts);
+    const listeners = createTopListenersChart();
     listeners.forEach(item => listenersList.appendChild(item));
 
     // Trigger mobile scroll handler

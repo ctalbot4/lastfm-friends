@@ -80,10 +80,11 @@ export function getTopAlbums(user, key = store.keys.KEY) {
     }, key);
 }
 
-export function getTopTracks(user, key = store.keys.KEY) {
+export function getTopTracks(user, key = store.keys.KEY, page = 1) {
     return callApi("user.gettoptracks", {
         user,
         limit: 1000,
-        period: "7day"
+        period: "7day",
+        page
     }, key);
 }

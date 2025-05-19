@@ -79,7 +79,7 @@ export function createHourlyChart() {
                             .slice(0, 3);
 
                         // Build tooltip content, looping through listeners
-                        let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${timeStr} - ${totalPlays} plays</div>`;
+                        let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${timeStr} - ${totalPlays.toLocaleString()} plays</div>`;
 
                         if (sortedListeners.length > 0) {
                             sortedListeners.forEach(([username, count]) => {
@@ -91,7 +91,7 @@ export function createHourlyChart() {
                                 tooltipContent += `
                                     <div style="display: flex; align-items: center; margin: 2px 0;">
                                         <img src="${profileUrl}" style="width: 16px; height: 16px; border-radius: 50%; margin-right: 6px;">
-                                        <span>${username}: ${count}</span>
+                                        <span>${username}: ${count.toLocaleString()}</span>
                                     </div>
                                 `;
                             });
@@ -270,7 +270,7 @@ export function createDailyChart() {
                             .slice(0, 3);
 
                         // Build tooltip content, looping through listeners
-                        let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${dayDisplay} - ${totalPlays} plays</div>`;
+                        let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${dayDisplay} - ${totalPlays.toLocaleString()} plays</div>`;
 
                         if (sortedListeners.length > 0) {
                             sortedListeners.forEach(([username, count]) => {
@@ -282,7 +282,7 @@ export function createDailyChart() {
                                 tooltipContent += `
                                     <div style="display: flex; align-items: center; margin: 2px 0;">
                                         <img src="${profileUrl}" style="width: 16px; height: 16px; border-radius: 50%; margin-right: 6px;">
-                                        <span>${username}: ${count}</span>
+                                        <span>${username}: ${count.toLocaleString()}</span>
                                     </div>
                                 `;
                             });

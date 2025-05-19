@@ -1,7 +1,7 @@
 // API
 import { getJSONP } from "../../api/deezer.js";
 
-// State
+// Preview
 import { audioState } from "./index.js";
 
 // Play preview for chart items

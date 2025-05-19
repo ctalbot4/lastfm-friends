@@ -4,7 +4,7 @@ import { store } from "../../state/store.js";
 // API
 import { getJSONP } from "../../api/deezer.js";
 
-// Blocks
+// Preview
 import { playBlockPreview } from "./blocks.js";
 
 // UI
