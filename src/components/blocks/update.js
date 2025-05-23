@@ -206,6 +206,8 @@ export async function updateAllBlocks() {
                 }, {
                     once: true
                 });
+            } else {
+                newBlock.querySelector(".info-button").style.opacity = "";
             }
 
             newerBlocks.push(newBlock);

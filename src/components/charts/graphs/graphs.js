@@ -116,7 +116,7 @@ export function createHourlyChart() {
                             tooltipEl.style.transform = 'translateY(-50%)';
                         }
 
-                        tooltipEl.style.top = position.top + context.tooltip.caretY + 'px';
+                        tooltipEl.style.top = position.top + context.tooltip.caretY + window.scrollY + 'px';
 
                         // Remove any existing tooltips
                         const existingTooltip = document.querySelector('.chart-tooltip');
@@ -293,7 +293,7 @@ export function createDailyChart() {
                         // Position tooltip
                         const position = context.chart.canvas.getBoundingClientRect();
                         tooltipEl.style.left = position.left + context.tooltip.caretX + 'px';
-                        tooltipEl.style.top = position.top + context.tooltip.caretY + 'px';
+                        tooltipEl.style.top = position.top + context.tooltip.caretY + window.scrollY + 'px';
 
                         // Remove any existing tooltips
                         const existingTooltip = document.querySelector('.chart-tooltip');

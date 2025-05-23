@@ -368,7 +368,7 @@ export function createScatterPlot() {
                             tooltipEl.style.transform = 'translateY(-50%)';
                         }
                         
-                        tooltipEl.style.top = position.top + context.tooltip.caretY + 'px';
+                        tooltipEl.style.top = position.top + context.tooltip.caretY + window.scrollY + 'px';
                         
                         // Add event listeners to remove tooltip
                         const removeTooltip = () => {
