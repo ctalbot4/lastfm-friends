@@ -114,6 +114,9 @@ function updateScatterPlot() {
         Math.min(MAX_DOT_RADIUS, 0.5 + (4 / Math.sqrt(maxBucketSize)))
     );
 
+    // Reset artist colors
+    artistColors.clear();
+
     // Get top 10 artists
     const artistCounts = new Map();
     Object.values(tempBuckets).forEach(plays => {
