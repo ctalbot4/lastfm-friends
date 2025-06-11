@@ -3,6 +3,7 @@ export function createBlock(user, mainUser = false) {
     const username = user.name;
     const userUrl = user.url;
     const imageUrl = user.image[3]["#text"];
+    const cacheBustedImageUrl = imageUrl ? `${imageUrl}?cb=${Date.now()}` : 'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png';
     const blockDiv = document.createElement("div");
     blockDiv.classList.add("block");
     if (mainUser) blockDiv.classList.add("main-user");
@@ -12,7 +13,7 @@ export function createBlock(user, mainUser = false) {
     <div class="user-info">
         <div class="profile-picture">
             <a href="${userUrl}" target="_blank">
-                <img id="pfp" src="${imageUrl || 'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png'}">
+                <img id="pfp" src="${cacheBustedImageUrl}">
             </a>
         </div>
         <div class="username"><a href=${userUrl} target="_blank">${username}</a></div>
