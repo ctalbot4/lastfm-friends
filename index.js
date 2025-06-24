@@ -42,7 +42,7 @@ document.addEventListener("touchmove", function(event) {
 });
 
 // Fetch background art
-const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${lastUser}&limit=100&period=12month&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
+const userUrl = `https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${lastUser}&limit=300&period=12month&api_key=1c4a67a2eacf14e735edb9e4475d3237&format=json`;
 
 const userFetch = fetch(userUrl)
     .then((response) => {
