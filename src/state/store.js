@@ -8,6 +8,7 @@ export const store = {
     isFetchingListeners: false,
     isUpdatingBlocks: false,
     isUpdatingCharts: false,
+    isFetchingCharts: false,
     keys: {
         KEY: null,
         KEY2: null,

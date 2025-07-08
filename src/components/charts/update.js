@@ -14,7 +14,7 @@ import { createAlbumCharts, createArtistCharts, createTrackCharts, createUniqueA
 import { updateTickerDisplay } from './ticker.js';
 
 // UI
-import { updateProgress } from '../../ui/progress.js';
+import { updateProgress, updateProgressText } from '../../ui/progress.js';
 
 export let userStats = {};
 export let trackData = {};
@@ -49,6 +49,7 @@ export async function updateCharts(useCache = false) {
         const blocksArr = Array.from(blocks);
         store.completed = 0;
         store.isUpdatingCharts = true;
+        store.isFetchingCharts = true;
         const chunks = [];
 
         // Fetch first chunk
@@ -71,6 +72,8 @@ export async function updateCharts(useCache = false) {
         }
         console.log("Stats refreshed!");
     }
+    store.isFetchingCharts = false;
+    updateProgressText();
 
     const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => {
         const aScore = b[1].userCount * b[1].cappedPlays;
@@ -142,6 +145,7 @@ export async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
     try {
         const data = await lastfm.getTopArtists(username, key);
+        updateProgress("artists", username);
         const totalArtists = parseInt(data.topartists["@attr"].total);
 
         data.topartists.artist.forEach(artist => {
@@ -168,8 +172,6 @@ export async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
             ...userStats[username],
             totalArtists
         };
-
-        updateProgress();
     } catch (error) {
         console.error("Error fetching user artist data:", error);
     }
@@ -179,6 +181,7 @@ export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
     try {
         const data = await lastfm.getTopAlbums(username, key);
+        updateProgress("albums", username);
         data.topalbums.album.forEach(album => {
             const plays = parseInt(album.playcount);
             const cappedPlays = Math.min(plays, 300);
@@ -205,7 +208,6 @@ export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
             albumPlays[key].users[username] = plays;
             albumPlays[key].userCount++;
         });
-        updateProgress();
     } catch (error) {
         console.error("Error fetching user album data:", error);
     }
@@ -215,6 +217,7 @@ export async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
     const username = block.dataset.username;
     try {
         let data = await lastfm.getTopTracks(username, key);
+        updateProgress("tracks", username);
         const totalTracks = parseInt(data.toptracks["@attr"].total);
         const totalPages = parseInt(data.toptracks["@attr"].totalPages);
 
@@ -261,8 +264,6 @@ export async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
             ...userStats[username],
             totalTracks
         };
-
-        updateProgress();
     } catch (error) {
         console.error("Error fetching user track data:", error);
     }

@@ -22,7 +22,7 @@ import { resetScatterData, tryScatterUpdate, updateScatterData } from "../charts
 
 // UI
 import { handleScroll } from "../preview/index.js";
-import { updateProgress } from "../../ui/progress.js";
+import { updateProgress, updateProgressText } from "../../ui/progress.js";
 
 export const userPlayCounts = {};
 
@@ -34,7 +34,7 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
 
-        updateProgress();
+        updateProgress("history", username);
 
         if (data.recenttracks["@attr"]["total"] == 0) {
             // Remove if no tracks played
@@ -223,6 +223,7 @@ export async function updateAllBlocks() {
     // Signal that charts ready to update
     updateActivityCharts();
     tryScatterUpdate();
+    updateProgressText();
 
     // Wait for charts to finish updating
     while (store.isUpdatingCharts) {

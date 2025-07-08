@@ -208,6 +208,7 @@
     cursor: default;
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 /* Arrow pointer on tooltip */
@@ -223,6 +224,7 @@
     cursor: default;
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 /* Tooltip */
@@ -241,6 +243,7 @@
     cursor: default;
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 /* Arrow pointer on tooltip */
@@ -255,6 +258,7 @@
     cursor: default;
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 #charts-toggle.tooltip:before,
