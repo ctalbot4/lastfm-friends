@@ -73,6 +73,7 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                     return null;
                 } else {
                     console.error(`Error checking listener ${friendUsername}:`, e);
+                    throw e;
                 }
             }
             return null;
@@ -130,8 +131,6 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
             `;
         }
 
-        store.isFetchingListeners = false;
-
         // Set listeners loaded dataset value to "2" (loading complete)
         block.dataset.listenersLoaded = "2";
     } catch (error) {
@@ -141,5 +140,8 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
        <div class="no-listeners">
          <div>Couldn't load listener data.</div>
        </div>`;
+        block.dataset.listenersLoaded = "0";
+    } finally {
+        store.isFetchingListeners = false;
     }
 }
