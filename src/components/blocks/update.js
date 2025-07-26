@@ -28,9 +28,13 @@ export const userPlayCounts = {};
 
 // Fetch data for a block and update
 async function updateBlock(block, retry = false, key = store.keys.KEY) {
+    if (block.classList.contains("private")) {
+        return block;
+    }
     const username = block.dataset.username;
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
     const newBlock = block.cloneNode(true);
+    newBlock.classList.remove("removed");
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
 
@@ -39,8 +43,6 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
         if (data.recenttracks["@attr"]["total"] == 0) {
             // Remove if no tracks played
             return null;
-        } else {
-            newBlock.classList.remove("removed");
         }
 
         // Pass user's tracks to charts
@@ -130,7 +132,8 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
             console.error(`API error ${error.data.error} for user ${username}:`, error.data.message);
             if (error.data?.error === 17) {
                 // Remove if private user
-                return null;
+                newBlock.classList.add("removed");
+                newBlock.classList.add("private");
             } else if (error.data?.error === 8 && retry == false) {
                 return updateBlock(block, true);
             } else if (error.data?.error === 29) {

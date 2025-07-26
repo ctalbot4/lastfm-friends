@@ -193,7 +193,7 @@ function updateScatterPlot() {
 
                 const ring = Math.floor((i + 1) / 2);
                 const sign = i % 2 === 0 ? 1 : -1;
-                const offset = sign * ring * (DAY_WIDTH / (maxBucketSize + 1));
+                const offset = sign * ring * (Math.min(DAY_WIDTH / (maxBucketSize + 1), 3.5));
                 const xPos = dayOffset + offset;
 
                 const point = {

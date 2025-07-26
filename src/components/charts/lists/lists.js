@@ -334,6 +334,7 @@ export function createTopListenersChart() {
 export function createUniqueArtistsChart() {
     // Sort users by number of unique artists
     const sortedUsers = Object.entries(userStats)
+        .filter(([username, stats]) => stats.totalArtists > 0)
         .sort((a, b) => b[1].totalArtists - a[1].totalArtists)
         .slice(0, 9);
 
@@ -371,6 +372,7 @@ export function createUniqueArtistsChart() {
 export function createUniqueTracksChart() {
     // Sort users by number of unique tracks
     const sortedUsers = Object.entries(userStats)
+        .filter(([username, stats]) => stats.totalTracks > 0)
         .sort((a, b) => b[1].totalTracks - a[1].totalTracks)
         .slice(0, 9);
 

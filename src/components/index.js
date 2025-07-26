@@ -85,7 +85,7 @@ export async function initDashboard() {
 }
 
 // Initial fetch on load
-async function initialFetch() {
+async function initialFetch(retry = false) {
     store.keys.KEY = await getKey();
 
     try {
@@ -189,8 +189,13 @@ async function initialFetch() {
             });
         }
     } catch (error) {
-        console.error("Error during initial fetch:", error);
-        document.getElementById("error-popup").classList.remove("removed");
-        localStorage.clear();
+        if (!retry) {
+            console.log("First request failed, retrying...");
+            await initialFetch(true);
+        } else {
+            console.error("Error during initial fetch:", error);
+            document.getElementById("error-popup").classList.remove("removed");
+            localStorage.clear();
+        }
     }
 }
