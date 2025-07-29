@@ -118,7 +118,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         }
         const listener = itemData.listeners[i];
         span.dataset.user = listener.user;
-        span.dataset.plays = listener.plays.toLocaleString();
+        span.dataset.plays = `${listener.plays.toLocaleString()} ${listener.plays === 1 ? 'play' : 'plays'}`;
 
         span.innerHTML = `<img class="listener-img" src="${listener.img}">`;
         li.querySelector(".listeners").appendChild(span);
