@@ -133,7 +133,7 @@ export async function updateCharts(useCache = false) {
     uniqueArtists.forEach(item => uniqueArtistsList.appendChild(item));
     uniqueTracks.forEach(item => uniqueTracksList.appendChild(item));
 
-    store.updateTimers.ticker.lastUpdate = Date.now();
+    store.updateTimers.charts.lastUpdate = Date.now();
 
     cachePlays(trackPlays, userListeningTime);
 
@@ -187,6 +187,7 @@ export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
             const cappedPlays = Math.min(plays, 300);
             const url = album.url;
             const artist = album.artist.name;
+            const artistUrl = album.artist.url;
             const albumName = album.name;
 
             const key = `${albumName}::${artist}`;
@@ -200,6 +201,7 @@ export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
                     plays,
                     cappedPlays,
                     url,
+                    artistUrl,
                     img: album.image[1]["#text"],
                     userCount: 0,
                     users: {}

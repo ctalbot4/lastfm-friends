@@ -10,11 +10,11 @@ import { updateAllBlocks } from "./blocks/update.js";
 // State
 import { store } from "../state/store.js";
 
-// Schedule updates for blocks and ticker
+// Schedule updates for blocks and charts
 export async function scheduleUpdates() {
     const now = Date.now();
     const blocksDelay = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval - now;
-    const tickerDelay = store.updateTimers.ticker.lastUpdate + store.updateTimers.ticker.interval - now;
+    const chartsDelay = store.updateTimers.charts.lastUpdate + store.updateTimers.charts.interval - now;
 
     // Clear any other timeouts
     cancelUpdates();
@@ -27,17 +27,17 @@ export async function scheduleUpdates() {
         store.updateTimers.blocks.timeoutId = setTimeout(scheduleUpdates, blocksDelay);
     }
 
-    // Schedule ticker update
-    if (tickerDelay <= 0) {
+    // Schedule charts update
+    if (chartsDelay <= 0) {
         await updateCharts();
-        store.updateTimers.ticker.timeoutId = setTimeout(scheduleUpdates, store.updateTimers.ticker.interval);
+        store.updateTimers.charts.timeoutId = setTimeout(scheduleUpdates, store.updateTimers.charts.interval);
     } else {
-        store.updateTimers.ticker.timeoutId = setTimeout(scheduleUpdates, tickerDelay);
+        store.updateTimers.charts.timeoutId = setTimeout(scheduleUpdates, chartsDelay);
     }
 
     const scheduleData = {
         blocks: store.updateTimers.blocks.lastUpdate,
-        ticker: store.updateTimers.ticker.lastUpdate
+        charts: store.updateTimers.charts.lastUpdate
     }
     setData('schedule', store.username, scheduleData);
 }
@@ -46,7 +46,7 @@ export function cancelUpdates() {
     if (store.updateTimers.blocks.timeoutId) {
         clearTimeout(store.updateTimers.blocks.timeoutId);
     }
-    if (store.updateTimers.ticker.timeoutId) {
-        clearTimeout(store.updateTimers.ticker.timeoutId);
+    if (store.updateTimers.charts.timeoutId) {
+        clearTimeout(store.updateTimers.charts.timeoutId);
     }
 }

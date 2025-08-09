@@ -20,7 +20,7 @@ export const store = {
             interval: 0,
             timeoutId: null
         },
-        ticker: {
+        charts: {
             lastUpdate: 0,
             interval: 0,
             timeoutId: null

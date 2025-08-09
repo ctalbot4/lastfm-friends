@@ -190,6 +190,7 @@ export async function createAlbumCharts(sortedAlbumPlays) {
             plays: albumInfo.plays,
             image: albumInfo.img,
             url: albumInfo.url,
+            artistUrl: albumInfo.artistUrl,
             listeners: sortedAlbumUsers.map(([username, plays]) => ({
                 user: username,
                 img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
