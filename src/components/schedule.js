@@ -12,6 +12,12 @@ import { store } from "../state/store.js";
 
 // Schedule updates for blocks and charts
 export async function scheduleUpdates() {
+    // Prevent multiple simultaneous calls
+    if (store.isScheduling) {
+        return;
+    }
+    store.isScheduling = true;
+
     const now = Date.now();
     const blocksDelay = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval - now;
     const chartsDelay = store.updateTimers.charts.lastUpdate + store.updateTimers.charts.interval - now;
@@ -19,34 +25,35 @@ export async function scheduleUpdates() {
     // Clear any other timeouts
     cancelUpdates();
 
-    // Schedule blocks update
-    if (blocksDelay <= 0) {
+    // Update blocks
+    if (blocksDelay <= 0 && !store.isUpdatingBlocks) {
         await updateAllBlocks();
-        store.updateTimers.blocks.timeoutId = setTimeout(scheduleUpdates, store.updateTimers.blocks.interval);
-    } else {
-        store.updateTimers.blocks.timeoutId = setTimeout(scheduleUpdates, blocksDelay);
     }
 
-    // Schedule charts update
-    if (chartsDelay <= 0) {
+    // Update charts
+    if (chartsDelay <= 0 && !store.isUpdatingCharts) {
         await updateCharts();
-        store.updateTimers.charts.timeoutId = setTimeout(scheduleUpdates, store.updateTimers.charts.interval);
-    } else {
-        store.updateTimers.charts.timeoutId = setTimeout(scheduleUpdates, chartsDelay);
     }
+
+    // Schedule next update
+    const nextBlocksTime = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval;
+    const nextChartsTime = store.updateTimers.charts.lastUpdate + store.updateTimers.charts.interval;
+    const nextUpdateTime = Math.min(nextBlocksTime, nextChartsTime);
+    const nextDelay = Math.max(1000, nextUpdateTime - Date.now());
+
+    store.updateTimers.timeoutId = setTimeout(scheduleUpdates, nextDelay);
 
     const scheduleData = {
         blocks: store.updateTimers.blocks.lastUpdate,
         charts: store.updateTimers.charts.lastUpdate
     }
     setData('schedule', store.username, scheduleData);
+    
+    store.isScheduling = false;
 }
 
 export function cancelUpdates() {
-    if (store.updateTimers.blocks.timeoutId) {
-        clearTimeout(store.updateTimers.blocks.timeoutId);
-    }
-    if (store.updateTimers.charts.timeoutId) {
-        clearTimeout(store.updateTimers.charts.timeoutId);
+    if (store.updateTimers.timeoutId) {
+        clearTimeout(store.updateTimers.timeoutId);
     }
 }

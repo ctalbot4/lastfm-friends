@@ -9,6 +9,7 @@ export const store = {
     isUpdatingBlocks: false,
     isUpdatingCharts: false,
     isFetchingCharts: false,
+    isScheduling: false,
     keys: {
         KEY: null,
         KEY2: null,
@@ -17,14 +18,13 @@ export const store = {
     updateTimers: {
         blocks: {
             lastUpdate: 0,
-            interval: 0,
-            timeoutId: null
+            interval: 0
         },
         charts: {
             lastUpdate: 0,
-            interval: 0,
-            timeoutId: null
-        }
+            interval: 0
+        },
+        timeoutId: null
     },
     foundBlocksCache: false,
     foundTickerCache: false,
