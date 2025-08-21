@@ -1,6 +1,9 @@
 // Charts - Scatter
 import { tryScatterUpdate } from "./scatter/data.js";
 
+// Charts - Pages
+import { navigatePage } from "./pages.js";
+
 // Preview
 import { audioState } from "../preview/index.js";
 
@@ -78,6 +81,18 @@ export function initCharts() {
     onSwipeDown(swipeElement, () => {
         if (charts.classList.contains("collapsed")) toggleCharts()
     }, 25);
+
+    // Page button event listeners
+    document.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('page-button')) {
+            const listType = event.target.dataset.list;
+            const direction = event.target.dataset.direction;
+            
+            if (listType && direction) {
+                await navigatePage(listType, direction);
+            }
+        }
+    });
 }
 
 function toggleCharts() {

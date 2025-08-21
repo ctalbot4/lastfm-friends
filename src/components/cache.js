@@ -4,7 +4,7 @@ import { store } from "../state/store.js";
 const blockContainer = document.getElementById("block-container");
 
 const dbName = 'lastfmfriends';
-const dbVersion = 2;
+const dbVersion = 3;
 let db;
 
 export function initCache() {
@@ -27,6 +27,7 @@ export function initCache() {
 
             db.createObjectStore('blocks');
             db.createObjectStore('play-data');
+            db.createObjectStore('sorted-data');
             db.createObjectStore('charts-html');
             db.createObjectStore('friends');
             db.createObjectStore('schedule');
@@ -63,6 +64,10 @@ export function cacheChartsHTML() {
     setData('charts-html', store.username, data);
 }
 
+export function cacheSortedData(sortedData) {
+    setData('sorted-data', store.username, sortedData);
+}
+
 export function cachePlays(trackPlays, userListeningTime) {
     const data = {
         trackPlays,
@@ -93,6 +98,15 @@ export async function getCachedChartsHTML() {
         return await getData('charts-html', store.username);
     } catch (error) {
         console.error('Error getting cached charts HTML:', error);
+        return null;
+    }
+}
+
+export async function getCachedSortedData() {
+    try {
+        return await getData('sorted-data', store.username);
+    } catch (error) {
+        console.error('Error getting cached sorted data:', error);
         return null;
     }
 }

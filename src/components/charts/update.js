@@ -5,20 +5,36 @@ import { store } from '../../state/store.js';
 import * as lastfm from '../../api/lastfm.js';
 
 // Cache
-import { cachePlays, getCachedPlays } from '../cache.js';
-
-// Charts - Lists
-import { createAlbumCharts, createArtistCharts, createTrackCharts, createUniqueArtistsChart, createUniqueTracksChart } from './lists/lists.js';
+import { cachePlays, getCachedPlays, cacheSortedData, getCachedSortedData } from '../cache.js';
 
 // Charts - Ticker
 import { updateTickerDisplay } from './ticker.js';
+
+// Charts - Pages
+import { pageState, displayPage } from './pages.js';
 
 // UI
 import { updateProgress, updateProgressText } from '../../ui/progress.js';
 
 export let userStats = {};
+
+// Store sorted data for charts
+export let sortedData = {
+    artists: [],
+    albums: [],
+    tracks: [],
+    listeners: [],
+    'unique-artists': [],
+    'unique-tracks': []
+};
+
 export let trackData = {};
 export let userListeningTime = {};
+
+// Tiebreaker for chart rankings
+function pseudoHash(str) {
+    return str.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+}
 
 // Update charts and ticker
 export async function updateCharts(useCache = false) {
@@ -33,6 +49,34 @@ export async function updateCharts(useCache = false) {
             trackData = cachedPlays.trackPlays;
             userListeningTime = cachedPlays.userListeningTime;
             store.foundTickerCache = true;
+        }
+        const cachedSortedData = await getCachedSortedData();
+        if (cachedSortedData) {
+            sortedData = cachedSortedData;
+            
+            // Update page state from cached data
+            pageState.artists.totalItems = sortedData.artists?.length || 0;
+            pageState.albums.totalItems = sortedData.albums?.length || 0;
+            pageState.tracks.totalItems = sortedData.tracks?.length || 0;
+            pageState.listeners.totalItems = sortedData.listeners?.length || 0;
+            pageState['unique-artists'].totalItems = sortedData['unique-artists']?.length || 0;
+            pageState['unique-tracks'].totalItems = sortedData['unique-tracks']?.length || 0;
+            
+            // Reset to page 1
+            pageState.artists.currentPage = 1;
+            pageState.albums.currentPage = 1;
+            pageState.tracks.currentPage = 1;
+            pageState.listeners.currentPage = 1;
+            pageState['unique-artists'].currentPage = 1;
+            pageState['unique-tracks'].currentPage = 1;
+            
+            // Display first page of each list
+            await displayPage('artists');
+            await displayPage('albums');
+            await displayPage('tracks');
+            await displayPage('listeners');
+            await displayPage('unique-artists');
+            await displayPage('unique-tracks');
         }
         return;
     }
@@ -72,76 +116,79 @@ export async function updateCharts(useCache = false) {
         }
         console.log("Stats refreshed!");
     }
-    store.isFetchingCharts = false;
     updateProgressText();
 
-    const sortedArtistPlays = Object.entries(artistPlays).sort((a, b) => {
+    sortedData.artists = Object.entries(artistPlays).sort((a, b) => {
         const aScore = b[1].userCount * b[1].cappedPlays;
         const bScore = a[1].userCount * a[1].cappedPlays;
         if (aScore !== bScore) {
             return aScore - bScore;
         }
-        return a[0].localeCompare(b[0]);
+        return pseudoHash(a[0]) - pseudoHash(b[0]);
     });
-    const sortedAlbumPlays = Object.entries(albumPlays).sort((a, b) => {
+    sortedData.albums = Object.entries(albumPlays).sort((a, b) => {
         const aScore = b[1].userCount * b[1].cappedPlays;
         const bScore = a[1].userCount * a[1].cappedPlays;
         if (aScore !== bScore) {
             return aScore - bScore;
         }
-        return a[0].localeCompare(b[0]);
+        return pseudoHash(a[0]) - pseudoHash(b[0]);
     });
-    const sortedTrackPlays = Object.entries(trackPlays).sort((a, b) => {
+    sortedData.tracks = Object.entries(trackPlays).sort((a, b) => {
         const aScore = b[1].userCount * b[1].cappedPlays;
         const bScore = a[1].userCount * a[1].cappedPlays;
         if (aScore !== bScore) {
             return aScore - bScore;
         }
-        return a[0].localeCompare(b[0]);
+        return pseudoHash(a[0]) - pseudoHash(b[0]);
     });
 
-    updateTickerDisplay(sortedArtistPlays, sortedAlbumPlays, sortedTrackPlays);
+    store.isFetchingCharts = false;
+
+    updateTickerDisplay(sortedData.artists, sortedData.albums, sortedData.tracks);
 
     // Wait for blocks to finish updating
     while (store.isUpdatingBlocks) {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    const [artists, albums, tracks, uniqueArtists, uniqueTracks] = await Promise.all([
-        createArtistCharts(sortedArtistPlays),
-        createAlbumCharts(sortedAlbumPlays),
-        createTrackCharts(sortedTrackPlays),
-        createUniqueArtistsChart(),
-        createUniqueTracksChart()
-    ]);
+    // Update lists
+    sortedData.listeners = Object.entries(userListeningTime)
+        .sort((a, b) => b[1] - a[1]);
+    
+    sortedData['unique-artists'] = Object.entries(userStats)
+        .filter(([username, stats]) => stats.totalArtists > 0)
+        .sort((a, b) => b[1].totalArtists - a[1].totalArtists);
+    
+    sortedData['unique-tracks'] = Object.entries(userStats)
+        .filter(([username, stats]) => stats.totalTracks > 0)
+        .sort((a, b) => b[1].totalTracks - a[1].totalTracks);
 
-    const artistsList = document.getElementById("artists-list");
-    const albumsList = document.getElementById("albums-list");
-    const tracksList = document.getElementById("tracks-list");
-    const uniqueArtistsList = document.getElementById("unique-artists-list");
-    const uniqueTracksList = document.getElementById("unique-tracks-list");
+    pageState.artists.totalItems = sortedData.artists.length;
+    pageState.albums.totalItems = sortedData.albums.length;
+    pageState.tracks.totalItems = sortedData.tracks.length;
+    pageState.listeners.totalItems = sortedData.listeners.length;
+    pageState['unique-artists'].totalItems = sortedData['unique-artists'].length;
+    pageState['unique-tracks'].totalItems = sortedData['unique-tracks'].length;
 
-    artistsList.innerHTML = '';
-    albumsList.innerHTML = '';
-    tracksList.innerHTML = '';
-    uniqueArtistsList.innerHTML = '';
-    uniqueTracksList.innerHTML = '';
-
-    artists.forEach(item => artistsList.appendChild(item));
-    albums.forEach(item => albumsList.appendChild(item));
-    tracks.forEach(item => tracksList.appendChild(item));
-    uniqueArtists.forEach(item => uniqueArtistsList.appendChild(item));
-    uniqueTracks.forEach(item => uniqueTracksList.appendChild(item));
+    await displayPage('artists');
+    await displayPage('albums');
+    await displayPage('tracks');
+    await displayPage('listeners');
+    await displayPage('unique-artists');
+    await displayPage('unique-tracks');
 
     store.updateTimers.charts.lastUpdate = Date.now();
 
     cachePlays(trackPlays, userListeningTime);
+    cacheSortedData(sortedData);
 
     trackData = trackPlays;
+
     store.isUpdatingCharts = false;
 }
 
-export async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
+export async function fetchArtists(block, artistPlays, key = store.keys.KEY, retry = false) {
     const username = block.dataset.username;
     try {
         const data = await lastfm.getTopArtists(username, key);
@@ -173,11 +220,20 @@ export async function fetchArtists(block, artistPlays, key = store.keys.KEY) {
             totalArtists
         };
     } catch (error) {
-        console.error("Error fetching user artist data:", error);
+        if (error.data) {
+            console.error(`API error ${error.data.error} for user ${username}'s artists:`, error.data.message);
+            if (error.data?.error === 8 && retry === false) {
+                return fetchArtists(block, artistPlays, key, true);
+            } else if (error.data?.error === 29) {
+                gtag('event', 'rate_limit-general', {});
+            }
+        } else {
+            console.error(`Error fetching user artist data for ${username}:`, error);
+        }
     }
 }
 
-export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
+export async function fetchAlbums(block, albumPlays, key = store.keys.KEY, retry = false) {
     const username = block.dataset.username;
     try {
         const data = await lastfm.getTopAlbums(username, key);
@@ -211,11 +267,20 @@ export async function fetchAlbums(block, albumPlays, key = store.keys.KEY) {
             albumPlays[key].userCount++;
         });
     } catch (error) {
-        console.error("Error fetching user album data:", error);
+        if (error.data) {
+            console.error(`API error ${error.data.error} for user ${username}'s albums:`, error.data.message);
+            if (error.data?.error === 8 && retry === false) {
+                return fetchAlbums(block, albumPlays, key, true);
+            } else if (error.data?.error === 29) {
+                gtag('event', 'rate_limit-general', {});
+            }
+        } else {
+            console.error(`Error fetching user album data for ${username}:`, error);
+        }
     }
 }
 
-export async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
+export async function fetchTracks(block, trackPlays, key = store.keys.KEY, retry = false) {
     const username = block.dataset.username;
     try {
         let data = await lastfm.getTopTracks(username, key);
@@ -267,6 +332,15 @@ export async function fetchTracks(block, trackPlays, key = store.keys.KEY) {
             totalTracks
         };
     } catch (error) {
-        console.error("Error fetching user track data:", error);
+        if (error.data) {
+            console.error(`API error ${error.data.error} for user ${username}'s tracks:`, error.data.message);
+            if (error.data?.error === 8 && retry === false) {
+                return fetchTracks(block, trackPlays, key, true);
+            } else if (error.data?.error === 29) {
+                gtag('event', 'rate_limit-general', {});
+            }
+        } else {
+            console.error(`Error fetching user track data for ${username}:`, error);
+        }
     }
 }

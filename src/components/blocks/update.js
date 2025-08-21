@@ -14,8 +14,11 @@ import { cacheBlocks, cacheChartsHTML } from "../cache.js";
 // Charts - Graphs
 import { updateActivityCharts, updateActivityData, resetActivityData } from "../charts/graphs/data.js";
 
-// Charts - Lists
-import { createTopListenersChart } from "../charts/lists/lists.js";
+// Charts
+import { sortedData } from "../charts/update.js";
+
+// Charts - Pages
+import { displayPage } from "../charts/pages.js";
 
 // Charts - Scatter
 import { resetScatterData, tryScatterUpdate, updateScatterData } from "../charts/scatter/data.js";
@@ -38,7 +41,7 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
 
-        updateProgress("history", username);
+        updateProgress("activity", username);
 
         if (data.recenttracks["@attr"]["total"] == 0) {
             // Remove if no tracks played
@@ -63,7 +66,12 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
             newBlock.querySelector(".listeners-container").classList.remove("active");
         }
 
-        // Workaround for heart icon wrapping incorrectly
+        // Wait for chart data to finish fetching (for star icons)
+        while (store.isFetchingCharts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Workaround for heart and star icons wrapping incorrectly
         const lastSpaceIndex = trimmedName.lastIndexOf(" ");
 
         let frontString;
@@ -80,12 +88,37 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
         const songLink = recentTrack.url;
         const artistLink = songLink.split("/_")[0];
 
+        // Check if artist is in user's top 4 weekly artists
+        let isTopArtist = false;
+        if (sortedData.artists) {
+            const artistData = sortedData.artists.find(([name]) => name === recentTrack.artist.name);
+            if (artistData && artistData[1].users && artistData[1].users[username]) {
+                const userArtists = sortedData.artists
+                    .filter(([name, data]) => data.users && data.users[username])
+                    .sort((a, b) => b[1].users[username] - a[1].users[username])
+                    .slice(0, 4);
+                isTopArtist = userArtists.some(([name]) => name === recentTrack.artist.name);
+            }
+        }
+
+        // Check if track is in user's top 8 weekly tracks
+        let isTopTrack = false;
+        if (sortedData.tracks) {
+            const trackKey = `${trimmedName}::${recentTrack.artist.name}`;
+            const trackData = sortedData.tracks.find(([key]) => key === trackKey);
+            if (trackData && trackData[1].users && trackData[1].users[username]) {
+                const userTracks = sortedData.tracks
+                    .filter(([key, data]) => data.users && data.users[username])
+                    .sort((a, b) => b[1].users[username] - a[1].users[username])
+                    .slice(0, 8);
+                isTopTrack = userTracks.some(([key]) => key === trackKey);
+            }
+        }
+
         newBlock.querySelector(".bottom > .track-info > .song-title > a").innerHTML = `
                         <span class="rest">${frontString}</span>
-                        <span class="no-break">${backString}<svg class="heart-icon" viewBox="0 0 120 120" fill="white">
-                            <path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/>
-                            </svg></span>`;
-        newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerText = recentTrack.artist.name;
+                        <span class="no-break">${backString}<svg class="heart-icon${recentTrack.loved === "1" ? '' : ' removed'}" viewBox="0 0 120 120" fill="white"><path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/></svg><img class="star-icon${isTopTrack ? '' : ' removed'}" src="icons/star.png" title="Top 8 track"></span>`;
+        newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerHTML = `${recentTrack.artist.name}<img class="star-icon${isTopArtist ? '' : ' removed'}" src="icons/star.png" title="Top 4 artist">`;
         newBlock.querySelector(".bottom > .track-info > .song-title > a").href = songLink;
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;
 
@@ -94,12 +127,6 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
 
         const nowPlaying = recentTrack["@attr"]?.nowplaying;
         const timeSpan = newBlock.querySelector(".time");
-
-        if (recentTrack.loved === "0") {
-            newBlock.querySelector(".heart-icon").classList.add("removed");
-        } else {
-            newBlock.querySelector(".heart-icon").classList.remove("removed");
-        }
 
         if (nowPlaying) {
             newBlock.dataset.nowPlaying = "true";
@@ -129,7 +156,7 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
         newBlock.classList.add("removed");
 
         if (error.data) {
-            console.error(`API error ${error.data.error} for user ${username}:`, error.data.message);
+            console.error(`API error ${error.data.error} for user ${username}'s activity:`, error.data.message);
             if (error.data?.error === 17) {
                 // Remove if private user
                 newBlock.classList.add("removed");
@@ -244,10 +271,7 @@ export async function updateAllBlocks() {
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
 
     // Update top listeners chart
-    const listenersList = document.querySelector("#listeners-section .users-list");
-    listenersList.innerHTML = '';
-    const listeners = createTopListenersChart();
-    listeners.forEach(item => listenersList.appendChild(item));
+    displayPage("listeners");
 
     // Trigger mobile scroll handler
     handleScroll();

@@ -143,6 +143,46 @@ body:has(#charts:not(.collapsed)) {
     box-sizing: border-box;
 }
 
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.page-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.page-button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.page-button:hover:not(:disabled) {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.page-button:disabled {
+    opacity: 0.3;
+    cursor: default;
+    transform: none;
+}
+
 .top-list {
     list-style: none;
     padding: 0;

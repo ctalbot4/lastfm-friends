@@ -45,7 +45,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         } else if (isAlbum) {
             hasPreviewAvailable = await hasPreview(itemData.name, itemData.artist, false, true);
         } else {
-            hasPreviewAvailable = await hasPreview(itemData.name, null, true, null);
+            hasPreviewAvailable = itemData.image ? true : false;
         }
     } catch (e) {
         console.error('Error checking preview:', e);
@@ -129,16 +129,12 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
 }
 
 // Create artist charts with Deezer images and previews
-export async function createArtistCharts(sortedArtistPlays) {
-    let artistsMax = 0;
-
-    // Process top 9 artists
-    const artistChartPromises = sortedArtistPlays.slice(0, 9).map(async (artistData) => {
+export async function createArtistCharts(sortedArtistPlays, artistsMax) {
+    // Process artists
+    const artistChartPromises = sortedArtistPlays.map(async (artistData) => {
         const [artistName, artistInfo] = artistData;
         const artistUsers = Object.entries(artistInfo.users);
         artistUsers.sort((a, b) => b[1] - a[1]);
-
-        artistsMax = Math.max(artistsMax, artistInfo.plays);
 
         // Fetch artist image from Deezer
         let imageUrl;
@@ -172,15 +168,11 @@ export async function createArtistCharts(sortedArtistPlays) {
 }
 
 // Create album charts with previews
-export async function createAlbumCharts(sortedAlbumPlays) {
-    let albumsMax = 0;
-
-    // Process top 9 albums
-    const albumChartPromises = sortedAlbumPlays.slice(0, 9).map(async (albumData) => {
+export async function createAlbumCharts(sortedAlbumPlays, albumsMax) {
+    // Process albums
+    const albumChartPromises = sortedAlbumPlays.map(async (albumData) => {
         const [key, albumInfo] = albumData;
         const albumUsers = Object.entries(albumInfo.users);
-
-        albumsMax = Math.max(albumsMax, albumInfo.plays);
 
         const sortedAlbumUsers = albumUsers.sort((a, b) => b[1] - a[1]);
 
@@ -207,15 +199,11 @@ export async function createAlbumCharts(sortedAlbumPlays) {
 }
 
 // Create track charts with Deezer images and previews
-export async function createTrackCharts(sortedTrackPlays) {
-    let tracksMax = 0;
-
-    // Process top 9 tracks
-    const trackChartPromises = sortedTrackPlays.slice(0, 9).map(async (trackData) => {
+export async function createTrackCharts(sortedTrackPlays, tracksMax) {
+    // Process tracks
+    const trackChartPromises = sortedTrackPlays.map(async (trackData) => {
         const trackInfo = trackData[1];
         const trackUsers = Object.entries(trackInfo.users);
-
-        tracksMax = Math.max(tracksMax, trackInfo.plays);
 
         const sortedTrackUsers = trackUsers.sort((a, b) => b[1] - a[1]);
 
@@ -296,12 +284,7 @@ export async function createTrackCharts(sortedTrackPlays) {
 }
 
 // Create top listeners chart
-export function createTopListenersChart() {
-    const sortedListeners = Object.entries(userListeningTime)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 9);
-
-    const maxDuration = sortedListeners[0][1];
+export function createTopListenersChart(sortedListeners, maxDuration) {
 
     const listenerItems = sortedListeners.map(([username, totalSeconds]) => {
         const li = document.createElement("li");
@@ -332,14 +315,7 @@ export function createTopListenersChart() {
 }
 
 // Create unique artists chart with plays per artist
-export function createUniqueArtistsChart() {
-    // Sort users by number of unique artists
-    const sortedUsers = Object.entries(userStats)
-        .filter(([username, stats]) => stats.totalArtists > 0)
-        .sort((a, b) => b[1].totalArtists - a[1].totalArtists)
-        .slice(0, 9);
-
-    const maxArtists = sortedUsers[0][1].totalArtists;
+export function createUniqueArtistsChart(sortedUsers, maxArtists) {
 
     const listenerItems = sortedUsers.map(([username, stats]) => {
         const li = document.createElement("li");
@@ -370,14 +346,7 @@ export function createUniqueArtistsChart() {
 }
 
 // Create unique tracks chart with plays per track
-export function createUniqueTracksChart() {
-    // Sort users by number of unique tracks
-    const sortedUsers = Object.entries(userStats)
-        .filter(([username, stats]) => stats.totalTracks > 0)
-        .sort((a, b) => b[1].totalTracks - a[1].totalTracks)
-        .slice(0, 9);
-
-    const maxTracks = sortedUsers[0][1].totalTracks;
+export function createUniqueTracksChart(sortedUsers, maxTracks) {
 
     const listenerItems = sortedUsers.map(([username, stats]) => {
         const li = document.createElement("li");
