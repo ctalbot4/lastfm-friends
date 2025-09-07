@@ -9,6 +9,7 @@ export const store = {
     isUpdatingBlocks: false,
     isUpdatingCharts: false,
     isFetchingCharts: false,
+    isUpdatingListening: false,
     isScheduling: false,
     keys: {
         KEY: null,
@@ -20,7 +21,7 @@ export const store = {
             lastUpdate: 0,
             interval: 0
         },
-        charts: {
+        listening: {
             lastUpdate: 0,
             interval: 0
         },
@@ -28,6 +29,7 @@ export const store = {
     },
     foundBlocksCache: false,
     foundTickerCache: false,
+    foundListeningCache: false,
     cacheKeys: {
         friends: null,
         blocks: null,

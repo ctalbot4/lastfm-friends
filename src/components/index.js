@@ -7,14 +7,14 @@ import * as lastfm from "../api/lastfm.js";
 // Blocks
 import { createBlock } from "./blocks/create.js";
 import { setupBlocks } from "./blocks/index.js";
-import { updateAllBlocks } from "./blocks/update.js";
+import { updateAllBlocks, setUserPlayCounts } from "./blocks/update.js";
 
 // Cache
-import { cacheFriends, getCachedBlocks, getCachedChartsHTML, getCachedFriends, getData } from "./cache.js";
+import { cacheFriends, getCachedBlocks, getCachedChartsHTML, getCachedFriends, getData, getCachedListening } from "./cache.js";
 
 // Charts
 import { initCharts } from "./charts/index.js";
-import { updateCharts } from "./charts/update.js";
+import { calculateListeningTime, updateCharts, setUserListeningTime } from "./charts/update.js";
 
 // Schedule
 import { scheduleUpdates, cancelUpdates } from "./schedule.js";
@@ -44,7 +44,7 @@ export async function initDashboard() {
     await initialFetch();
 
     await Promise.all([
-        store.foundTickerCache ? null : updateCharts(),
+        store.foundListeningCache ? null : calculateListeningTime(),
         store.foundBlocksCache ? null : updateAllBlocks()
     ].filter(Boolean));
 
@@ -99,7 +99,7 @@ export async function initDashboard() {
 }
 
 // Initial fetch on load
-async function initialFetch(retry = false) {
+async function initialFetch() {
     store.keys.KEY = await getKey();
 
     try {
@@ -131,7 +131,7 @@ async function initialFetch(retry = false) {
 
         // Set conservative refreshes to try to avoid API rate limit
         store.updateTimers.blocks.interval = Math.max(5000, (store.friendCount / 5) * 1200);
-        store.updateTimers.charts.interval = Math.max(270000, (store.friendCount / 5) * 9 * 3000);
+        store.updateTimers.listening.interval = Math.max(180000, (store.friendCount / 5) * 5 * 3000);
 
         // Get secondary key if necessary
         if (store.friendCount > 250) {
@@ -150,10 +150,10 @@ async function initialFetch(retry = false) {
                 if (cachedSchedule) {
                     const {
                         blocks,
-                        charts
+                        listening
                     } = cachedSchedule;
                     store.updateTimers.blocks.lastUpdate = blocks;
-                    store.updateTimers.charts.lastUpdate = charts;
+                    store.updateTimers.listening.lastUpdate = listening;
 
                     const now = Date.now();
 
@@ -163,20 +163,13 @@ async function initialFetch(retry = false) {
 
                     if (blocksDelay > 0) {
                         const cachedBlocks = await getCachedBlocks();
-                        if (cachedBlocks) {
-                            blockContainer.innerHTML = cachedBlocks;
-                            const cacheAge = now - store.updateTimers.blocks.lastUpdate;
-                            console.log(`Loaded blocks from cache (${formatCacheTime(cacheAge)} ago, next update in ${formatCacheTime(blocksDelay)}).`);
-                            store.foundBlocksCache = true;
-                        }
-                    }
-
-                    let nextChartsUpdateTime = store.updateTimers.charts.lastUpdate + store.updateTimers.charts.interval;
-                    let chartsDelay = nextChartsUpdateTime - now;
-
-                    if (chartsDelay > 0) {
                         const chartsHTMLCache = await getCachedChartsHTML();
-                        if (chartsHTMLCache) {
+                        if (cachedBlocks && chartsHTMLCache) {
+                            store.foundBlocksCache = true;
+                            store.foundTickerCache = true;
+
+                            blockContainer.innerHTML = cachedBlocks;
+
                             const ticker = chartsHTMLCache.ticker || '';
                             const charts = chartsHTMLCache.charts || '';
 
@@ -190,9 +183,21 @@ async function initialFetch(retry = false) {
 
                             updateCharts(true);
 
-                            store.foundTickerCache = true;
-                            const cacheAge = now - store.updateTimers.charts.lastUpdate;
-                            console.log(`Loaded charts from cache (${formatCacheTime(cacheAge)} ago, next update in ${formatCacheTime(chartsDelay)}).`);
+                            const cacheAge = now - store.updateTimers.blocks.lastUpdate;
+                            console.log(`Loaded from cache (${formatCacheTime(cacheAge)} ago, next update in ${formatCacheTime(blocksDelay)}).`);
+
+                        }
+                    }
+
+                    let nextListeningUpdateTime = store.updateTimers.listening.lastUpdate + store.updateTimers.listening.interval;
+                    let listeningDelay = nextListeningUpdateTime - now;
+
+                    if (listeningDelay > 0) {
+                        const cachedListening = await getCachedListening();
+                        if (cachedListening) {
+                            setUserListeningTime(cachedListening.listeningTime);
+                            setUserPlayCounts(cachedListening.playCounts);
+                            store.foundListeningCache = true;
                         }
                     }
                 }
@@ -205,14 +210,8 @@ async function initialFetch(retry = false) {
             });
         }
     } catch (error) {
-        if (!retry) {
-            console.log("First request failed, retrying...");
-            blockContainer.innerHTML = '';
-            await initialFetch(true);
-        } else {
-            console.error("Error during initial fetch:", error);
-            document.getElementById("error-popup").classList.remove("removed");
-            localStorage.clear();
-        }
+        console.error("Error during initial fetch:", error);
+        document.getElementById("error-popup").classList.remove("removed");
+        localStorage.clear();
     }
 }

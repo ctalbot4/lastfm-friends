@@ -15,10 +15,7 @@ import { cacheBlocks, cacheChartsHTML } from "../cache.js";
 import { updateActivityCharts, updateActivityData, resetActivityData } from "../charts/graphs/data.js";
 
 // Charts
-import { sortedData } from "../charts/update.js";
-
-// Charts - Pages
-import { displayPage } from "../charts/pages.js";
+import { sortedData, updateCharts, calculateChartData } from "../charts/update.js";
 
 // Charts - Scatter
 import { resetScatterData, tryScatterUpdate, updateScatterData } from "../charts/scatter/data.js";
@@ -27,10 +24,14 @@ import { resetScatterData, tryScatterUpdate, updateScatterData } from "../charts
 import { handleScroll } from "../preview/index.js";
 import { updateProgress, updateProgressText } from "../../ui/progress.js";
 
-export const userPlayCounts = {};
+export let userPlayCounts = {};
+
+export function setUserPlayCounts(playCounts) {
+    userPlayCounts = playCounts;
+}
 
 // Fetch data for a block and update
-async function updateBlock(block, retry = false, key = store.keys.KEY) {
+async function updateBlock(block, key = store.keys.KEY) {
     if (block.classList.contains("private")) {
         return block;
     }
@@ -41,16 +42,25 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
 
-        updateProgress("activity", username);
-
         if (data.recenttracks["@attr"]["total"] == 0) {
             // Remove if no tracks played
             return null;
         }
 
-        // Pass user's tracks to charts
-        updateActivityData(data.recenttracks.track, username);
-        updateScatterData(data.recenttracks.track, username);
+        // Get user's entire recent listening history if more than 1 page of tracks
+        let tracks = data.recenttracks.track;
+
+        for (let i = 1000; i < data.recenttracks["@attr"]["total"] && i < 5000; i += 1000) {
+            const moreData = await lastfm.getRecentTracks(username, key, oneWeekAgo, (i / 1000) + 1);
+            tracks.push(...moreData.recenttracks.track);
+        }
+
+        // Pass user's tracks to graphs and scatter
+        updateActivityData(tracks, username);
+        updateScatterData(tracks, username);
+
+        // Calculate list data from recent tracks
+        calculateChartData(tracks, username);
 
         userPlayCounts[username] = parseInt(data.recenttracks["@attr"].total);
 
@@ -161,15 +171,14 @@ async function updateBlock(block, retry = false, key = store.keys.KEY) {
                 // Remove if private user
                 newBlock.classList.add("removed");
                 newBlock.classList.add("private");
-            } else if (error.data?.error === 8 && retry == false) {
-                return updateBlock(block, true);
-            } else if (error.data?.error === 29) {
-                gtag('event', 'rate_limit-general', {});
             }
         } else {
             console.error(`Error updating ${username}:`, error);
         }
+    } finally {
+        updateProgress("activity", username);
     }
+
     newBlock.dataset.previewPlaying = block.dataset.previewPlaying || "false";
 
     return newBlock;
@@ -181,6 +190,7 @@ export async function updateAllBlocks() {
     while (store.isFetchingListeners) {
         await new Promise(r => setTimeout(r, 100));
     }
+
     const blockContainer = document.getElementById("block-container");
     const blocks = blockContainer.getElementsByClassName("block");
     const blocksArr = Array.from(blocks);
@@ -203,7 +213,7 @@ export async function updateAllBlocks() {
     if (store.friendCount > 250) {
         await new Promise(resolve => setTimeout(resolve, 8000));
         chunks.push(blocksArr.slice(250, 500));
-        const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, false, store.keys.KEY2)));
+        const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, store.keys.KEY2)));
         newBlocks.push(...blockPromises);
     }
 
@@ -247,18 +257,16 @@ export async function updateAllBlocks() {
     // Call sortBlocks after all updates are done
     await sortBlocks(newerBlocks);
 
-    // Async functions all done
+    // Fetches all done
     store.isUpdatingBlocks = false;
+    updateProgressText();
 
     // Signal that charts ready to update
     updateActivityCharts();
     tryScatterUpdate();
-    updateProgressText();
 
-    // Wait for charts to finish updating
-    while (store.isUpdatingCharts) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-    }
+    // Update charts with calculated data
+    await updateCharts(false);
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
@@ -269,9 +277,6 @@ export async function updateAllBlocks() {
 
     // Update total plays
     const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
-
-    // Update top listeners chart
-    displayPage("listeners");
 
     // Trigger mobile scroll handler
     handleScroll();

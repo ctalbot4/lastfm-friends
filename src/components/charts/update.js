@@ -4,8 +4,11 @@ import { store } from '../../state/store.js';
 // API
 import * as lastfm from '../../api/lastfm.js';
 
+// Blocks - Update
+import { userPlayCounts } from '../blocks/update.js';
+
 // Cache
-import { cachePlays, getCachedPlays, cacheSortedData, getCachedSortedData } from '../cache.js';
+import { cachePlays, getCachedPlays, cacheSortedData, getCachedSortedData, cacheListening } from '../cache.js';
 
 // Charts - Ticker
 import { updateTickerDisplay } from './ticker.js';
@@ -14,7 +17,7 @@ import { updateTickerDisplay } from './ticker.js';
 import { pageState, displayPage } from './pages.js';
 
 // UI
-import { updateProgress, updateProgressText } from '../../ui/progress.js';
+import { updateProgress } from '../../ui/progress.js';
 
 export let userStats = {};
 
@@ -31,6 +34,139 @@ export let sortedData = {
 export let trackData = {};
 export let userListeningTime = {};
 
+export function setUserListeningTime(listeningTime) {
+    userListeningTime = listeningTime;
+}
+
+export let chartDataPerUser = {};
+
+// Calculate top artists, albums, and tracks from recent track data
+export function calculateChartData(tracks, username) {
+
+    const userArtists = {};
+    const userAlbums = {};
+    const userTracks = {};
+    
+    // Count plays for each track, artist, and album
+    tracks.forEach(track => {
+        if (!track.date?.uts) return; // Skip now playing tracks
+        
+        const trackName = track.name.trim();
+        const artistName = track.artist.name;
+        const albumName = track.album?.["#text"];
+
+        // Count artists
+        const artistUrl = track.artist.url;
+        if (userArtists[artistName]) {
+            userArtists[artistName].plays += 1;
+        } else {
+            userArtists[artistName] = {
+                plays: 1,
+                artistUrl
+            };
+        }
+
+        // Count albums
+        if (albumName) {
+            const albumUrl = `${artistUrl}/${encodeURIComponent(albumName).replace(/%20/g, '+')}`;
+            const key = `${albumName}::${artistName}`;
+            if (userAlbums[key]) {
+                userAlbums[key].plays += 1;
+            } else {
+                userAlbums[key] = {
+                    artistName,
+                    albumName,
+                    plays: 1,
+                    artistUrl,
+                    albumUrl,
+                    img: track.image[1]["#text"]
+                };
+            }
+        }
+
+        // Count tracks
+        const trackKey = `${trackName}::${artistName}`;
+        const trackUrl = track.url;
+
+        if (userTracks[trackKey]) {
+            userTracks[trackKey].plays += 1;
+        } else {
+            userTracks[trackKey] = {
+                artistName,
+                trackName,
+                plays: 1,
+                trackUrl,
+                artistUrl
+            };
+        }
+    });
+
+    chartDataPerUser[username] = {
+        artistPlays: userArtists,
+        albumPlays: userAlbums,
+        trackPlays: userTracks
+    };
+}
+
+// Calculate listening time for users using top tracks API (needed for duration data)
+export async function calculateListeningTime() {
+    store.isUpdatingListening = true;
+
+    userListeningTime = {};
+
+    const blockContainer = document.getElementById("block-container");
+    const blocks = blockContainer.getElementsByClassName("block");
+    const blocksArr = Array.from(blocks);
+    
+    const chunks = [];
+    chunks.push(blocksArr.slice(0, 250));
+    
+    // Fetch listening time for first chunk
+    const listeningPromises = Array.from(chunks[0]).map(block => fetchListeningTime(block));
+    await Promise.all(listeningPromises);
+    
+    // Fetch second chunk if necessary
+    if (store.friendCount > 250) {
+        await new Promise(resolve => setTimeout(resolve, 8000));
+        chunks.push(blocksArr.slice(250, 500));
+        const listeningPromises = Array.from(chunks[1]).map(block => fetchListeningTime(block, store.keys.KEY2));
+        await Promise.all(listeningPromises);
+    }
+
+    displayPage("listeners");
+
+    store.updateTimers.listening.lastUpdate = Date.now();
+    store.isUpdatingListening = false;
+
+    cacheListening(userListeningTime, userPlayCounts);
+}
+
+// Fetch listening time for a single user
+export async function fetchListeningTime(block, key = store.keys.KEY) {
+    const username = block.dataset.username;
+    try {
+        let data = await lastfm.getTopTracks(username, key);
+        const totalTracks = parseInt(data.toptracks["@attr"].total);
+        const totalPages = parseInt(data.toptracks["@attr"].totalPages);
+
+        for (let page = 1; page <= totalPages && page <= 5; page++) {
+            if (page > 1) {
+                data = await lastfm.getTopTracks(username, key, page);
+            }
+            data.toptracks.track.forEach(track => {
+                const plays = parseInt(track.playcount);
+                // If no duration data, default to 220 seconds
+                const duration = parseInt(track.duration) || 220;
+                userListeningTime[username] = (userListeningTime[username] || 0) + (duration * plays);
+            });
+        }
+    } catch (error) {
+        console.error(`Error fetching listening time for ${username}:`, error);
+    } finally {
+        updateProgress("tracks", username);
+    }
+}
+
 // Tiebreaker for chart rankings
 function pseudoHash(str) {
     return str.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
@@ -46,8 +182,7 @@ export async function updateCharts(useCache = false) {
     if (useCache) {
         const cachedPlays = await getCachedPlays();
         if (cachedPlays) {
-            trackData = cachedPlays.trackPlays;
-            userListeningTime = cachedPlays.userListeningTime;
+            trackData = cachedPlays;
             store.foundTickerCache = true;
         }
         const cachedSortedData = await getCachedSortedData();
@@ -81,43 +216,99 @@ export async function updateCharts(useCache = false) {
         return;
     }
 
-    // Only fetch if data wasn't provided
-    if (!artistPlays || !albumPlays || !trackPlays) {
-        artistPlays = {};
-        albumPlays = {};
-        trackPlays = {};
-        userListeningTime = {};
+    // Process calculated data from each user
+    artistPlays = {};
+    albumPlays = {};
+    trackPlays = {};
 
-        const blockContainer = document.getElementById("block-container");
-        const blocks = blockContainer.getElementsByClassName("block");
-        const blocksArr = Array.from(blocks);
-        store.completed = 0;
-        store.isUpdatingCharts = true;
-        store.isFetchingCharts = true;
-        const chunks = [];
-
-        // Fetch first chunk
-        chunks.push(blocksArr.slice(0, 250));
-        const artistPromises = Array.from(chunks[0]).map(block => fetchArtists(block, artistPlays));
-        const albumPromises = Array.from(chunks[0]).map(block => fetchAlbums(block, albumPlays));
-        const trackPromises = Array.from(chunks[0]).map(block => fetchTracks(block, trackPlays));
-        await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
-
-        // Fetch second chunk if necessary
-        if (store.friendCount > 250) {
-            await new Promise(resolve => setTimeout(resolve, 8000));
-
-            chunks.push(blocksArr.slice(250, 500));
-            const artistPromises = Array.from(chunks[1]).map(block => fetchArtists(block, artistPlays, store.keys.KEY2));
-            const albumPromises = Array.from(chunks[1]).map(block => fetchAlbums(block, albumPlays, store.keys.KEY2));
-            const trackPromises = Array.from(chunks[1]).map(block => fetchTracks(block, trackPlays, store.keys.KEY2));
-
-            await Promise.all([...artistPromises, ...albumPromises, ...trackPromises]);
+    // Process each user's data
+    Object.entries(chartDataPerUser).forEach(([username, userData]) => {
+        Object.entries(userData.artistPlays).forEach(([artistName, artistData]) => {
+        const plays = parseInt(artistData.plays);
+        const cappedPlays = Math.min(plays, 800);
+        const url = artistData.artistUrl;
+        
+        if (artistPlays[artistName]) {
+            artistPlays[artistName].plays += plays;
+            artistPlays[artistName].cappedPlays += cappedPlays;
+        } else {
+            artistPlays[artistName] = {
+                plays,
+                cappedPlays,
+                url,
+                userCount: 0,
+                users: {}
+            };
         }
-        console.log("Stats refreshed!");
-    }
-    updateProgressText();
+            artistPlays[artistName].users[username] = plays;
+            artistPlays[artistName].userCount++;
+        });
+    
+        // Process albums
+        Object.entries(userData.albumPlays).forEach(([albumKey, albumData]) => {
+            const plays = parseInt(albumData.plays);
+            const cappedPlays = Math.min(plays, 300);
+            const url = albumData.albumUrl;
+            const artist = albumData.artistName;
+            const artistUrl = albumData.artistUrl;
+            const albumName = albumData.albumName;
+            
+            if (albumPlays[albumKey]) {
+                albumPlays[albumKey].plays += plays;
+                albumPlays[albumKey].cappedPlays += cappedPlays;
+            } else {
+                albumPlays[albumKey] = {
+                    artist,
+                    albumName,
+                    plays,
+                    cappedPlays,
+                    url,
+                    artistUrl,
+                    img: albumData.img,
+                    userCount: 0,
+                    users: {}
+                };
+            }
+            albumPlays[albumKey].users[username] = plays;
+            albumPlays[albumKey].userCount++;
+        });
+    
+        // Process tracks
+        Object.entries(userData.trackPlays).forEach(([trackKey, trackData]) => {
+            const plays = parseInt(trackData.plays);
+            const cappedPlays = Math.min(plays, 30);
+            const trackUrl = trackData.trackUrl;
+            const artistUrl = trackData.artistUrl;
+            const artist = trackData.artistName;
+            const trackName = trackData.trackName;
+            
+            if (trackPlays[trackKey]) {
+                trackPlays[trackKey].plays += plays;
+                trackPlays[trackKey].cappedPlays += cappedPlays;
+            } else {
+                trackPlays[trackKey] = {
+                    artist,
+                    trackName,
+                    plays,
+                    cappedPlays,
+                    trackUrl,
+                    artistUrl,
+                    userCount: 0,
+                    users: {}
+                };
+            }
+            trackPlays[trackKey].users[username] = plays;
+            trackPlays[trackKey].userCount++;
+        });
 
+        userStats[username] = {
+            ...userStats[username],
+            totalArtists: Object.keys(userData.artistPlays).length,
+            totalAlbums: Object.keys(userData.albumPlays).length,
+            totalTracks: Object.keys(userData.trackPlays).length
+        };
+    });
+        
     sortedData.artists = Object.entries(artistPlays).sort((a, b) => {
         const aScore = b[1].userCount * b[1].cappedPlays;
         const bScore = a[1].userCount * a[1].cappedPlays;
@@ -147,8 +338,8 @@ export async function updateCharts(useCache = false) {
 
     updateTickerDisplay(sortedData.artists, sortedData.albums, sortedData.tracks);
 
-    // Wait for blocks to finish updating
-    while (store.isUpdatingBlocks) {
+    // Wait for blocks and listening time to finish updating
+    while (store.isUpdatingBlocks || store.isUpdatingListening) {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 
@@ -178,169 +369,11 @@ export async function updateCharts(useCache = false) {
     await displayPage('unique-artists');
     await displayPage('unique-tracks');
 
-    store.updateTimers.charts.lastUpdate = Date.now();
-
-    cachePlays(trackPlays, userListeningTime);
+    cacheListening(userListeningTime, userPlayCounts);
+    cachePlays(trackPlays);
     cacheSortedData(sortedData);
 
     trackData = trackPlays;
 
     store.isUpdatingCharts = false;
-}
-
-export async function fetchArtists(block, artistPlays, key = store.keys.KEY, retry = false) {
-    const username = block.dataset.username;
-    try {
-        const data = await lastfm.getTopArtists(username, key);
-        updateProgress("artists", username);
-        const totalArtists = parseInt(data.topartists["@attr"].total);
-
-        data.topartists.artist.forEach(artist => {
-            const plays = parseInt(artist.playcount);
-            const cappedPlays = Math.min(plays, 800);
-            const url = artist.url;
-            if (artistPlays[artist.name]) {
-                artistPlays[artist.name].plays += plays;
-                artistPlays[artist.name].cappedPlays += cappedPlays;
-            } else {
-                artistPlays[artist.name] = {
-                    plays,
-                    cappedPlays,
-                    url,
-                    userCount: 0,
-                    users: {}
-                };
-            }
-            artistPlays[artist.name].users[username] = plays;
-            artistPlays[artist.name].userCount++;
-        });
-
-        userStats[username] = {
-            ...userStats[username],
-            totalArtists
-        };
-    } catch (error) {
-        if (error.data) {
-            console.error(`API error ${error.data.error} for user ${username}'s artists:`, error.data.message);
-            if (error.data?.error === 8 && retry === false) {
-                return fetchArtists(block, artistPlays, key, true);
-            } else if (error.data?.error === 29) {
-                gtag('event', 'rate_limit-general', {});
-            }
-        } else {
-            console.error(`Error fetching user artist data for ${username}:`, error);
-        }
-    }
-}
-
-export async function fetchAlbums(block, albumPlays, key = store.keys.KEY, retry = false) {
-    const username = block.dataset.username;
-    try {
-        const data = await lastfm.getTopAlbums(username, key);
-        updateProgress("albums", username);
-        data.topalbums.album.forEach(album => {
-            const plays = parseInt(album.playcount);
-            const cappedPlays = Math.min(plays, 300);
-            const url = album.url;
-            const artist = album.artist.name;
-            const artistUrl = album.artist.url;
-            const albumName = album.name;
-
-            const key = `${albumName}::${artist}`;
-            if (albumPlays[key]) {
-                albumPlays[key].plays += plays;
-                albumPlays[key].cappedPlays += cappedPlays;
-            } else {
-                albumPlays[key] = {
-                    artist,
-                    albumName,
-                    plays,
-                    cappedPlays,
-                    url,
-                    artistUrl,
-                    img: album.image[1]["#text"],
-                    userCount: 0,
-                    users: {}
-                };
-            }
-            albumPlays[key].users[username] = plays;
-            albumPlays[key].userCount++;
-        });
-    } catch (error) {
-        if (error.data) {
-            console.error(`API error ${error.data.error} for user ${username}'s albums:`, error.data.message);
-            if (error.data?.error === 8 && retry === false) {
-                return fetchAlbums(block, albumPlays, key, true);
-            } else if (error.data?.error === 29) {
-                gtag('event', 'rate_limit-general', {});
-            }
-        } else {
-            console.error(`Error fetching user album data for ${username}:`, error);
-        }
-    }
-}
-
-export async function fetchTracks(block, trackPlays, key = store.keys.KEY, retry = false) {
-    const username = block.dataset.username;
-    try {
-        let data = await lastfm.getTopTracks(username, key);
-        updateProgress("tracks", username);
-        const totalTracks = parseInt(data.toptracks["@attr"].total);
-        const totalPages = parseInt(data.toptracks["@attr"].totalPages);
-
-        for (let page = 1; page <= totalPages && page <= 5; page++) {
-            if (page > 1) {
-                data = await lastfm.getTopTracks(username, key, page);
-            }
-            data.toptracks.track.forEach(track => {
-                const plays = parseInt(track.playcount);
-                const cappedPlays = Math.min(plays, 30);
-                const trackUrl = track.url;
-                const artistUrl = track.artist.url;
-                const artist = track.artist.name;
-                const trackName = track.name;
-
-                // If no duration data, default to 220 seconds
-                const duration = parseInt(track.duration) || 220;
-
-                userListeningTime[username] = (userListeningTime[username] || 0) + (duration * plays);
-
-                const key = `${trackName}::${artist}`;
-
-                if (trackPlays[key]) {
-                    trackPlays[key].plays += plays;
-                    trackPlays[key].cappedPlays += cappedPlays;
-                } else {
-                    trackPlays[key] = {
-                        artist,
-                        trackName,
-                        plays,
-                        cappedPlays,
-                        trackUrl,
-                        artistUrl,
-                        userCount: 0,
-                        users: {}
-                    };
-                }
-                trackPlays[key].users[username] = plays;
-                trackPlays[key].userCount++;
-            });
-        }
-
-        userStats[username] = {
-            ...userStats[username],
-            totalTracks
-        };
-    } catch (error) {
-        if (error.data) {
-            console.error(`API error ${error.data.error} for user ${username}'s tracks:`, error.data.message);
-            if (error.data?.error === 8 && retry === false) {
-                return fetchTracks(block, trackPlays, key, true);
-            } else if (error.data?.error === 29) {
-                gtag('event', 'rate_limit-general', {});
-            }
-        } else {
-            console.error(`Error fetching user track data for ${username}:`, error);
-        }
-    }
 }

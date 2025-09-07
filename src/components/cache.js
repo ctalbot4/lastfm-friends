@@ -4,7 +4,7 @@ import { store } from "../state/store.js";
 const blockContainer = document.getElementById("block-container");
 
 const dbName = 'lastfmfriends';
-const dbVersion = 3;
+const dbVersion = 4;
 let db;
 
 export function initCache() {
@@ -31,6 +31,7 @@ export function initCache() {
             db.createObjectStore('charts-html');
             db.createObjectStore('friends');
             db.createObjectStore('schedule');
+            db.createObjectStore('listening');
         };
     });
 }
@@ -64,16 +65,23 @@ export function cacheChartsHTML() {
     setData('charts-html', store.username, data);
 }
 
+// Cache sorted top artists, albums, tracks data
 export function cacheSortedData(sortedData) {
     setData('sorted-data', store.username, sortedData);
 }
 
-export function cachePlays(trackPlays, userListeningTime) {
+// Cache all tracks and their info
+export function cachePlays(trackPlays) {
+    setData('play-data', store.username, trackPlays);
+}
+
+// Cache listening time and play count per user
+export function cacheListening(userListeningTime, userPlayCounts) {
     const data = {
-        trackPlays,
-        userListeningTime
+        listeningTime: userListeningTime,
+        playCounts: userPlayCounts
     }
-    setData('play-data', store.username, data);
+    setData('listening', store.username, data);
 }
 
 export function cacheFriends(friends) {
@@ -116,6 +124,16 @@ export async function getCachedPlays() {
         return await getData('play-data', store.username);
     } catch (error) {
         console.error('Error getting play data:', error);
+        return null;
+    }
+}
+
+export async function getCachedListening() {
+
+    try {
+        return await getData('listening', store.username);
+    } catch (error) {
+        console.error('Error getting cached listening:', error);
         return null;
     }
 }

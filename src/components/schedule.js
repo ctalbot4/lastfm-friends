@@ -2,7 +2,7 @@
 import { setData } from "./cache.js";
 
 // Charts
-import { updateCharts } from "./charts/update.js";
+import { calculateListeningTime } from "./charts/update.js";
 
 // Blocks
 import { updateAllBlocks } from "./blocks/update.js";
@@ -10,7 +10,7 @@ import { updateAllBlocks } from "./blocks/update.js";
 // State
 import { store } from "../state/store.js";
 
-// Schedule updates for blocks and charts
+// Schedule updates for blocks and listening
 export async function scheduleUpdates() {
     // Prevent multiple simultaneous calls
     if (store.isScheduling) {
@@ -20,7 +20,7 @@ export async function scheduleUpdates() {
 
     const now = Date.now();
     const blocksDelay = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval - now;
-    const chartsDelay = store.updateTimers.charts.lastUpdate + store.updateTimers.charts.interval - now;
+    const listeningDelay = store.updateTimers.listening.lastUpdate + store.updateTimers.listening.interval - now;
 
     // Clear any other timeouts
     cancelUpdates();
@@ -30,22 +30,22 @@ export async function scheduleUpdates() {
         await updateAllBlocks();
     }
 
-    // Update charts
-    if (chartsDelay <= 0 && !store.isUpdatingCharts) {
-        await updateCharts();
+    // Update listening
+    if (listeningDelay <= 0 && !store.isUpdatingListening) {
+        await calculateListeningTime();
     }
 
     // Schedule next update
     const nextBlocksTime = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval;
-    const nextChartsTime = store.updateTimers.charts.lastUpdate + store.updateTimers.charts.interval;
-    const nextUpdateTime = Math.min(nextBlocksTime, nextChartsTime);
+    const nextListeningTime = store.updateTimers.listening.lastUpdate + store.updateTimers.listening.interval;
+    const nextUpdateTime = Math.min(nextBlocksTime, nextListeningTime);
     const nextDelay = Math.max(1000, nextUpdateTime - Date.now());
 
     store.updateTimers.timeoutId = setTimeout(scheduleUpdates, nextDelay);
 
     const scheduleData = {
         blocks: store.updateTimers.blocks.lastUpdate,
-        charts: store.updateTimers.charts.lastUpdate
+        listening: store.updateTimers.listening.lastUpdate
     }
     setData('schedule', store.username, scheduleData);
     

@@ -13,6 +13,9 @@ import { userStats, userListeningTime } from "../update.js";
 import { audioState, hasPreview } from "../../preview/index.js";
 import { playChartPreview } from "../../preview/charts.js";
 
+// Cache for images and previews
+const imageCache = new Map();
+
 // Helper function to format duration
 function formatDuration(totalSeconds) {
     if (!totalSeconds) return "0s";
@@ -43,7 +46,15 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         if (isTrack) {
             hasPreviewAvailable = itemData.preview ? true : false;
         } else if (isAlbum) {
-            hasPreviewAvailable = await hasPreview(itemData.name, itemData.artist, false, true);
+            // Check cache first for preview availability
+            if (imageCache.has(`album:${itemData.name}:${itemData.artist}`)) {
+                hasPreviewAvailable = imageCache.get(`album:${itemData.name}:${itemData.artist}`);
+            } else {
+                hasPreviewAvailable = await hasPreview(itemData.name, itemData.artist, false, true);
+                if (hasPreviewAvailable !== null) {
+                    imageCache.set(`album:${itemData.name}:${itemData.artist}`, hasPreviewAvailable);
+                }
+            }
         } else {
             hasPreviewAvailable = itemData.image ? true : false;
         }
@@ -138,13 +149,21 @@ export async function createArtistCharts(sortedArtistPlays, artistsMax) {
 
         // Fetch artist image from Deezer
         let imageUrl;
-        try {
-            const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
-            const response = await getJSONP(fetchUrl);
-            imageUrl = response.data[0]?.picture;
-        } catch (error) {
-            console.error(`Error fetching artist image for ${artistName}:`, error);
-            imageUrl = null;
+        // Check image cache first
+        const cacheKey = `artist:${artistName}`;
+        
+        if (imageCache.has(cacheKey)) {
+            imageUrl = imageCache.get(cacheKey);
+        } else {
+            try {
+                const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
+                const response = await getJSONP(fetchUrl);
+                imageUrl = response.data[0]?.picture || null;
+                imageCache.set(cacheKey, imageUrl);
+            } catch (error) {
+                console.error(`Error fetching artist image for ${artistName}:`, error);
+                imageUrl = null;
+            }
         }
 
         return {
@@ -208,45 +227,29 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
         const sortedTrackUsers = trackUsers.sort((a, b) => b[1] - a[1]);
 
         // Search for track on Deezer to get album image and preview
-        const sanitizedTrackTitle = trackInfo.trackName.replace(/\?/g, '');
-        const query = `artist:"${trackInfo.artist}" track:"${sanitizedTrackTitle}"`;
-        const encodedQuery = encodeURIComponent(query);
-        const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
-
+        const cacheKey = `track:${trackInfo.trackName}:${trackInfo.artist}`;
         let foundTrack = null;
-        try {
-            const result = await getJSONP(url);
+        
+        // Check image cache first
+        if (imageCache.has(cacheKey)) {
+            foundTrack = imageCache.get(cacheKey);
+        } else {
+            const sanitizedTrackTitle = trackInfo.trackName.replace(/\?/g, '');
+            const query = `artist:"${trackInfo.artist}" track:"${sanitizedTrackTitle}"`;
+            const encodedQuery = encodeURIComponent(query);
+            const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
 
-            // Find first result that contains matching word in artist and song name
-            const trackWords = trackInfo.trackName.toLowerCase().split(/\s+/);
-            const artistWords = trackInfo.artist.toLowerCase().split(/\s+/);
+            try {
+                const result = await getJSONP(url);
 
-            for (let track of result.data) {
-                const resultTrackTitle = track.title.toLowerCase();
-                const resultArtistName = track.artist.name.toLowerCase();
-                const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-                const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+                // Find first result that contains matching word in artist and song name
+                const trackWords = trackInfo.trackName.toLowerCase().split(/\s+/);
+                const artistWords = trackInfo.artist.toLowerCase().split(/\s+/);
 
-                if (trackMatches && artistMatches) {
-                    foundTrack = track;
-                    break;
-                }
-            }
-
-            // If no match found and title has parentheses, try without
-            if (!foundTrack && trackInfo.trackName.includes('(')) {
-                const newTitle = trackInfo.trackName.replace(/\(.*?\)/g, '').trim();
-                const newQuery = `artist:"${trackInfo.artist}" track:"${newTitle}"`;
-                const newEncodedQuery = encodeURIComponent(newQuery);
-                const newUrl = `https://api.deezer.com/search/track/?q=${newEncodedQuery}&output=jsonp`;
-
-                const newResult = await getJSONP(newUrl);
-
-                const newTrackWords = newTitle.toLowerCase().split(/\s+/);
-                for (let track of newResult.data) {
+                for (let track of result.data) {
                     const resultTrackTitle = track.title.toLowerCase();
                     const resultArtistName = track.artist.name.toLowerCase();
-                    const trackMatches = newTrackWords.some(word => resultTrackTitle.includes(word));
+                    const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
                     const artistMatches = artistWords.some(word => resultArtistName.includes(word));
 
                     if (trackMatches && artistMatches) {
@@ -254,10 +257,36 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
                         break;
                     }
                 }
+
+                // If no match found and title has parentheses, try without
+                if (!foundTrack && trackInfo.trackName.includes('(')) {
+                    const newTitle = trackInfo.trackName.replace(/\(.*?\)/g, '').trim();
+                    const newQuery = `artist:"${trackInfo.artist}" track:"${newTitle}"`;
+                    const newEncodedQuery = encodeURIComponent(newQuery);
+                    const newUrl = `https://api.deezer.com/search/track/?q=${newEncodedQuery}&output=jsonp`;
+
+                    const newResult = await getJSONP(newUrl);
+
+                    const newTrackWords = newTitle.toLowerCase().split(/\s+/);
+                    for (let track of newResult.data) {
+                        const resultTrackTitle = track.title.toLowerCase();
+                        const resultArtistName = track.artist.name.toLowerCase();
+                        const trackMatches = newTrackWords.some(word => resultTrackTitle.includes(word));
+                        const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+                        if (trackMatches && artistMatches) {
+                            foundTrack = track;
+                            break;
+                        }
+                    }
+                }
+                
+                // Cache image
+                imageCache.set(cacheKey, foundTrack);
+            } catch (error) {
+                console.error(`Error fetching track data for ${trackInfo.trackName}:`, error);
+                foundTrack = null;
             }
-        } catch (error) {
-            console.error(`Error fetching track data for ${trackInfo.trackName}:`, error);
-            foundTrack = null;
         }
 
         return {
