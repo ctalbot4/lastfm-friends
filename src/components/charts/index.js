@@ -103,6 +103,7 @@ function toggleCharts() {
     if (!isCollapsed && audioState.currentChartAudio) {
         audioState.currentChartAudio.pause();
         audioState.currentChartAudio.currentTime = 0;
+        audioState.currentChartAudio = null;
         // Reset any playing buttons
         document.querySelectorAll('.play-button.playing').forEach(button => {
             button.classList.remove('playing');

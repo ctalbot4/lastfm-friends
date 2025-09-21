@@ -99,6 +99,7 @@ export async function playChartPreview(title, artistName, listItem, isArtist = f
                 button.querySelector('.play-icon').style.display = 'block';
                 button.querySelector('.pause-icon').style.display = 'none';
             });
+            audioState.currentChartAudio = null;
         }
 
         if (!audioState.currentChartAudio) {
@@ -117,6 +118,7 @@ export async function playChartPreview(title, artistName, listItem, isArtist = f
             playButton.classList.remove('playing');
             playButton.querySelector('.play-icon').style.display = 'block';
             playButton.querySelector('.pause-icon').style.display = 'none';
+            audioState.currentChartAudio = null;
         };
 
         gtag('event', 'chart_play', {

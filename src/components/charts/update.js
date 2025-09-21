@@ -16,6 +16,9 @@ import { updateTickerDisplay } from './ticker.js';
 // Charts - Pages
 import { pageState, displayPage } from './pages.js';
 
+// Preview
+import { audioState } from '../preview/index.js';
+
 // UI
 import { updateProgress } from '../../ui/progress.js';
 
@@ -28,7 +31,12 @@ export let sortedData = {
     tracks: [],
     listeners: [],
     'unique-artists': [],
-    'unique-tracks': []
+    'unique-tracks': [],
+    'complete-albums': [],
+    'artist-streaks': [],
+    'album-streaks': [],
+    'track-streaks': [],
+    'listening-streaks': []
 };
 
 export let trackData = {};
@@ -46,6 +54,16 @@ export function calculateChartData(tracks, username) {
     const userArtists = {};
     const userAlbums = {};
     const userTracks = {};
+    
+    // Track streaks using buffers
+    let artistStreakBuffer = { current: null, count: 0, startDate: null, endDate: null };
+    let albumStreakBuffer = { current: null, count: 0, image: null, startDate: null, endDate: null };
+    let trackStreakBuffer = { current: null, count: 0, startDate: null, endDate: null };
+    let listeningStreakBuffer = { count: 0, startDate: null, endDate: null, lastTrackDate: null };
+    let allArtistStreaks = [];
+    let allAlbumStreaks = [];
+    let allTrackStreaks = [];
+    let allListeningStreaks = [];
     
     // Count plays for each track, artist, and album
     tracks.forEach(track => {
@@ -99,13 +117,169 @@ export function calculateChartData(tracks, username) {
                 artistUrl
             };
         }
+
+        // Track artist streak
+        const trackDate = new Date(track.date.uts * 1000);
+        if (artistStreakBuffer.current === artistName) {
+            artistStreakBuffer.count++;
+            artistStreakBuffer.endDate = trackDate;
+        } else {
+            // Save completed streak
+            if (artistStreakBuffer.count >= 2 && artistStreakBuffer.current) {
+                allArtistStreaks.push({
+                    username: username,
+                    count: artistStreakBuffer.count,
+                    name: artistStreakBuffer.current,
+                    startDate: artistStreakBuffer.endDate,
+                    endDate: artistStreakBuffer.startDate
+                });
+            }
+            artistStreakBuffer.current = artistName;
+            artistStreakBuffer.count = 1;
+            artistStreakBuffer.startDate = trackDate;
+            artistStreakBuffer.endDate = trackDate;
+        }
+        
+        // Track album streak
+        const albumKey = albumName ? `${albumName}::${artistName}` : null;
+        if (albumStreakBuffer.current === albumKey && albumKey) {
+            albumStreakBuffer.count++;
+            albumStreakBuffer.endDate = trackDate;
+        } else {
+            // Save completed streak
+            if (albumStreakBuffer.count >= 2 && albumStreakBuffer.current) {
+                const [albumName, artistName] = albumStreakBuffer.current.split('::');
+                allAlbumStreaks.push({
+                    username: username,
+                    count: albumStreakBuffer.count,
+                    name: albumName,
+                    artist: artistName,
+                    image: albumStreakBuffer.image,
+                    startDate: albumStreakBuffer.endDate,
+                    endDate: albumStreakBuffer.startDate
+                });
+            }
+            albumStreakBuffer.current = albumKey;
+            albumStreakBuffer.count = albumKey ? 1 : 0;
+            albumStreakBuffer.image = albumKey ? track.image[1]["#text"] : null;
+            albumStreakBuffer.startDate = albumKey ? trackDate : null;
+            albumStreakBuffer.endDate = albumKey ? trackDate : null;
+        }
+        
+        // Track track streak
+        const trackStreakKey = `${trackName}::${artistName}`;
+        if (trackStreakBuffer.current === trackStreakKey) {
+            trackStreakBuffer.count++;
+            trackStreakBuffer.endDate = trackDate;
+        } else {
+            // Save completed streak
+            if (trackStreakBuffer.count >= 2 && trackStreakBuffer.current) {
+                const [trackName, artistName] = trackStreakBuffer.current.split('::');
+                allTrackStreaks.push({
+                    username: username,
+                    count: trackStreakBuffer.count,
+                    name: trackName,
+                    artist: artistName,
+                    startDate: trackStreakBuffer.endDate,
+                    endDate: trackStreakBuffer.startDate
+                });
+            }
+            trackStreakBuffer.current = trackStreakKey;
+            trackStreakBuffer.count = 1;
+            trackStreakBuffer.startDate = trackDate;
+            trackStreakBuffer.endDate = trackDate;
+        }
+
+        // Track listening streak of plays within 15 minutes
+        if (listeningStreakBuffer.lastTrackDate) {
+            const timeDiffMinutes = (listeningStreakBuffer.lastTrackDate - trackDate) / (1000 * 60); // Convert to minutes
+            
+            if (timeDiffMinutes <= 15) {
+                // Continue the streak
+                listeningStreakBuffer.count++;
+                listeningStreakBuffer.endDate = trackDate;
+            } else {
+                // Save completed streak
+                if (listeningStreakBuffer.count >= 5) {
+                    const durationSeconds = (listeningStreakBuffer.startDate - listeningStreakBuffer.endDate) / 1000;
+                    allListeningStreaks.push({
+                        username: username,
+                        count: listeningStreakBuffer.count,
+                        duration: Math.round(durationSeconds),
+                        startDate: listeningStreakBuffer.endDate,
+                        endDate: listeningStreakBuffer.startDate
+                    });
+                }
+                // Start new streak
+                listeningStreakBuffer.count = 1;
+                listeningStreakBuffer.startDate = trackDate;
+                listeningStreakBuffer.endDate = trackDate;
+            }
+        } else {
+            // First track
+            listeningStreakBuffer.count = 1;
+            listeningStreakBuffer.startDate = trackDate;
+            listeningStreakBuffer.endDate = trackDate;
+        }
+        listeningStreakBuffer.lastTrackDate = trackDate;
     });
+    
+    // Save any remaining streaks
+    if (artistStreakBuffer.count >= 2 && artistStreakBuffer.current) {
+        allArtistStreaks.push({
+            username: username,
+            count: artistStreakBuffer.count,
+            name: artistStreakBuffer.current,
+            startDate: artistStreakBuffer.endDate,
+            endDate: artistStreakBuffer.startDate
+        });
+    }
+    if (albumStreakBuffer.count >= 2 && albumStreakBuffer.current) {
+        const [albumName, artistName] = albumStreakBuffer.current.split('::');
+        allAlbumStreaks.push({
+            username: username,
+            count: albumStreakBuffer.count,
+            name: albumName,
+            artist: artistName,
+            image: albumStreakBuffer.image,
+            startDate: albumStreakBuffer.endDate,
+            endDate: albumStreakBuffer.startDate
+        });
+    }
+    if (trackStreakBuffer.count >= 2 && trackStreakBuffer.current) {
+        const [trackName, artistName] = trackStreakBuffer.current.split('::');
+        allTrackStreaks.push({
+            username: username,
+            count: trackStreakBuffer.count,
+            name: trackName,
+            artist: artistName,
+            startDate: trackStreakBuffer.endDate,
+            endDate: trackStreakBuffer.startDate
+        });
+    }
+    if (listeningStreakBuffer.count >= 5) {
+        const durationSeconds = (listeningStreakBuffer.startDate - listeningStreakBuffer.endDate) / 1000;
+        allListeningStreaks.push({
+            username: username,
+            count: listeningStreakBuffer.count,
+            duration: Math.round(durationSeconds),
+            startDate: listeningStreakBuffer.endDate,
+            endDate: listeningStreakBuffer.startDate
+        });
+    }
 
     chartDataPerUser[username] = {
         artistPlays: userArtists,
         albumPlays: userAlbums,
-        trackPlays: userTracks
+        trackPlays: userTracks,
+        streaks: {
+            artists: allArtistStreaks,
+            albums: allAlbumStreaks,
+            tracks: allTrackStreaks,
+            listening: allListeningStreaks
+        }
     };
+    return chartDataPerUser[username];
 }
 
 // Calculate listening time for users using top tracks API (needed for duration data)
@@ -196,6 +370,10 @@ export async function updateCharts(useCache = false) {
             pageState.listeners.totalItems = sortedData.listeners?.length || 0;
             pageState['unique-artists'].totalItems = sortedData['unique-artists']?.length || 0;
             pageState['unique-tracks'].totalItems = sortedData['unique-tracks']?.length || 0;
+            pageState['artist-streaks'].totalItems = sortedData['artist-streaks']?.length || 0;
+            pageState['album-streaks'].totalItems = sortedData['album-streaks']?.length || 0;
+            pageState['track-streaks'].totalItems = sortedData['track-streaks']?.length || 0;
+            pageState['listening-streaks'].totalItems = sortedData['listening-streaks']?.length || 0;
             
             // Reset to page 1
             pageState.artists.currentPage = 1;
@@ -204,6 +382,10 @@ export async function updateCharts(useCache = false) {
             pageState.listeners.currentPage = 1;
             pageState['unique-artists'].currentPage = 1;
             pageState['unique-tracks'].currentPage = 1;
+            pageState['artist-streaks'].currentPage = 1;
+            pageState['album-streaks'].currentPage = 1;
+            pageState['track-streaks'].currentPage = 1;
+            pageState['listening-streaks'].currentPage = 1;
             
             // Display first page of each list
             await displayPage('artists');
@@ -212,6 +394,10 @@ export async function updateCharts(useCache = false) {
             await displayPage('listeners');
             await displayPage('unique-artists');
             await displayPage('unique-tracks');
+            await displayPage('artist-streaks');
+            await displayPage('album-streaks');
+            await displayPage('track-streaks');
+            await displayPage('listening-streaks');
         }
         return;
     }
@@ -334,8 +520,6 @@ export async function updateCharts(useCache = false) {
         return pseudoHash(a[0]) - pseudoHash(b[0]);
     });
 
-    store.isFetchingCharts = false;
-
     updateTickerDisplay(sortedData.artists, sortedData.albums, sortedData.tracks);
 
     // Wait for blocks and listening time to finish updating
@@ -354,6 +538,36 @@ export async function updateCharts(useCache = false) {
     sortedData['unique-tracks'] = Object.entries(userStats)
         .filter(([username, stats]) => stats.totalTracks > 0)
         .sort((a, b) => b[1].totalTracks - a[1].totalTracks);
+    
+    // Sort streaks
+    const artistStreaks = [];
+    const albumStreaks = [];
+    const trackStreaks = [];
+    const listeningStreaks = [];
+    
+    Object.entries(chartDataPerUser).forEach(([username, userData]) => {
+        artistStreaks.push(...userData.streaks.artists);
+        albumStreaks.push(...userData.streaks.albums);
+        trackStreaks.push(...userData.streaks.tracks);
+        listeningStreaks.push(...userData.streaks.listening);
+    });
+    
+    sortedData['artist-streaks'] = artistStreaks
+        .sort((a, b) => b.count - a.count);
+    
+    sortedData['album-streaks'] = albumStreaks
+        .sort((a, b) => b.count - a.count);
+    
+    sortedData['track-streaks'] = trackStreaks
+        .sort((a, b) => b.count - a.count);
+    
+    sortedData['listening-streaks'] = listeningStreaks
+        .sort((a, b) => b.duration - a.duration);
+
+    // Wait for chart audio to finish playing
+    while (audioState.currentChartAudio) {
+        await new Promise(r => setTimeout(r, 100));
+    }
 
     pageState.artists.totalItems = sortedData.artists.length;
     pageState.albums.totalItems = sortedData.albums.length;
@@ -361,6 +575,10 @@ export async function updateCharts(useCache = false) {
     pageState.listeners.totalItems = sortedData.listeners.length;
     pageState['unique-artists'].totalItems = sortedData['unique-artists'].length;
     pageState['unique-tracks'].totalItems = sortedData['unique-tracks'].length;
+    pageState['artist-streaks'].totalItems = sortedData['artist-streaks'].length;
+    pageState['album-streaks'].totalItems = sortedData['album-streaks'].length;
+    pageState['track-streaks'].totalItems = sortedData['track-streaks'].length;
+    pageState['listening-streaks'].totalItems = sortedData['listening-streaks'].length;
 
     await displayPage('artists');
     await displayPage('albums');
@@ -368,12 +586,14 @@ export async function updateCharts(useCache = false) {
     await displayPage('listeners');
     await displayPage('unique-artists');
     await displayPage('unique-tracks');
+    await displayPage('artist-streaks');
+    await displayPage('album-streaks');
+    await displayPage('track-streaks');
+    await displayPage('listening-streaks');
 
     cacheListening(userListeningTime, userPlayCounts);
     cachePlays(trackPlays);
     cacheSortedData(sortedData);
 
     trackData = trackPlays;
-
-    store.isUpdatingCharts = false;
 }

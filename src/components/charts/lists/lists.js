@@ -6,9 +6,6 @@ import { getJSONP } from "../../../api/deezer.js";
 // Blocks
 import { userPlayCounts } from "../../blocks/update.js";
 
-// Charts
-import { userStats, userListeningTime } from "../update.js";
-
 // Preview
 import { audioState, hasPreview } from "../../preview/index.js";
 import { playChartPreview } from "../../preview/charts.js";
@@ -17,21 +14,33 @@ import { playChartPreview } from "../../preview/charts.js";
 const imageCache = new Map();
 
 // Helper function to format duration
-function formatDuration(totalSeconds) {
+function formatDuration(totalSeconds, includeMinutes = false) {
     if (!totalSeconds) return "0s";
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     let string = "";
-    if (days > 0) string += `${days}d `;
-    if (hours > 0) {
+    
+    if (days > 0) {
+        string += `${days}d `;
+        if (hours > 0) {
+            string += `${hours}h `;
+        }
+        if (includeMinutes && minutes > 0) {
+            string += `${minutes}m `;
+        }
+    } else if (hours > 0) {
         string += `${hours}h `;
-    } else if (days === 0 && minutes > 0) {
+        if (includeMinutes && minutes > 0) {
+            string += `${minutes}m `;
+        }
+    } else if (minutes > 0) {
         string += `${minutes}m `;
-    } else if (days === 0 && seconds > 0) {
+    } else if (seconds > 0) {
         string += `${seconds}s`;
     }
+    
     return string || "0s";
 }
 
@@ -81,7 +90,10 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
             </div>
             <div class="item-subtext">
               ${isTrack || isAlbum ? `<span class="artist-subtext"><a href="${itemData.artistUrl}" target="_blank">${itemData.artist}</a></span>` : ""}
-              <span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} plays</span>
+              ${itemData.streakDays ? 
+                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} plays ${itemData.streakDays.includes('-') ? 'from' : 'on'} ${itemData.streakDays}</span>` :
+                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} plays</span>`
+              }
             </div>
           </div>
         <div class="listeners">
@@ -100,6 +112,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
                 playButton.classList.remove('playing');
                 playIcon.style.display = 'block';
                 pauseIcon.style.display = 'none';
+                audioState.currentChartAudio = null;
             } else {
                 // Play the preview
                 await playChartPreview(itemData.name, isTrack || isAlbum ? itemData.artist : null, li, !isTrack && !isAlbum, isAlbum);
@@ -396,6 +409,199 @@ export function createUniqueTracksChart(sortedUsers, maxTracks) {
                 </div>
                 <div class="item-subtext">
                     <span class="plays">${stats?.totalTracks.toLocaleString()} tracks${totalPlays > 0 ? ` - ${(totalPlays / stats.totalTracks).toFixed(2).toLocaleString()} plays per track` : ""}</span>
+                </div>
+            </div>
+        `;
+
+        return li;
+    });
+    return listenerItems;
+}
+
+// Helper function to format days of the week
+function formatStreakDays(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    if (start.toDateString() === end.toDateString()) {
+        return dayNames[start.getDay()];
+    }
+    
+    const startDay = dayNames[start.getDay()];
+    const endDay = dayNames[end.getDay()];
+    
+    return `${startDay}-${endDay}`;
+}
+
+// Create artist streaks chart
+export async function createArtistStreaksChart(sortedStreaks, maxStreak) {
+
+    const artistChartPromises = sortedStreaks.map(async (streak) => {
+        const artistName = streak.name;
+        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+
+        // Fetch artist image from Deezer
+        let imageUrl;
+        const cacheKey = `artist:${artistName}`;
+        
+        if (imageCache.has(cacheKey)) {
+            imageUrl = imageCache.get(cacheKey);
+        } else {
+            try {
+                const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
+                const response = await getJSONP(fetchUrl);
+                imageUrl = response.data[0]?.picture || null;
+                imageCache.set(cacheKey, imageUrl);
+            } catch (error) {
+                console.error(`Error fetching artist image for ${artistName}:`, error);
+                imageUrl = null;
+            }
+        }
+
+        return {
+            name: artistName,
+            plays: streak.count,
+            image: imageUrl,
+            url: `https://www.last.fm/music/${encodeURIComponent(artistName)}`,
+            streakDays: formatStreakDays(streak.startDate, streak.endDate),
+            listeners: [{
+                user: streak.username,
+                img: profilePic,
+                plays: streak.count,
+                url: `https://www.last.fm/user/${streak.username}`
+            }]
+        };
+    });
+
+    const artistResults = await Promise.all(artistChartPromises);
+    const listItemPromises = artistResults.map(data => createListItem(data, maxStreak));
+    return await Promise.all(listItemPromises);
+}
+
+// Create album streaks chart
+export async function createAlbumStreaksChart(sortedStreaks, maxStreak) {
+
+    const albumChartPromises = sortedStreaks.map(async (streak) => {
+        const albumName = streak.name;
+        const artistName = streak.artist;
+        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+
+        return {
+            name: albumName,
+            artist: artistName,
+            plays: streak.count,
+            image: streak.image,
+            url: `https://www.last.fm/music/${encodeURIComponent(artistName)}/${encodeURIComponent(albumName)}`,
+            artistUrl: `https://www.last.fm/music/${encodeURIComponent(artistName)}`,
+            streakDays: formatStreakDays(streak.startDate, streak.endDate),
+            listeners: [{
+                user: streak.username,
+                img: profilePic,
+                plays: streak.count,
+                url: `https://www.last.fm/user/${streak.username}`
+            }]
+        };
+    });
+
+    const albumResults = await Promise.all(albumChartPromises);
+    const listItemPromises = albumResults.map(data => createListItem(data, maxStreak, false, true));
+    return await Promise.all(listItemPromises);
+}
+
+// Create track streaks chart
+export async function createTrackStreaksChart(sortedStreaks, maxStreak) {
+
+    const trackChartPromises = sortedStreaks.map(async (streak) => {
+        const trackName = streak.name;
+        const artistName = streak.artist;
+        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+
+        // Search for track on Deezer to get album image and preview
+        const cacheKey = `track:${trackName}:${artistName}`;
+        let foundTrack = null;
+        
+        if (imageCache.has(cacheKey)) {
+            foundTrack = imageCache.get(cacheKey);
+        } else {
+            const sanitizedTrackTitle = trackName.replace(/\?/g, '');
+            const query = `artist:"${artistName}" track:"${sanitizedTrackTitle}"`;
+            const encodedQuery = encodeURIComponent(query);
+            const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+
+            try {
+                const result = await getJSONP(url);
+                const trackWords = trackName.toLowerCase().split(/\s+/);
+                const artistWords = artistName.toLowerCase().split(/\s+/);
+
+                for (let track of result.data) {
+                    const resultTrackTitle = track.title.toLowerCase();
+                    const resultArtistName = track.artist.name.toLowerCase();
+                    const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
+                    const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+
+                    if (trackMatches && artistMatches) {
+                        foundTrack = track;
+                        break;
+                    }
+                }
+                imageCache.set(cacheKey, foundTrack);
+            } catch (error) {
+                console.error(`Error fetching track data for ${trackName}:`, error);
+                foundTrack = null;
+            }
+        }
+
+        return {
+            name: trackName,
+            artist: artistName,
+            plays: streak.count,
+            url: `https://www.last.fm/music/${encodeURIComponent(artistName)}/_/${encodeURIComponent(trackName)}`,
+            artistUrl: `https://www.last.fm/music/${encodeURIComponent(artistName)}`,
+            image: foundTrack?.album?.cover_medium,
+            preview: foundTrack?.preview,
+            streakDays: formatStreakDays(streak.startDate, streak.endDate),
+            listeners: [{
+                user: streak.username,
+                img: profilePic,
+                plays: streak.count,
+                url: `https://www.last.fm/user/${streak.username}`
+            }]
+        };
+    });
+
+    const trackResults = await Promise.all(trackChartPromises);
+    const listItemPromises = trackResults.map(data => createListItem(data, maxStreak, true));
+    return await Promise.all(listItemPromises);
+}
+
+// Create listening streaks chart
+export function createListeningStreaksChart(sortedStreaks, maxStreak) {
+
+    const listenerItems = sortedStreaks.map((streak) => {
+        const li = document.createElement("li");
+        li.classList.add("list-item");
+
+        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userUrl = `https://www.last.fm/user/${streak.username}`;
+        const streakDays = formatStreakDays(streak.startDate, streak.endDate);
+        const durationFormatted = formatDuration(streak.duration, true);
+
+        li.innerHTML = `
+            <div class="bar" style="width: ${15 + (streak.duration / maxStreak) * 85}%;"></div>
+            <div class="image-container listener-image-container" style="background-image: url('${profilePic}');">
+            </div>
+            <div class="item-info">
+                <div class="item-name">
+                    <a href="${userUrl}" target="_blank">${streak.username}</a>
+                </div>
+                <div class="item-subtext">
+                    <span class="plays">${streak.count.toLocaleString()} plays over ${durationFormatted} ${streakDays.includes('-') ? 'from' : 'on'} ${streakDays}</span>
                 </div>
             </div>
         `;

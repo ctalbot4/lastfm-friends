@@ -60,7 +60,7 @@ async function updateBlock(block, key = store.keys.KEY) {
         updateScatterData(tracks, username);
 
         // Calculate list data from recent tracks
-        calculateChartData(tracks, username);
+        const userChartData = calculateChartData(tracks, username);
 
         userPlayCounts[username] = parseInt(data.recenttracks["@attr"].total);
 
@@ -74,11 +74,6 @@ async function updateBlock(block, key = store.keys.KEY) {
             newBlock.dataset.listenersLoaded = "0";
             newBlock.dataset.reset = "true";
             newBlock.querySelector(".listeners-container").classList.remove("active");
-        }
-
-        // Wait for chart data to finish fetching (for star icons)
-        while (store.isFetchingCharts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
         }
 
         // Workaround for heart and star icons wrapping incorrectly
@@ -100,29 +95,21 @@ async function updateBlock(block, key = store.keys.KEY) {
 
         // Check if artist is in user's top 4 weekly artists
         let isTopArtist = false;
-        if (sortedData.artists) {
-            const artistData = sortedData.artists.find(([name]) => name === recentTrack.artist.name);
-            if (artistData && artistData[1].users && artistData[1].users[username]) {
-                const userArtists = sortedData.artists
-                    .filter(([name, data]) => data.users && data.users[username])
-                    .sort((a, b) => b[1].users[username] - a[1].users[username])
-                    .slice(0, 4);
-                isTopArtist = userArtists.some(([name]) => name === recentTrack.artist.name);
-            }
+        if (userChartData && userChartData.artistPlays) {
+            const userArtists = Object.entries(userChartData.artistPlays)
+                .sort((a, b) => b[1].plays - a[1].plays)
+                .slice(0, 4);
+            isTopArtist = userArtists.some(([artistName]) => artistName === recentTrack.artist.name);
         }
 
         // Check if track is in user's top 8 weekly tracks
         let isTopTrack = false;
-        if (sortedData.tracks) {
+        if (userChartData && userChartData.trackPlays) {
             const trackKey = `${trimmedName}::${recentTrack.artist.name}`;
-            const trackData = sortedData.tracks.find(([key]) => key === trackKey);
-            if (trackData && trackData[1].users && trackData[1].users[username]) {
-                const userTracks = sortedData.tracks
-                    .filter(([key, data]) => data.users && data.users[username])
-                    .sort((a, b) => b[1].users[username] - a[1].users[username])
-                    .slice(0, 8);
-                isTopTrack = userTracks.some(([key]) => key === trackKey);
-            }
+            const userTracks = Object.entries(userChartData.trackPlays)
+                .sort((a, b) => b[1].plays - a[1].plays)
+                .slice(0, 8);
+            isTopTrack = userTracks.some(([key]) => key === trackKey);
         }
 
         newBlock.querySelector(".bottom > .track-info > .song-title > a").innerHTML = `
@@ -211,7 +198,7 @@ export async function updateAllBlocks() {
 
     // Update second chunk if necessary
     if (store.friendCount > 250) {
-        await new Promise(resolve => setTimeout(resolve, 8000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         chunks.push(blocksArr.slice(250, 500));
         const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, store.keys.KEY2)));
         newBlocks.push(...blockPromises);

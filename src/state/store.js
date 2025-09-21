@@ -7,8 +7,6 @@ export const store = {
     scrollTimeoutId: null,
     isFetchingListeners: false,
     isUpdatingBlocks: false,
-    isUpdatingCharts: false,
-    isFetchingCharts: false,
     isUpdatingListening: false,
     isScheduling: false,
     keys: {

@@ -4,7 +4,7 @@ import { store } from "../state/store.js";
 const blockContainer = document.getElementById("block-container");
 
 const dbName = 'lastfmfriends';
-const dbVersion = 4;
+const dbVersion = 5;
 let db;
 
 export function initCache() {

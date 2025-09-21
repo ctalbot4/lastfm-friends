@@ -1,6 +1,6 @@
 {
-  "name": "Last.fm Friends",
-  "short_name": "fmFriends",
+  "name": "lastfmfriends.live",
+  "short_name": "lastfmfriends.live",
   "icons": [
     {
       "src": "/favicon/web-app-manifest-192x192.png",

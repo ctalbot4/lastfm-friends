@@ -2,7 +2,7 @@
 import { sortedData } from "./update.js";
 
 // Charts - Lists
-import { createAlbumCharts, createArtistCharts, createTrackCharts, createUniqueArtistsChart, createUniqueTracksChart, createTopListenersChart } from './lists/lists.js';
+import { createAlbumCharts, createArtistCharts, createTrackCharts, createUniqueArtistsChart, createUniqueTracksChart, createTopListenersChart, createArtistStreaksChart, createAlbumStreaksChart, createTrackStreaksChart, createListeningStreaksChart } from './lists/lists.js';
 
 // Page state
 export const pageState = {
@@ -11,7 +11,11 @@ export const pageState = {
     tracks: { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
     listeners: { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
     'unique-artists': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
-    'unique-tracks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 }
+    'unique-tracks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
+    'artist-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
+    'album-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
+    'track-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
+    'listening-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 }
 };
 
 // Display a page for a list
@@ -34,6 +38,14 @@ export async function displayPage(listType) {
             maxValue = Math.max(...data.map(item => item[1].totalArtists));
         } else if (listType === 'unique-tracks') {
             maxValue = Math.max(...data.map(item => item[1].totalTracks));
+        } else if (listType === 'artist-streaks') {
+            maxValue = Math.max(...data.map(item => item.count));
+        } else if (listType === 'album-streaks') {
+            maxValue = Math.max(...data.map(item => item.count));
+        } else if (listType === 'track-streaks') {
+            maxValue = Math.max(...data.map(item => item.count));
+        } else if (listType === 'listening-streaks') {
+            maxValue = Math.max(...data.map(item => item.duration));
         } else {
             maxValue = Math.max(...data.map(item => item[1].plays));
         }
@@ -52,6 +64,14 @@ export async function displayPage(listType) {
         chartItems = createUniqueArtistsChart(pageData, maxValue);
     } else if (listType === 'unique-tracks') {
         chartItems = createUniqueTracksChart(pageData, maxValue);
+    } else if (listType === 'artist-streaks') {
+        chartItems = await createArtistStreaksChart(pageData, maxValue);
+    } else if (listType === 'album-streaks') {
+        chartItems = await createAlbumStreaksChart(pageData, maxValue);
+    } else if (listType === 'track-streaks') {
+        chartItems = await createTrackStreaksChart(pageData, maxValue);
+    } else if (listType === 'listening-streaks') {
+        chartItems = await createListeningStreaksChart(pageData, maxValue);
     }
 
     const listElement = document.getElementById(`${listType}-list`);
