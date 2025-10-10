@@ -16,6 +16,7 @@
     <meta name="apple-mobile-web-app-title" content="lastfmfriends.live">
     <link rel="manifest" href="favicon/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2QMKX3VH8T"></script>
 <script>
@@ -123,10 +124,14 @@
                         <img src="icons/scatter.png" width="20" height="20" alt="Scatter Plot">
                         <span>Scatter</span>
                     </button>
+                    <button data-view="network" title="Network Graph">
+                        <img src="icons/network.png" width="20" height="20" alt="Network Graph">
+                        <span>Network</span>
+                    </button>
                 </div>
             </div>
             <div class="charts-sections">
-                <div id="artists-section" class="chart-section">
+                <div id="artists-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Top Artists</h2>
                         <div class="page-controls">
@@ -136,7 +141,7 @@
                     </div>
                     <ul id="artists-list" class="top-list"></ul>
                 </div>
-                <div class="chart-section">
+                <div class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Top Albums</h2>
                         <div class="page-controls">
@@ -146,7 +151,7 @@
                     </div>
                     <ul id="albums-list" class="top-list"></ul>
                 </div>
-                <div id="tracks-section" class="chart-section">
+                <div id="tracks-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Top Tracks</h2>
                         <div class="page-controls">
@@ -156,7 +161,7 @@
                     </div>
                     <ul id="tracks-list" class="top-list"></ul>
                 </div>
-                <div id="listeners-section" class="chart-section">
+                <div id="listeners-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Top Listeners</h2>
                         <div class="page-controls">
@@ -166,7 +171,7 @@
                     </div>
                     <ul id="listeners-list" class="top-list users-list"></ul>
                 </div>
-                <div id="unique-artists-section" class="chart-section">
+                <div id="unique-artists-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Unique Artists per Friend</h2>
                         <div class="page-controls">
@@ -176,7 +181,7 @@
                     </div>
                     <ul id="unique-artists-list" class="top-list users-list"></ul>
                 </div>
-                <div id="unique-tracks-section" class="chart-section">
+                <div id="unique-tracks-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Unique Tracks per Friend</h2>
                         <div class="page-controls">
@@ -186,7 +191,7 @@
                     </div>
                     <ul id="unique-tracks-list" class="top-list users-list"></ul>
                 </div>
-                <div id="listening-streaks-section" class="chart-section">
+                <div id="listening-streaks-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Longest Listening Streaks</h2>
                         <div class="page-controls">
@@ -196,15 +201,15 @@
                     </div>
                     <ul id="listening-streaks-list" class="top-list users-list"></ul>
                 </div>
-                <div id="hourly-section" class="chart-section">
+                <div id="hourly-section" class="chart-section stats-section">
                     <h2>Activity by Hour</h2>
                     <div id="hourly-chart" class="activity-chart"></div>
                 </div>
-                <div id="daily-section" class="chart-section">
+                <div id="daily-section" class="chart-section stats-section">
                     <h2>Activity by Day</h2>
                     <div id="daily-chart" class="activity-chart"></div>
                 </div>
-                <div id="artist-streaks-section" class="chart-section">
+                <div id="artist-streaks-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Longest Artist Streaks</h2>
                         <div class="page-controls">
@@ -214,7 +219,7 @@
                     </div>
                     <ul id="artist-streaks-list" class="top-list users-list"></ul>
                 </div>
-                <div id="album-streaks-section" class="chart-section">
+                <div id="album-streaks-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Longest Album Streaks</h2>
                         <div class="page-controls">
@@ -224,7 +229,7 @@
                     </div>
                     <ul id="album-streaks-list" class="top-list users-list"></ul>
                 </div>
-                <div id="track-streaks-section" class="chart-section">
+                <div id="track-streaks-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Longest Track Streaks</h2>
                         <div class="page-controls">
@@ -237,6 +242,22 @@
                 <div id="scatter-section" class="chart-section" style="display: none">
                     <h2>Every Play From Every Friend</h2>
                     <div id="scatter-chart" class="activity-chart"></div>
+                </div>
+                <div id="network-section" class="chart-section" style="display: none">
+                    <div class="network-chart-container">
+                        <div id="network-chart"></div>
+                        <div class="network-organizing-overlay">
+                            <div class="organizing-text">Simulating network...</div>
+                            <div class="network-progress-bar">
+                                <div class="network-progress-fill"></div>
+                            </div>
+                            <div class="mobile-notice">Limited mobile support for Network. Use desktop for the best experience.</div>
+                        </div>
+                        <div class="network-zoom-controls">
+                            <button class="zoom-btn zoom-in" title="Zoom In">+</button>
+                            <button class="zoom-btn zoom-out" title="Zoom Out">−</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

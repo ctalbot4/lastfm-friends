@@ -1,6 +1,9 @@
 // Charts - Scatter
 import { tryScatterUpdate } from "./scatter/data.js";
 
+// Charts - Network
+import { tryNetworkUpdate } from "./network/data.js";
+
 // Charts - Pages
 import { navigatePage } from "./pages.js";
 
@@ -120,18 +123,24 @@ function toggleCharts() {
 
     charts.classList.toggle('collapsed');
 
+    // Update network if it's what we're opening to
+    if (isCollapsed && document.querySelector('#network-section').style.display !== 'none') {
+        tryNetworkUpdate();
+    }
+
     gtag('event', 'charts_toggle', {
         chart_state: isCollapsed ? 'expanded' : 'collapsed'
     });
 }
 
-// Toggle between charts and scatter
+// Toggle between chart views
 function toggleView(view) {
     const charts = document.querySelector('#charts');
     const scrollable = charts.querySelector('.charts-scrollable');
     const buttons = document.querySelectorAll('#inner-charts-toggle button');
-    const chartSections = document.querySelectorAll('.chart-section:not(#scatter-section)');
+    const chartSections = document.querySelectorAll('.chart-section:not(#scatter-section):not(#network-section)');
     const scatterSection = document.querySelector('#scatter-section');
+    const networkSection = document.querySelector('#network-section');
 
     // Update active button
     buttons.forEach(button => {
@@ -142,11 +151,19 @@ function toggleView(view) {
     if (view === 'scatter') {
         chartSections.forEach(section => section.style.display = 'none');
         scatterSection.style.display = '';
+        networkSection.style.display = 'none';
         tryScatterUpdate();
         gtag('event', 'scatter_view');
+    } else if (view === 'network') {
+        chartSections.forEach(section => section.style.display = 'none');
+        scatterSection.style.display = 'none';
+        networkSection.style.display = '';
+        tryNetworkUpdate();
+        gtag('event', 'network_view');
     } else {
         chartSections.forEach(section => section.style.display = '');
         scatterSection.style.display = 'none';
+        networkSection.style.display = 'none';
     }
 
     // Clear tooltips

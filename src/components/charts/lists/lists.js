@@ -1,4 +1,5 @@
-// "Top Artists", "Top Albums", "Top Tracks", "Unique Artists", "Unique Tracks" charts
+// "Top Artists", "Top Albums", "Top Tracks", "Unique Artists", "Unique Tracks", 
+// "Listening Streaks", "Artist Streaks", "Album Streaks", "Track Streaks" charts
 
 // API
 import { getJSONP } from "../../../api/deezer.js";
@@ -11,7 +12,7 @@ import { audioState, hasPreview } from "../../preview/index.js";
 import { playChartPreview } from "../../preview/charts.js";
 
 // Cache for images and previews
-const imageCache = new Map();
+export const imageCache = new Map();
 
 // Helper function to format duration
 function formatDuration(totalSeconds, includeMinutes = false) {
@@ -48,6 +49,11 @@ function formatDuration(totalSeconds, includeMinutes = false) {
 async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = false) {
     const li = document.createElement("li");
     li.classList.add("list-item");
+    
+    // Add streak class if only one listener for custom spacing
+    if (itemData.streakDays && itemData.listeners.length === 1) {
+        li.classList.add("streak-item");
+    }
 
     // Check for preview availability on Deezer
     let hasPreviewAvailable = false;
@@ -418,21 +424,37 @@ export function createUniqueTracksChart(sortedUsers, maxTracks) {
     return listenerItems;
 }
 
-// Helper function to format days of the week
+// Helper function to format days of the week with time ranges
 function formatStreakDays(startDate, endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
     
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
-    if (start.toDateString() === end.toDateString()) {
-        return dayNames[start.getDay()];
+    function formatTime(date) {
+        let hours = date.getHours();
+        const ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12 || 12;
+        return `${hours}${ampm}`;
     }
     
     const startDay = dayNames[start.getDay()];
+    const startTime = formatTime(start);
+    const endTime = formatTime(end);
+    
+    if (start.toDateString() === end.toDateString()) {
+        // Same day
+        if (start.getHours() === end.getHours()) {
+            // Same hour
+            return `${startDay} ${startTime}`;
+        }
+        return `${startDay} ${startTime}–${endTime}`;
+    }
+    
     const endDay = dayNames[end.getDay()];
     
-    return `${startDay}-${endDay}`;
+    // Different days
+    return `${startDay} ${startTime} – ${endDay} ${endTime}`;
 }
 
 // Create artist streaks chart

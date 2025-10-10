@@ -19,6 +19,42 @@ export function initAnalytics() {
                 click_type: "tracks",
                 track_target: target.textContent,
             });
+        } else if (target.closest("#listeners-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "listeners",
+                listener_target: target.textContent,
+            });
+        }
+        else if (target.closest("#unique-artists-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "unique_artists",
+                artist_target: target.textContent,
+            });
+        } else if (target.closest("#unique-tracks-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "unique_tracks",
+                track_target: target.textContent,
+            });
+        } else if (target.closest("#listening-streaks-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "listening_streaks",
+                streak_target: target.textContent,
+            });
+        } else if (target.closest("#artist-streaks-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "artist_streaks",
+                streak_target: target.textContent,
+            });
+        } else if (target.closest("#album-streaks-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "album_streaks",
+                streak_target: target.textContent,
+            });
+        } else if (target.closest("#track-streaks-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "track_streaks",
+                streak_target: target.textContent,
+            });
         }
 
         // Track clicks in block-container

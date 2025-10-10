@@ -4,12 +4,6 @@ import { store } from '../../state/store.js';
 // API
 import * as lastfm from '../../api/lastfm.js';
 
-// Blocks - Update
-import { userPlayCounts } from '../blocks/update.js';
-
-// Cache
-import { cachePlays, getCachedPlays, cacheSortedData, getCachedSortedData, cacheListening } from '../cache.js';
-
 // Charts - Ticker
 import { updateTickerDisplay } from './ticker.js';
 
@@ -277,7 +271,8 @@ export function calculateChartData(tracks, username) {
             albums: allAlbumStreaks,
             tracks: allTrackStreaks,
             listening: allListeningStreaks
-        }
+        },
+        recentTracks: tracks
     };
     return chartDataPerUser[username];
 }
@@ -293,16 +288,16 @@ export async function calculateListeningTime() {
     const blocksArr = Array.from(blocks);
     
     const chunks = [];
-    chunks.push(blocksArr.slice(0, 250));
+    chunks.push(blocksArr.slice(0, 200));
     
     // Fetch listening time for first chunk
     const listeningPromises = Array.from(chunks[0]).map(block => fetchListeningTime(block));
     await Promise.all(listeningPromises);
     
     // Fetch second chunk if necessary
-    if (store.friendCount > 250) {
+    if (store.friendCount > 200) {
         await new Promise(resolve => setTimeout(resolve, 8000));
-        chunks.push(blocksArr.slice(250, 500));
+        chunks.push(blocksArr.slice(200, 400));
         const listeningPromises = Array.from(chunks[1]).map(block => fetchListeningTime(block, store.keys.KEY2));
         await Promise.all(listeningPromises);
     }
@@ -311,8 +306,6 @@ export async function calculateListeningTime() {
 
     store.updateTimers.listening.lastUpdate = Date.now();
     store.isUpdatingListening = false;
-
-    cacheListening(userListeningTime, userPlayCounts);
 }
 
 // Fetch listening time for a single user
@@ -347,60 +340,10 @@ function pseudoHash(str) {
 }
 
 // Update charts and ticker
-export async function updateCharts(useCache = false) {
+export async function updateCharts() {
     let artistPlays = null;
     let albumPlays = null;
     let trackPlays = null;
-
-    // If using cache, just load trackPlays and return
-    if (useCache) {
-        const cachedPlays = await getCachedPlays();
-        if (cachedPlays) {
-            trackData = cachedPlays;
-            store.foundTickerCache = true;
-        }
-        const cachedSortedData = await getCachedSortedData();
-        if (cachedSortedData) {
-            sortedData = cachedSortedData;
-            
-            // Update page state from cached data
-            pageState.artists.totalItems = sortedData.artists?.length || 0;
-            pageState.albums.totalItems = sortedData.albums?.length || 0;
-            pageState.tracks.totalItems = sortedData.tracks?.length || 0;
-            pageState.listeners.totalItems = sortedData.listeners?.length || 0;
-            pageState['unique-artists'].totalItems = sortedData['unique-artists']?.length || 0;
-            pageState['unique-tracks'].totalItems = sortedData['unique-tracks']?.length || 0;
-            pageState['artist-streaks'].totalItems = sortedData['artist-streaks']?.length || 0;
-            pageState['album-streaks'].totalItems = sortedData['album-streaks']?.length || 0;
-            pageState['track-streaks'].totalItems = sortedData['track-streaks']?.length || 0;
-            pageState['listening-streaks'].totalItems = sortedData['listening-streaks']?.length || 0;
-            
-            // Reset to page 1
-            pageState.artists.currentPage = 1;
-            pageState.albums.currentPage = 1;
-            pageState.tracks.currentPage = 1;
-            pageState.listeners.currentPage = 1;
-            pageState['unique-artists'].currentPage = 1;
-            pageState['unique-tracks'].currentPage = 1;
-            pageState['artist-streaks'].currentPage = 1;
-            pageState['album-streaks'].currentPage = 1;
-            pageState['track-streaks'].currentPage = 1;
-            pageState['listening-streaks'].currentPage = 1;
-            
-            // Display first page of each list
-            await displayPage('artists');
-            await displayPage('albums');
-            await displayPage('tracks');
-            await displayPage('listeners');
-            await displayPage('unique-artists');
-            await displayPage('unique-tracks');
-            await displayPage('artist-streaks');
-            await displayPage('album-streaks');
-            await displayPage('track-streaks');
-            await displayPage('listening-streaks');
-        }
-        return;
-    }
 
     // Process calculated data from each user
     artistPlays = {};
@@ -590,10 +533,6 @@ export async function updateCharts(useCache = false) {
     await displayPage('album-streaks');
     await displayPage('track-streaks');
     await displayPage('listening-streaks');
-
-    cacheListening(userListeningTime, userPlayCounts);
-    cachePlays(trackPlays);
-    cacheSortedData(sortedData);
 
     trackData = trackPlays;
 }

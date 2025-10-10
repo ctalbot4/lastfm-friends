@@ -1,13 +1,13 @@
 // JSONP helper
-export function getJSONP(url) {
+export function getJSONP(url, timeout = 2000) {
     return new Promise((resolve, reject) => {
         const callbackName = "jsonp_callback_" + Math.round(100000 * Math.random());
-        const timeout = setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             reject(new Error('JSONP request timed out'));
-        }, 2000);
+        }, timeout);
 
         window[callbackName] = function(data) {
-            clearTimeout(timeout);
+            clearTimeout(timeoutId);
             resolve(data);
             delete window[callbackName];
             document.body.removeChild(script);

@@ -7,14 +7,17 @@ import * as lastfm from "../api/lastfm.js";
 // Blocks
 import { createBlock } from "./blocks/create.js";
 import { setupBlocks } from "./blocks/index.js";
-import { updateAllBlocks, setUserPlayCounts } from "./blocks/update.js";
+import { updateAllBlocks } from "./blocks/update.js";
 
 // Cache
-import { cacheFriends, getCachedBlocks, getCachedChartsHTML, getCachedFriends, getData, getCachedListening } from "./cache.js";
+import { getData } from "./cache.js";
 
 // Charts
 import { initCharts } from "./charts/index.js";
-import { calculateListeningTime, updateCharts, setUserListeningTime } from "./charts/update.js";
+import { calculateListeningTime } from "./charts/update.js";
+
+// Charts - Network
+import { tryNetworkUpdate } from "./charts/network/data.js";
 
 // Schedule
 import { scheduleUpdates, cancelUpdates } from "./schedule.js";
@@ -23,20 +26,6 @@ import { scheduleUpdates, cancelUpdates } from "./schedule.js";
 import { getUsernameFromURL } from "../ui/dom.js";
 
 const blockContainer = document.getElementById("block-container");
-
-function formatCacheTime(milliseconds) {
-    const totalSeconds = Math.floor(Math.abs(milliseconds) / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    if (minutes === 0) {
-        return `${seconds}s`;
-    } else if (seconds === 0) {
-        return `${minutes}m`;
-    } else {
-        return `${minutes}m ${seconds}s`;
-    }
-}
 
 export async function initDashboard() {
     document.title = `${getUsernameFromURL()} | lastfmfriends.live`;
@@ -60,6 +49,7 @@ export async function initDashboard() {
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
             scheduleUpdates();
+            tryNetworkUpdate();
         } else {
             cancelUpdates();
         }
@@ -134,81 +124,22 @@ async function initialFetch() {
         store.updateTimers.listening.interval = Math.max(180000, (store.friendCount / 5) * 5 * 3000);
 
         // Get secondary key if necessary
-        if (store.friendCount > 250) {
+        if (store.friendCount > 200) {
             store.keys.KEY2 = await getKey(2);
         }
 
-        const cachedFriends = await getCachedFriends();
-
-        if (cachedFriends) {
-            const list = [];
-            friends.forEach(friend => {
-                list.push(friend.name);
-            });
-            if (JSON.stringify(list) === JSON.stringify(cachedFriends)) {
-                const cachedSchedule = await getData('schedule', store.username);
-                if (cachedSchedule) {
-                    const {
-                        blocks,
-                        listening
-                    } = cachedSchedule;
-                    store.updateTimers.blocks.lastUpdate = blocks;
-                    store.updateTimers.listening.lastUpdate = listening;
-
-                    const now = Date.now();
-
-                    // Calculate time when the next update should occur
-                    let nextBlockUpdateTime = store.updateTimers.blocks.lastUpdate + store.updateTimers.blocks.interval;
-                    let blocksDelay = nextBlockUpdateTime - now;
-
-                    if (blocksDelay > 0) {
-                        const cachedBlocks = await getCachedBlocks();
-                        const chartsHTMLCache = await getCachedChartsHTML();
-                        if (cachedBlocks && chartsHTMLCache) {
-                            store.foundBlocksCache = true;
-                            store.foundTickerCache = true;
-
-                            blockContainer.innerHTML = cachedBlocks;
-
-                            const ticker = chartsHTMLCache.ticker || '';
-                            const charts = chartsHTMLCache.charts || '';
-
-                            const tickerDiv = document.querySelector(".ticker-stats");
-                            const scrollDiv = document.querySelector(".ticker-scroll");
-                            const chartsDiv = document.querySelector(".charts-scrollable");
-
-                            tickerDiv.innerHTML = ticker;
-                            scrollDiv.innerHTML = ticker;
-                            chartsDiv.innerHTML = charts;
-
-                            updateCharts(true);
-
-                            const cacheAge = now - store.updateTimers.blocks.lastUpdate;
-                            console.log(`Loaded from cache (${formatCacheTime(cacheAge)} ago, next update in ${formatCacheTime(blocksDelay)}).`);
-
-                        }
-                    }
-
-                    let nextListeningUpdateTime = store.updateTimers.listening.lastUpdate + store.updateTimers.listening.interval;
-                    let listeningDelay = nextListeningUpdateTime - now;
-
-                    if (listeningDelay > 0) {
-                        const cachedListening = await getCachedListening();
-                        if (cachedListening) {
-                            setUserListeningTime(cachedListening.listeningTime);
-                            setUserPlayCounts(cachedListening.playCounts);
-                            store.foundListeningCache = true;
-                        }
-                    }
-                }
-            }
+        const cachedSchedule = await getData('schedule', store.username);
+        if (cachedSchedule) {
+            const {
+                blocks,
+                listening
+            } = cachedSchedule;
+            store.updateTimers.blocks.lastUpdate = blocks;
+            store.updateTimers.listening.lastUpdate = listening;
         }
-        cacheFriends(friends);
-        if (!store.foundBlocksCache) {
-            friends.forEach((friend) => {
-                blockContainer.appendChild(createBlock(friend));
-            });
-        }
+        friends.forEach((friend) => {
+            blockContainer.appendChild(createBlock(friend));
+        });
     } catch (error) {
         console.error("Error during initial fetch:", error);
         document.getElementById("error-popup").classList.remove("removed");

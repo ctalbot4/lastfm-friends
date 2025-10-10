@@ -1,11 +1,11 @@
+// Blocks
+import { updateAllBlocks } from "./blocks/update.js";
+
 // Cache
 import { setData } from "./cache.js";
 
 // Charts
 import { calculateListeningTime } from "./charts/update.js";
-
-// Blocks
-import { updateAllBlocks } from "./blocks/update.js";
 
 // State
 import { store } from "../state/store.js";

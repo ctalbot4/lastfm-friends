@@ -1,5 +1,6 @@
 // State
 import { store } from "../state/store.js";
+import { getData, setData, cleanCache } from "../components/cache.js";
 
 const API_BASE = "https://ws.audioscrobbler.com/2.0/";
 
@@ -54,22 +55,98 @@ export function getUserInfo(user, key = store.keys.KEY) {
     }, key);
 }
 
-export function getRecentTracks(user, key = store.keys.KEY, from, page = 1) {
-    return callApi("user.getrecenttracks", {
+export async function getRecentTracks(user, key = store.keys.KEY, from, page = 1) {
+    const cacheKey = `${user}:${page}`;
+    const cached = await getData('recent-tracks-cache', cacheKey);
+    
+    // Check cacbe
+    if (cached && cached.timestamp) {
+        const now = Date.now();
+        const age = now - cached.timestamp;
+        if (age < store.updateTimers.blocks.interval) {
+            return cached.data;
+        }
+    }
+    
+    const data = await callApi("user.getrecenttracks", {
         user,
         extended: 1,
         limit: 1000,
         from,
         page
     }, key);
+    
+    // Cache response
+    setData('recent-tracks-cache', cacheKey, {
+        data: data,
+        timestamp: Date.now()
+    });
+        
+    // Keep only 1000 newest entries
+    cleanCache('recent-tracks-cache', 1000);
+    
+    return data;
 }
 
-export function getTrackInfo(user, key = store.keys.KEY, artist, track) {
-    return callApi("track.getInfo", {
+export async function getTrackInfo(user, key = store.keys.KEY, artist, track) {
+    const cacheKey = `${user}:${artist}:${track}`;
+    const cached = await getData('track-info-cache', cacheKey);
+    
+    // Check cacbe
+    if (cached && cached.timestamp) {
+        const now = Date.now();
+        const age = now - cached.timestamp;
+        if (age < store.updateTimers.listening.interval) {
+            return cached.data;
+        }
+    }
+    
+    const data = await callApi("track.getInfo", {
         username: user,
         artist,
         track
     }, key);
+    
+    // Cache response
+    setData('track-info-cache', cacheKey, {
+        data: data,
+        timestamp: Date.now()
+    });
+    
+    // Keep only 1000 newest entries
+    cleanCache('track-info-cache', 1000);
+    
+    return data;
+}
+
+export async function getArtistInfo(user, key = store.keys.KEY, artist) {
+    const cacheKey = `${user}:${artist}`;
+    const cached = await getData('artist-info-cache', cacheKey);
+    
+    // Check cache
+    if (cached && cached.timestamp) {
+        const now = Date.now();
+        const age = now - cached.timestamp;
+        if (age < store.updateTimers.listening.interval) {
+            return cached.data;
+        }
+    }
+    
+    const data = await callApi("artist.getInfo", {
+        username: user,
+        artist
+    }, key);
+    
+    // Cache response
+    setData('artist-info-cache', cacheKey, {
+        data: data,
+        timestamp: Date.now()
+    });
+    
+    // Keep only 1000 newest entries
+    cleanCache('artist-info-cache', 1000);
+    
+    return data;
 }
 
 export function getTopArtists(user, key = store.keys.KEY) {
@@ -88,11 +165,34 @@ export function getTopAlbums(user, key = store.keys.KEY) {
     }, key);
 }
 
-export function getTopTracks(user, key = store.keys.KEY, page = 1) {
-    return callApi("user.gettoptracks", {
+export async function getTopTracks(user, key = store.keys.KEY, page = 1) {
+    const cacheKey = `${user}:${page}`;
+    const cached = await getData('top-tracks-cache', cacheKey);
+    
+    // Check cacbe
+    if (cached && cached.timestamp) {
+        const now = Date.now();
+        const age = now - cached.timestamp;
+        if (age < store.updateTimers.listening.interval) {
+            return cached.data;
+        }
+    }
+    
+    const data = await callApi("user.gettoptracks", {
         user,
         limit: 1000,
         period: "7day",
         page
     }, key);
+    
+    // Cache response
+    setData('top-tracks-cache', cacheKey, {
+        data: data,
+        timestamp: Date.now()
+    });
+    
+    // Keep only 1000 newest entries
+    cleanCache('top-tracks-cache', 1000);
+    
+    return data;
 }

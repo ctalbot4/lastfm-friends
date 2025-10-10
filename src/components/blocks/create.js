@@ -22,15 +22,27 @@ export function createBlock(user, mainUser = false) {
             </div>
     </div>
     <div class="listeners-container">
-        <div class="listeners-header">
-            <div class="listeners-title">Who listens to this track?</div>
+        <div class="listeners-header" style="display: none;">
+            <div class="listeners-tabs">
+                <button class="listeners-tab active" data-tab="track">
+                    <img class="tab-image album-image" src="" alt="" style="display: none;">
+                    <span>Track</span>
+                </button>
+                <button class="listeners-tab" data-tab="artist">
+                    <img class="tab-image artist-image" src="" alt="" style="display: none;">
+                    <span>Artist</span>
+                </button>
+            </div>
             <div class="close-listeners">
                 <svg viewBox="0 0 24 24">
                     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                 </svg>
             </div>
         </div>
-        <div class="listeners-content">
+        <div class="listeners-content-track" style="display: none;">
+
+        </div>
+        <div class="listeners-content-artist" style="display: none;">
 
         </div>
     </div>

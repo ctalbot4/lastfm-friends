@@ -17,13 +17,20 @@ body:has(#charts:not(.collapsed)) {
     position: fixed;
     top: 0;
     width: 100%;
-    height: 90%;
+    height: 95%;
     display: flex;
     flex-direction: column;
     background: rgba(21, 21, 21);
     z-index: 20;
     box-sizing: border-box;
     transition: height 0.3s ease-in-out;
+}
+
+/* Smaller on mobile to avoid nav bar */
+@media (pointer: coarse) {
+    #charts {
+        height: 90%;
+    }
 }
 
 #charts.collapsed {
@@ -53,14 +60,23 @@ body:has(#charts:not(.collapsed)) {
     overflow-y: auto;
     overflow-x: hidden;
     gap: 20px;
-    padding: 40px 30px 18px 30px;
+    padding: 0px 30px 18px 30px;
+    margin-top: 28px;
     align-items: center;
     box-sizing: border-box;
     overscroll-behavior: contain;
+}
 
+/* Hide overflow and remove padding when network is active */
+body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
+    overflow: hidden;
+    padding: 0;
+}
+
+/* Gradient on charts when network is not active */
+.charts-scrollable:not(:has(#network-section:not([style*="display: none"]))) {
     mask-image: linear-gradient(to bottom,
-            transparent 0%,
-            black 5%,
+            black 0%,
             black 95%,
             transparent 100%);
 }
@@ -71,8 +87,14 @@ body:has(#charts:not(.collapsed)) {
     flex-flow: row wrap;
     row-gap: 30px;
     column-gap: 60px;
-    padding: 0 7px;
+    padding: 78px 7px 0 7px;
     justify-content: center;
+}
+
+/* Fill height when network is active */
+.charts-scrollable:has(#network-section:not([style*="display: none"])) .charts-sections {
+    height: 100%;
+    padding: 0;
 }
 
 .chart-section {
@@ -81,7 +103,6 @@ body:has(#charts:not(.collapsed)) {
     display: flex;
     flex-flow: column;
     flex: 1 1 30%;
-    scroll-snap-align: start;
 }
 
 #hourly-section,
@@ -141,6 +162,149 @@ body:has(#charts:not(.collapsed)) {
     width: 100%;
     min-width: 100%;
     box-sizing: border-box;
+}
+
+#network-section {
+    width: 100%;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.03);
+    margin: 0;
+    height: 100%;
+}
+
+.network-chart-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#network-chart {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: filter 0.3s ease;
+}
+
+#network-chart.organizing {
+    filter: blur(10px);
+    pointer-events: none;
+}
+
+#network-chart svg {
+    width: 100%;
+    height: 100%;
+}
+
+.network-organizing-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.network-organizing-overlay.hidden {
+    opacity: 0;
+}
+
+.organizing-text {
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.network-progress-bar {
+    width: 200px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.network-progress-fill {
+    height: 100%;
+    background-color: white;
+    width: 0%;
+    transition: width 0.1s linear;
+}
+
+.mobile-notice {
+    display: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    font-weight: 400;
+    margin-top: 8px;
+    text-align: center;
+}
+
+@media (pointer: coarse) {
+    .mobile-notice {
+        display: block;
+    }
+}
+
+.network-node {
+    cursor: pointer;
+}
+
+.network-node circle {
+    transition: stroke-width 0.2s ease;
+}
+
+.network-node:hover circle {
+    stroke-width: 4px;
+}
+
+.network-zoom-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+}
+
+/* Hide on screens where it's hidden behind nav bar */
+@media (pointer: coarse), (max-width: 550px) {
+    .network-zoom-controls {
+        display: none;
+    }
+}
+
+.zoom-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.zoom-btn:hover {
+    background: rgba(88, 86, 214, 0.8);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.zoom-btn:active {
+    transform: scale(0.95);
 }
 
 .chart-header {
@@ -389,6 +553,7 @@ body:has(#charts:not(.collapsed)) {
     transition: all 0.2s ease;
     width: 24px;
     height: 24px;
+    margin-top: -1.5px;
     border-radius: 50%;
     border: 2px solid white;
     background-color: rgba(21, 21, 21);
@@ -421,6 +586,23 @@ body:has(#charts:not(.collapsed)) {
     white-space: nowrap;
     z-index: 3;
     pointer-events: none;
+}
+
+/* Custom spacing for items with one listener */
+.list-item.streak-item {
+    grid-template-columns: 40px 1fr 40px;
+}
+    
+.list-item.streak-item .listeners {
+    width: 40px;
+}
+    
+.list-item.streak-item .artist-subtext {
+    max-width: 165px;
+}
+
+.list-item.streak-item .listener-container {
+    left: 11px !important;
 }
 
 .listener-img {
@@ -458,11 +640,6 @@ body:has(#charts:not(.collapsed)) {
 }
 
 .charts-collapse-handle:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.charts-collapse-handle:hover {
-    /* This is a duplicate, but I'm keeping it as per your instruction to not change code */
     background: rgba(255, 255, 255, 0.08);
 }
 
@@ -480,15 +657,31 @@ body:has(#charts:not(.collapsed)) {
 }
 
 #charts-toggle-container {
-    width: 100%;
+    width: 350px;
+    height: 33px;
     display: flex;
     justify-content: center;
-    padding: 8px 0;
-    background: rgba(21, 21, 21, 0.95);
+    padding: 7px 10px 7px 10px;
+    background: rgba(21, 21, 21, 0.3);
+    position: fixed;
+    top: 35px;
+    z-index: 100;
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Ensure it's hidden when charts are collapsed */
+#charts.collapsed #charts-toggle-container {
+    display: none;
 }
 
 #inner-charts-toggle {
     display: flex;
+    justify-content: space-between;
+    width: 332px;
+    height: 29px;
     gap: 8px;
     background: rgba(255, 255, 255, 0.05);
     padding: 2px;

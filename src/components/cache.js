@@ -1,10 +1,5 @@
-// State
-import { store } from "../state/store.js";
-
-const blockContainer = document.getElementById("block-container");
-
 const dbName = 'lastfmfriends';
-const dbVersion = 5;
+const dbVersion = 6;
 let db;
 
 export function initCache() {
@@ -24,14 +19,11 @@ export function initCache() {
             for (const name of stores) {
                 db.deleteObjectStore(name);
             }
-
-            db.createObjectStore('blocks');
-            db.createObjectStore('play-data');
-            db.createObjectStore('sorted-data');
-            db.createObjectStore('charts-html');
-            db.createObjectStore('friends');
             db.createObjectStore('schedule');
-            db.createObjectStore('listening');
+            db.createObjectStore('recent-tracks-cache');
+            db.createObjectStore('top-tracks-cache');
+            db.createObjectStore('track-info-cache');
+            db.createObjectStore('artist-info-cache');
         };
     });
 }
@@ -47,102 +39,46 @@ export function setData(storeName, key, value) {
     db.transaction(storeName, 'readwrite').objectStore(storeName).put(value, key);
 }
 
-// Cache blocks
-export function cacheBlocks() {
-    setData('blocks', store.username, blockContainer.innerHTML);
-}
-
-// Cache ticker, charts
-export function cacheChartsHTML() {
-    const tickerDiv = document.querySelector(".ticker-stats");
-    const chartsDiv = document.querySelector(".charts-scrollable");
-
-    const data = {
-        charts: chartsDiv.innerHTML,
-        ticker: tickerDiv.innerHTML
-    };
-
-    setData('charts-html', store.username, data);
-}
-
-// Cache sorted top artists, albums, tracks data
-export function cacheSortedData(sortedData) {
-    setData('sorted-data', store.username, sortedData);
-}
-
-// Cache all tracks and their info
-export function cachePlays(trackPlays) {
-    setData('play-data', store.username, trackPlays);
-}
-
-// Cache listening time and play count per user
-export function cacheListening(userListeningTime, userPlayCounts) {
-    const data = {
-        listeningTime: userListeningTime,
-        playCounts: userPlayCounts
-    }
-    setData('listening', store.username, data);
-}
-
-export function cacheFriends(friends) {
-    const list = [];
-    friends.forEach(friend => {
-        list.push(friend.name);
+// Keep only the 1000 newest entries in a cache store
+export async function cleanCache(storeName, maxEntries = 1000) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const getAllRequest = store.getAllKeys();
+        
+        getAllRequest.onsuccess = async () => {
+            const allKeys = getAllRequest.result;
+            
+            if (allKeys.length <= maxEntries) {
+                resolve();
+                return;
+            }
+            
+            // Get all entries with their timestamps
+            const entries = [];
+            for (const key of allKeys) {
+                const value = await getData(storeName, key);
+                if (value && value.timestamp) {
+                    entries.push({ key, timestamp: value.timestamp });
+                }
+            }
+            
+            // Sort by timestamp
+            entries.sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Delete entries
+            const keysToDelete = entries.slice(maxEntries).map(e => e.key);
+            const deleteTransaction = db.transaction(storeName, 'readwrite');
+            const deleteStore = deleteTransaction.objectStore(storeName);
+            
+            for (const key of keysToDelete) {
+                deleteStore.delete(key);
+            }
+            
+            deleteTransaction.oncomplete = () => resolve();
+            deleteTransaction.onerror = () => reject(deleteTransaction.error);
+        };
+        
+        getAllRequest.onerror = () => reject(getAllRequest.error);
     });
-    setData('friends', store.username, list);
-}
-
-export async function getCachedBlocks() {
-    try {
-        return await getData('blocks', store.username);
-    } catch (error) {
-        console.error('Error getting cached blocks:', error);
-        return null;
-    }
-}
-
-export async function getCachedChartsHTML() {
-    try {
-        return await getData('charts-html', store.username);
-    } catch (error) {
-        console.error('Error getting cached charts HTML:', error);
-        return null;
-    }
-}
-
-export async function getCachedSortedData() {
-    try {
-        return await getData('sorted-data', store.username);
-    } catch (error) {
-        console.error('Error getting cached sorted data:', error);
-        return null;
-    }
-}
-
-export async function getCachedPlays() {
-    try {
-        return await getData('play-data', store.username);
-    } catch (error) {
-        console.error('Error getting play data:', error);
-        return null;
-    }
-}
-
-export async function getCachedListening() {
-
-    try {
-        return await getData('listening', store.username);
-    } catch (error) {
-        console.error('Error getting cached listening:', error);
-        return null;
-    }
-}
-
-export async function getCachedFriends() {
-    try {
-        return await getData('friends', store.username);
-    } catch (error) {
-        console.error('Error getting cached friends:', error);
-        return null;
-    }
 }

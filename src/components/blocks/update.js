@@ -8,17 +8,17 @@ import * as lastfm from "../../api/lastfm.js";
 import { setupBlocks } from "./index.js";
 import { sortBlocks } from "./sort.js";
 
-// Cache
-import { cacheBlocks, cacheChartsHTML } from "../cache.js";
+// Charts
+import { updateCharts, calculateChartData } from "../charts/update.js";
 
 // Charts - Graphs
 import { updateActivityCharts, updateActivityData, resetActivityData } from "../charts/graphs/data.js";
 
-// Charts
-import { sortedData, updateCharts, calculateChartData } from "../charts/update.js";
-
 // Charts - Scatter
 import { resetScatterData, tryScatterUpdate, updateScatterData } from "../charts/scatter/data.js";
+
+// Charts - Network
+import { updateNetworkData } from "../charts/network/data.js";
 
 // UI
 import { handleScroll } from "../preview/index.js";
@@ -71,7 +71,8 @@ async function updateBlock(block, key = store.keys.KEY) {
         // Reset block if track changes
         if (trimmedName != oldName) {
             newBlock.dataset.previewTime = 0;
-            newBlock.dataset.listenersLoaded = "0";
+            newBlock.dataset.trackListenersLoaded = "0";
+            newBlock.dataset.artistListenersLoaded = "0";
             newBlock.dataset.reset = "true";
             newBlock.querySelector(".listeners-container").classList.remove("active");
         }
@@ -192,57 +193,20 @@ export async function updateAllBlocks() {
     const chunks = [];
     const newBlocks = [];
 
-    chunks.push(blocksArr.slice(0, 250));
+    chunks.push(blocksArr.slice(0, 200));
     const blockPromises = await Promise.all(chunks[0].map(block => updateBlock(block)));
     newBlocks.push(...blockPromises);
 
     // Update second chunk if necessary
-    if (store.friendCount > 250) {
+    if (store.friendCount > 200) {
         await new Promise(resolve => setTimeout(resolve, 3000));
-        chunks.push(blocksArr.slice(250, 500));
+        chunks.push(blocksArr.slice(200, 400));
         const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, store.keys.KEY2)));
         newBlocks.push(...blockPromises);
     }
 
-    const newerBlocks = [];
-
-    // Sync values from original blocks that user might've changed during update and ignore null blocks
-    newBlocks.forEach((newBlock, index) => {
-        if (newBlock) {
-            const originalBlock = blocks[index];
-            newBlock.dataset.previewPlaying = originalBlock.dataset.previewPlaying || "false";
-            if (newBlock.dataset.previewTime != 0) {
-                newBlock.dataset.previewTime = originalBlock.dataset.previewTime;
-            }
-            // Sync listeners-container status if listeners have been loaded 
-            // (user has clicked info button, and track hasn't changed)
-            if (newBlock.dataset.reset == "true") {
-                delete newBlock.dataset.reset;
-            } else if (originalBlock.dataset.listenersLoaded != "0") {
-                newBlock.querySelector(".listeners-container").className =
-                    originalBlock.querySelector(".listeners-container").className;
-            }
-            newBlock.querySelector(".listeners-container").innerHTML =
-                originalBlock.querySelector(".listeners-container").innerHTML;
-
-            // Preserve info button hover state
-            if (originalBlock.matches(':hover')) {
-                newBlock.querySelector(".info-button").style.opacity = "1";
-                newBlock.addEventListener('mouseout', () => {
-                    newBlock.querySelector(".info-button").style.opacity = "";
-                }, {
-                    once: true
-                });
-            } else {
-                newBlock.querySelector(".info-button").style.opacity = "";
-            }
-
-            newerBlocks.push(newBlock);
-        }
-    });
-
     // Call sortBlocks after all updates are done
-    await sortBlocks(newerBlocks);
+    await sortBlocks(newBlocks);
 
     // Fetches all done
     store.isUpdatingBlocks = false;
@@ -253,7 +217,10 @@ export async function updateAllBlocks() {
     tryScatterUpdate();
 
     // Update charts with calculated data
-    await updateCharts(false);
+    await updateCharts();
+
+    // Update network data after charts data is calculated
+    updateNetworkData();
 
     // Update now playing count
     const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
@@ -297,8 +264,6 @@ export async function updateAllBlocks() {
 
     store.updateTimers.blocks.lastUpdate = Date.now();
 
-    cacheBlocks();
-    cacheChartsHTML();
     setupBlocks();
     console.log(`Refreshed ${store.friendCount + 1} users!`);
 }
