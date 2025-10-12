@@ -235,35 +235,8 @@ export async function updateAllBlocks() {
     // Trigger mobile scroll handler
     handleScroll();
 
-    // Counting animation if % change < 5%
-    const startPlays = parseInt(document.querySelector(".ticker-plays > .value").innerText);
-    if (startPlays && Math.abs((totalPlays - startPlays) / (1 + startPlays)) < 0.05) {
-        let startTime = null;
-        const duration = store.updateTimers.blocks.interval;
-
-        function updateCounter(currentTime) {
-            if (!startTime) startTime = currentTime;
-            const elapsedTime = currentTime - startTime;
-            const progress = Math.min(elapsedTime / duration, 1);
-            const currentNumber = Math.floor(progress * (totalPlays - startPlays) + startPlays);
-            document.querySelectorAll(".ticker-plays > .value").forEach(element => {
-                element.innerText = currentNumber;
-            });
-
-            if (progress < 1) {
-                requestAnimationFrame(updateCounter);
-            }
-        }
-
-        requestAnimationFrame(updateCounter);
-    } else {
-        document.querySelectorAll(".ticker-plays > .value").forEach(element => {
-            element.innerText = totalPlays;
-        });
-    }
-
     store.updateTimers.blocks.lastUpdate = Date.now();
 
     setupBlocks();
-    console.log(`Refreshed ${store.friendCount + 1} users!`);
+    console.log(`Refreshed ${store.friendCount} users!`);
 }

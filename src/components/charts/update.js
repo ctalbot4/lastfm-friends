@@ -4,9 +4,6 @@ import { store } from '../../state/store.js';
 // API
 import * as lastfm from '../../api/lastfm.js';
 
-// Charts - Ticker
-import { updateTickerDisplay } from './ticker.js';
-
 // Charts - Pages
 import { pageState, displayPage } from './pages.js';
 
@@ -463,8 +460,6 @@ export async function updateCharts() {
         return pseudoHash(a[0]) - pseudoHash(b[0]);
     });
 
-    updateTickerDisplay(sortedData.artists, sortedData.albums, sortedData.tracks);
-
     // Wait for blocks and listening time to finish updating
     while (store.isUpdatingBlocks || store.isUpdatingListening) {
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -534,5 +529,6 @@ export async function updateCharts() {
     await displayPage('track-streaks');
     await displayPage('listening-streaks');
 
+    // Expose new track data now that it's done updating
     trackData = trackPlays;
 }

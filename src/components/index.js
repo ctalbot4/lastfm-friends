@@ -19,6 +19,9 @@ import { calculateListeningTime } from "./charts/update.js";
 // Charts - Network
 import { tryNetworkUpdate } from "./charts/network/data.js";
 
+// Ticker
+import { startTicker } from "./charts/ticker.js";
+
 // Schedule
 import { scheduleUpdates, cancelUpdates } from "./schedule.js";
 
@@ -45,6 +48,9 @@ export async function initDashboard() {
     scheduleUpdates();
     setupBlocks();
     initCharts();
+    
+    // Start ticker after blocks are updated
+    startTicker();
 
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
@@ -116,7 +122,7 @@ async function initialFetch() {
         // Fetch friends data
         const friendsData = await lastfm.getFriends(store.username, store.keys.KEY, 500);
 
-        store.friendCount = Math.min(parseInt(friendsData.friends["@attr"].total, 10), parseInt(friendsData.friends["@attr"].perPage, 10));
+        store.friendCount = Math.min(parseInt(friendsData.friends["@attr"].total, 10), parseInt(friendsData.friends["@attr"].perPage, 10)) + 1;
         const friends = friendsData.friends.user;
 
         // Set conservative refreshes to try to avoid API rate limit

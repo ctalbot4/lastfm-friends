@@ -14,7 +14,7 @@ const MAX_DOT_RADIUS = 1.5;
 
 // Buckets for scatter plot
 export let buckets = {};
-let tempBuckets = {};
+export let tempBuckets = {};
 
 export let pendingScatterUpdate = false;
 

@@ -16,6 +16,9 @@
     align-items: center;
     height: 28px;
     padding-right: 16px;
+    overflow: hidden;
+    flex: 1;
+    cursor: pointer;
 }
 
 .ticker-main a:hover {
@@ -33,6 +36,7 @@
     background: rgba(21, 21, 21);
     backdrop-filter: blur(10px);
     z-index: 5;
+    flex-shrink: 0;
 }
 
 .pulse-dot {
@@ -57,93 +61,38 @@
     }
 }
 
-.ticker-stats,
-.ticker-scroll {
-    display: flex;
-    gap: 28px;
-    width: 1350px;
-    flex-shrink: 0;
-}
-
-.stat-item {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    font-size: 0.9em;
-    color: white;
-    flex-shrink: 0;
-}
-
-.label {
-    opacity: 0.8;
-    flex-shrink: 0;
-    display: inline-block;
-    font-size: 0.8em;
-}
-
-.subtext {
-    font-size: 0.75em;
-    opacity: 0.6;
-    flex-shrink: 0;
-    display: inline-block;
-}
-
-.value {
+.ticker-wrapper {
+    flex: 1;
     overflow: hidden;
-    text-overflow: ellipsis;
+    position: relative;
+}
+
+.ticker-content {
+    display: flex;
+    align-items: center;
     white-space: nowrap;
-    display: inline-block;
-    max-width: 190px;
+    will-change: transform;
 }
 
-/* Hide second scroll ticker text by default */
-.ticker-scroll {
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    padding-right: 25px;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.925);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.ticker-item::before {
+    content: "•";
+    margin-right: 25px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1.2em;
+}
+
+.ticker-item:first-child::before {
     display: none;
-}
-
-/* Scroll when screen width too small */
-@media (max-width: 1250px) {
-    .ticker-stats {
-        animation: ticker-scroll1 45s linear infinite;
-    }
-
-    .ticker-scroll {
-        display: flex;
-        animation: ticker-scroll2 45s linear infinite;
-    }
-
-    .ticker-main:hover .ticker-scroll,
-    .ticker-main:hover .ticker-stats {
-        animation-play-state: paused;
-    }
-}
-
-@keyframes ticker-scroll1 {
-    0% {
-        transform: translateX(0%);
-    }
-
-    50% {
-        transform: translateX(-1350px);
-    }
-
-    50.000001% {
-        transform: translateX(1350px);
-    }
-
-    100% {
-        transform: translateX(0%);
-    }
-}
-
-@keyframes ticker-scroll2 {
-    0% {
-        transform: translateX(0px);
-    }
-
-    100% {
-        transform: translateX(-2700px);
-    }
 }
 
 #buttons {
