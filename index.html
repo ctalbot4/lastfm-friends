@@ -51,15 +51,20 @@
 </script>
 
 <body>
-    <a href="https://github.com/ctalbot4/lastfm-friends" class="github-icon" target="_blank">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg">
-    </a>
+    <div class="corner-icons">
+        <a href="https://www.last.fm/user/ctalbot4" class="lastfm-icon" target="_blank">
+            <img src="icons/lastfm.svg">
+        </a>
+        <a href="https://github.com/ctalbot4/lastfm-friends" class="github-icon" target="_blank">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg">
+        </a>
+    </div>
     <div class="input-container">
         <h1>
             <span class="left">lastfm</span><span class="middle">friends</span><span class="right">.live</span>
         </h1>
         <h5>Discover what your friends are listening to in real-time.</h5>
-        <p>Enter a username:</p>
+        <p>Enter a <a href="https://www.last.fm" target="_blank" class="lastfm-link">last.fm</a> username:</p>
         <div class="bottom">
             <input type="text" id="userInput" placeholder="username" autocomplete="off" autocorrect="off" spellcheck="false">
             <button onclick="goToUser()">Go</button>

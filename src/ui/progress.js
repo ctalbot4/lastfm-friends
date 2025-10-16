@@ -7,7 +7,7 @@ const progressText = document.getElementById("progress-text");
 
 export function updateProgress(kind, username) {
     store.completed++;
-    const progress = ((store.completed) / ((store.friendCount + 1) * (store.foundListeningCache ? 1 : 2))) * 100;
+    const progress = ((store.completed) / ((store.friendCount) * (store.foundListeningCache ? 1 : 2))) * 100;
     progressBar.style.width = progress + "%";
     usersLoaded.textContent = `Received ${username}'s ${kind}`;
 }

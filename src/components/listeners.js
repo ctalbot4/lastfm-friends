@@ -76,6 +76,9 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
         }
     }
 
+    // Reselect block in case it changed during fetch
+    block = document.querySelector(`.block[data-username="${username}"]`);
+
     const trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
     const artistTab = block.querySelector('.listeners-tab[data-tab="artist"]');
     const albumImageEl = trackTab.querySelector('.album-image');
@@ -172,7 +175,7 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
         const listeners = results.filter(item => item !== null);
         listeners.sort((a, b) => b.playCount - a.playCount);
 
-        // Reselect listeners content container in case it changed from updateAllBlocks()
+        // Reselect listeners content container in case it changed during fetch
         block = document.querySelector(`.block[data-username="${username}"]`);
         listenersContent = block.querySelector(`.listeners-content-track`);
 
@@ -219,13 +222,6 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
             `;
         }
 
-        // Show now that images and user data are loaded
-        const listenersHeader = block.querySelector(".listeners-header");
-        const trackTab = block.querySelector('.listeners-content-track');
-
-        listenersHeader.style.display = 'flex';
-        trackTab.style.display = 'flex';
-
         // Set listeners loaded dataset value to "2" (loading complete)
         block.dataset.trackListenersLoaded = "2";
     } catch (error) {
@@ -237,6 +233,13 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
        </div>`;
         block.dataset.trackListenersLoaded = "0";
     } finally {
+        // Show now that images and user data are loaded
+        const listenersHeader = block.querySelector(".listeners-header");
+        const trackTab = block.querySelector('.listeners-content-track');
+
+        listenersHeader.style.display = 'flex';
+        trackTab.style.display = 'flex';
+        
         store.isFetchingListeners = false;
     }
 }

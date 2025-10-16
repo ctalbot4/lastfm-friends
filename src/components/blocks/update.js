@@ -121,7 +121,11 @@ async function updateBlock(block, key = store.keys.KEY) {
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;
 
         const imageUrl = recentTrack.image[3]["#text"];
-        newBlock.style.backgroundImage = `url(${imageUrl})`;
+
+        // Ignore default album image that Last.fm sometimes incorrectly gives if we already have an image
+        if (newBlock.dataset.reset === "true" || imageUrl !== 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png') {
+            newBlock.style.backgroundImage = `url(${imageUrl})`;
+        }
 
         const nowPlaying = recentTrack["@attr"]?.nowplaying;
         const timeSpan = newBlock.querySelector(".time");

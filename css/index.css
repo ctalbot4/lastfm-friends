@@ -112,29 +112,52 @@ p {
     background-color: #b30000;
 }
 
-.github-icon {
-    width: 40px;
-    height: 40px;
+.corner-icons {
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1;
+}
+
+.github-icon, .lastfm-icon {
+    width: 40px;
+    height: 40px;
     padding: 10px;
     border-radius: 25%;
     font-size: 2rem;
     text-decoration: none;
     transition: filter 0.3s ease;
     background-color: rgba(256, 256, 256);
-    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.github-icon > img {
+.github-icon > img, .lastfm-icon > img {
     width: 40px;
     height: 40px;
+    transition: filter 0.3s ease;
 }
 
-.github-icon:hover > img {
-    transition: filter 0.3s ease;
+.github-icon:hover, .lastfm-icon:hover > img {
     filter: brightness(3);
+}
+
+.lastfm-icon:hover > img {
+    transition: filter 0.3s ease;
+    filter: brightness(0.8);
+}
+
+.lastfm-link {
+    color: #333;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.lastfm-link:hover {
+    color: #d14f4f;
 }
 
 .try-profile {
