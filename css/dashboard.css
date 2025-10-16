@@ -158,7 +158,7 @@ a {
     font-style: italic;
 }
 
-.song-title .no-break {
+.no-break {
     white-space: nowrap;
 }
 

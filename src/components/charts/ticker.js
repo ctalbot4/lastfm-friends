@@ -224,7 +224,7 @@ const messageGenerators = {
             if (!addedMessage && listenerCount >= 2) {
                 // Single-user dominance
                 if (topPercentage >= 60 && topPlays >= 25) {
-                    if (secondPlays >= 5) {
+                    if (secondPlays >= 5 && margin > 20) {
                         const templates = [
                             `${topUsername} is dominating ${artistName} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,
                             `${topUsername} is way ahead in ${artistName} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,
@@ -256,7 +256,7 @@ const messageGenerators = {
             if (!addedMessage && listenerCount >= 2) {
                 // High dominance (40-60%)
                 if (topPercentage >= 40 && topPlays >= 25) {
-                    if (secondPlays >= 5) {
+                    if (secondPlays >= 5 && margin > 20) {
                         const templates = [
                             `${topUsername} is dominating ${artistName} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,
                             `${topUsername} is way ahead in ${artistName} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,
@@ -473,7 +473,7 @@ const messageGenerators = {
             if (!addedMessage && listenerCount >= 2) {
                 // Single-user dominance
                 if (topPercentage >= 60 && topPlays >= 20) {
-                    if (secondPlays >= 5) {
+                    if (secondPlays >= 5 && margin > 15) {
                         const templates = [
                             `${topUsername} is dominating ${albumDisplay} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,
                             `${topUsername} is way ahead in ${albumDisplay} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,
@@ -508,7 +508,7 @@ const messageGenerators = {
             if (!addedMessage && listenerCount >= 2) {
                 // High dominance (40-60%)
                 if (topPercentage >= 40 && topPlays >= 20) {
-                    if (secondPlays >= 5) {
+                    if (secondPlays >= 5 && margin > 15) {
                         const templates = [
                             `${topUsername} is dominating ${albumDisplay} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,
                             `${topUsername} is way ahead in ${albumDisplay} plays with ${topPlays} (${margin} ahead of ${secondUsername})`,

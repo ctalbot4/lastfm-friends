@@ -78,17 +78,28 @@ async function updateBlock(block, key = store.keys.KEY) {
         }
 
         // Workaround for heart and star icons wrapping incorrectly
-        const lastSpaceIndex = trimmedName.lastIndexOf(" ");
+        const lastTrackSpaceIndex = trimmedName.lastIndexOf(" ");
+        const lastArtistSpaceIndex = recentTrack.artist.name.lastIndexOf(" ");
 
-        let frontString;
-        let backString;
+        let frontTrackString;
+        let backTrackString;
+        let frontArtistString;
+        let backArtistString;
 
-        if (lastSpaceIndex === -1) {
-            frontString = "";
-            backString = trimmedName;
+        if (lastTrackSpaceIndex === -1) {
+            frontTrackString = "";
+            backTrackString = trimmedName;
         } else {
-            frontString = trimmedName.slice(0, lastSpaceIndex);
-            backString = trimmedName.slice(lastSpaceIndex + 1);
+            frontTrackString = trimmedName.slice(0, lastTrackSpaceIndex);
+            backTrackString = trimmedName.slice(lastTrackSpaceIndex + 1);
+        }
+
+        if (lastArtistSpaceIndex === -1) {
+            frontArtistString = "";
+            backArtistString = recentTrack.artist.name;
+        } else {
+            frontArtistString = recentTrack.artist.name.slice(0, lastArtistSpaceIndex);
+            backArtistString = recentTrack.artist.name.slice(lastArtistSpaceIndex + 1);
         }
 
         const songLink = recentTrack.url;
@@ -114,15 +125,19 @@ async function updateBlock(block, key = store.keys.KEY) {
         }
 
         newBlock.querySelector(".bottom > .track-info > .song-title > a").innerHTML = `
-                        <span class="rest">${frontString}</span>
-                        <span class="no-break">${backString}<svg class="heart-icon${recentTrack.loved === "1" ? '' : ' removed'}" viewBox="0 0 120 120" fill="white"><path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/></svg><img class="star-icon${isTopTrack ? '' : ' removed'}" src="icons/star.png" title="Top 8 track"></span>`;
-        newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerHTML = `${recentTrack.artist.name}<img class="star-icon${isTopArtist ? '' : ' removed'}" src="icons/star.png" title="Top 4 artist">`;
+                        <span class="rest">${frontTrackString}</span>
+                        <span class="no-break">${backTrackString}<svg class="heart-icon${recentTrack.loved === "1" ? '' : ' removed'}" viewBox="0 0 120 120" fill="white"><path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/></svg><img class="star-icon${isTopTrack ? '' : ' removed'}" src="icons/star.png" title="Top 8 track"></span>`;
+        
+        newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerHTML = `
+                        <span class="rest">${frontArtistString}</span>
+                        <span class="no-break">${backArtistString}<img class="star-icon${isTopArtist ? '' : ' removed'}" src="icons/star.png" title="Top 4 artist"></span>`;
+        
         newBlock.querySelector(".bottom > .track-info > .song-title > a").href = songLink;
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;
 
         const imageUrl = recentTrack.image[3]["#text"];
 
-        // Ignore default album image that Last.fm sometimes incorrectly gives if we already have an image
+        // If Last.fm errors and gives blank album image, ignore it and use the image we already have
         if (newBlock.dataset.reset === "true" || imageUrl !== 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png') {
             newBlock.style.backgroundImage = `url(${imageUrl})`;
         }
