@@ -33,6 +33,11 @@ function formatTimeAgo(timestamp) {
 
 // Fetch track listeners
 export async function fetchTrackListeners(block, key = store.keys.KEY3) {
+    const username = block.dataset.username;
+
+    // Reselect block in case it changed during fetch
+    block = document.querySelector(`.block[data-username="${username}"]`);
+    
     let listenersContent = block.querySelector(".listeners-content-track");
     let YOffset = 0;
 
@@ -54,7 +59,6 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
 
     const artistName = block.querySelector(".artist-title > a").innerText;
     const trackName = block.querySelector(".song-title > a").innerText.replace(/<svg.*<\/svg>/g, '').trim();
-    const username = block.dataset.username;
 
     const albumImageUrl = block.style.backgroundImage.slice(5, -2);
 
@@ -79,8 +83,8 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     // Reselect block in case it changed during fetch
     block = document.querySelector(`.block[data-username="${username}"]`);
 
-    const trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
-    const artistTab = block.querySelector('.listeners-tab[data-tab="artist"]');
+    let trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
+    let artistTab = block.querySelector('.listeners-tab[data-tab="artist"]');
     const albumImageEl = trackTab.querySelector('.album-image');
     const artistTabArtistImg = artistTab.querySelector('.artist-image');
     const trackTabText = trackTab.querySelector('span');
@@ -146,7 +150,7 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                 // If we've been rate limited, show message
                 if (e.code === 29) {
                     rateLimited = true;
-                    listenersContent = block.querySelector(`.block[data-username="${username}"] .listeners-content-track`);
+                    listenersContent = document.querySelector(`.block[data-username="${username}"] .listeners-content-track`);
                     listenersContent.innerHTML = `
                       <div class="no-listeners">
                         <div>You're making requests too quickly. Please try again in a moment.</div>
@@ -177,6 +181,14 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
 
         // Reselect listeners content container in case it changed during fetch
         block = document.querySelector(`.block[data-username="${username}"]`);
+        
+        // Check if track tab is still active before appending to DOM
+        trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
+        if (!trackTab.classList.contains('active')) {
+            store.isFetchingListeners = false;
+            return;
+        }
+        
         listenersContent = block.querySelector(`.listeners-content-track`);
 
         // Append to container
@@ -319,7 +331,7 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
                 // If we've been rate limited, show message
                 if (e.code === 29) {
                     rateLimited = true;
-                    listenersContent = block.querySelector(`.block[data-username="${username}"] .listeners-content-artist`);
+                    listenersContent = document.querySelector(`.block[data-username="${username}"] .listeners-content-artist`);
                     listenersContent.innerHTML = `
                       <div class="no-listeners">
                         <div>You're making requests too quickly. Please try again in a moment.</div>
@@ -350,6 +362,14 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
 
         // Reselect listeners content container in case it changed from updateAllBlocks()
         block = document.querySelector(`.block[data-username="${username}"]`);
+        
+        // Check if artist tab is still active before appending to DOM
+        const artistTab = block.querySelector('.listeners-tab[data-tab="artist"]');
+        if (!artistTab.classList.contains('active')) {
+            store.isFetchingListeners = false;
+            return;
+        }
+        
         listenersContent = block.querySelector(`.listeners-content-artist`);
 
         // Append to container

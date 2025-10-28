@@ -180,7 +180,7 @@ export function updateNetworkGraph(data) {
     
     // If this is an update, restart with low alpha
     if (isUpdate) {
-        simulation.alpha(0.2).restart();
+        simulation.alpha(0.1).restart();
     }
     
     // Clear previous elements

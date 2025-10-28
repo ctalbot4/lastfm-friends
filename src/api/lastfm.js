@@ -14,7 +14,20 @@ async function callApi(method, params = {}, key = store.keys.KEY, retry = 0) {
     });
 
     const response = await fetch(url.toString());
-    const data = await response.json();
+    
+    // Handle random HTML responses from Last.fm
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        if (retry < 3) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return callApi(method, params, key, retry + 1);
+        }
+        const err = new Error(`Last.fm ${method} returned non-JSON response`);
+        err.status = response.status;
+        throw err;
+    }
 
     if (!response.ok) {
         if (data.error) {

@@ -7,6 +7,10 @@ body {
     touch-action: manipulation;
 }
 
+body:has(#block-container.hidden) {
+    overflow: hidden;
+}
+
 /* Transition from progress bar */
 body:has(#block-container:not(.hidden)) {
     background-color: rgba(21, 21, 21);
@@ -400,7 +404,7 @@ a {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
+    padding: 10px 40px 10px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     gap: 12px;
 }
@@ -475,6 +479,10 @@ a {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    position: absolute;
+    top: 15px;
+    right: 10px;
+    z-index: 10;
 }
 
 .close-listeners svg {
