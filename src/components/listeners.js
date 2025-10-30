@@ -58,7 +58,7 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     store.isFetchingListeners = true;
 
     const artistName = block.querySelector(".artist-title > a").innerText;
-    const trackName = block.querySelector(".song-title > a").innerText.replace(/<svg.*<\/svg>/g, '').trim();
+    const trackName = block.querySelector(".song-title > a").innerText;
 
     const albumImageUrl = block.style.backgroundImage.slice(5, -2);
 
