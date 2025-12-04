@@ -55,10 +55,10 @@ export async function startTicker() {
     }
 
     // Wait a moment to give charts a chance to update
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Wait for chart data to finish updating
-    if (store.isUpdatingBlocks || store.isUpdatingListening) {
+    while (store.isUpdatingBlocks || store.isUpdatingListening) {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
     
@@ -867,7 +867,7 @@ const messageGenerators = {
             if (streak.count >= 8) {
                 const templates = [
                     `${streak.username} played ${trackDisplay} ${streak.count} times in a row ${when}`,
-                    `${streak.count} consecutive plays: ${streak.username} put ${trackDisplay} on repeat ${when.replace('on ', '')}`,
+                    `${streak.count} consecutive plays: ${streak.username} put ${trackDisplay} on repeat ${when.replace(/^on /, '')}`,
                     `${streak.username} replayed ${trackDisplay} ${streak.count} times straight ${when}`,
                     `${streak.username} had ${trackDisplay} on repeat for ${streak.count} plays ${when}`,
                     `${streak.username} binged ${trackDisplay} ${streak.count} times in a row ${when}`

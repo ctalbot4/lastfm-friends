@@ -1,6 +1,9 @@
 // State
 import { store } from "../../state/store.js";
 
+// Blocks
+import { setupBlocks } from "./index.js";
+
 // UI
 import { getUsernameFromURL } from "../../ui/dom.js";
 
@@ -114,4 +117,6 @@ export async function sortBlocks(blocks) {
             }
         });
     });
+
+    setupBlocks();
 }

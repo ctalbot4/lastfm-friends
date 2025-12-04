@@ -41,6 +41,7 @@ a {
     aspect-ratio: 1;
     position: relative;
     background-size: cover;
+    overflow: hidden;
 }
 
 /* Mask when preview is playing */

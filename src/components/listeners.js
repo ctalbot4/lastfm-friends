@@ -239,6 +239,8 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     } catch (error) {
         console.error("Error fetching track listeners:", error);
 
+        block = document.querySelector(`.block[data-username="${username}"]`);
+        listenersContent = block.querySelector(".listeners-content-track");
         listenersContent.innerHTML = `
        <div class="no-listeners">
          <div>Couldn't load listener data.</div>
@@ -246,11 +248,17 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
         block.dataset.trackListenersLoaded = "0";
     } finally {
         // Show now that images and user data are loaded
+        block = document.querySelector(`.block[data-username="${username}"]`);
         const listenersHeader = block.querySelector(".listeners-header");
-        const trackTab = block.querySelector('.listeners-content-track');
+        const trackContent = block.querySelector('.listeners-content-track');
+        const trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
 
         listenersHeader.style.display = 'flex';
-        trackTab.style.display = 'flex';
+        
+        // Make sure track tab is still active before displaying content
+        if (trackTab.classList.contains('active')) {
+            trackContent.style.display = 'flex';
+        }
         
         store.isFetchingListeners = false;
     }
@@ -419,6 +427,8 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
     } catch (error) {
         console.error("Error fetching artist listeners:", error);
 
+        block = document.querySelector(`.block[data-username="${username}"]`);
+        listenersContent = block.querySelector(".listeners-content-artist");
         listenersContent.innerHTML = `
        <div class="no-listeners">
          <div>Couldn't load listener data.</div>

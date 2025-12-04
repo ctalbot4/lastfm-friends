@@ -97,8 +97,8 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
             <div class="item-subtext">
               ${isTrack || isAlbum ? `<span class="artist-subtext"><a href="${itemData.artistUrl}" target="_blank">${itemData.artist}</a></span>` : ""}
               ${itemData.streakDays ? 
-                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} plays ${itemData.streakDays.includes('-') ? 'from' : 'on'} ${itemData.streakDays}</span>` :
-                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} plays</span>`
+                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} ${itemData.plays === 1 ? 'play' : 'plays'} ${itemData.streakDays.includes('-') ? 'from' : 'on'} ${itemData.streakDays}</span>` :
+                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} ${itemData.plays === 1 ? 'play' : 'plays'}</span>`
               }
             </div>
           </div>

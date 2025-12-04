@@ -5,7 +5,6 @@ import { store } from "../../state/store.js";
 import * as lastfm from "../../api/lastfm.js";
 
 // Blocks
-import { setupBlocks } from "./index.js";
 import { sortBlocks } from "./sort.js";
 
 // Charts
@@ -108,20 +107,20 @@ async function updateBlock(block, key = store.keys.KEY) {
         // Check if artist is in user's top 4 weekly artists
         let isTopArtist = false;
         if (userChartData && userChartData.artistPlays) {
-            const userArtists = Object.entries(userChartData.artistPlays)
-                .sort((a, b) => b[1].plays - a[1].plays)
-                .slice(0, 4);
-            isTopArtist = userArtists.some(([artistName]) => artistName === recentTrack.artist.name);
+            const sortedArtists = Object.entries(userChartData.artistPlays)
+                .sort((a, b) => b[1].plays - a[1].plays);
+            const artistIndex = sortedArtists.findIndex(([artistName]) => artistName === recentTrack.artist.name);
+            isTopArtist = artistIndex >= 0 && artistIndex < 4;
         }
 
         // Check if track is in user's top 8 weekly tracks
         let isTopTrack = false;
         if (userChartData && userChartData.trackPlays) {
             const trackKey = `${trimmedName}::${recentTrack.artist.name}`;
-            const userTracks = Object.entries(userChartData.trackPlays)
-                .sort((a, b) => b[1].plays - a[1].plays)
-                .slice(0, 8);
-            isTopTrack = userTracks.some(([key]) => key === trackKey);
+            const sortedTracks = Object.entries(userChartData.trackPlays)
+                .sort((a, b) => b[1].plays - a[1].plays);
+            const trackIndex = sortedTracks.findIndex(([key]) => key === trackKey);
+            isTopTrack = trackIndex >= 0 && trackIndex < 8;
         }
 
         newBlock.querySelector(".bottom > .track-info > .song-title > a").innerHTML = `
@@ -241,21 +240,10 @@ export async function updateAllBlocks() {
     // Update network data after charts data is calculated
     updateNetworkData();
 
-    // Update now playing count
-    const nowPlayingCount = document.querySelectorAll('.block[data-now-playing="true"]').length;
-    const nowPlayingElements = document.querySelectorAll('.ticker-friends > .value');
-    nowPlayingElements.forEach(element => {
-        element.textContent = `${nowPlayingCount} friend${nowPlayingCount !== 1 ? 's' : ''}`;
-    });
-
-    // Update total plays
-    const totalPlays = Object.values(userPlayCounts).reduce((sum, count) => sum + count, 0);
-
     // Trigger mobile scroll handler
     handleScroll();
 
     store.updateTimers.blocks.lastUpdate = Date.now();
 
-    setupBlocks();
     console.log(`Refreshed ${store.friendCount} users!`);
 }

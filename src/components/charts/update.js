@@ -81,6 +81,10 @@ export function calculateChartData(tracks, username) {
             const key = `${albumName}::${artistName}`;
             if (userAlbums[key]) {
                 userAlbums[key].plays += 1;
+                // If we have blank album image currently, try to replace it with valid one
+                if (userAlbums[key].img === 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png') {
+                    userAlbums[key].img = track.image[1]["#text"];
+                }
             } else {
                 userAlbums[key] = {
                     artistName,
