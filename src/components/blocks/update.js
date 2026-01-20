@@ -108,7 +108,15 @@ async function updateBlock(block, key = store.keys.KEY) {
         let isTopArtist = false;
         if (userChartData && userChartData.artistPlays) {
             const sortedArtists = Object.entries(userChartData.artistPlays)
-                .sort((a, b) => b[1].plays - a[1].plays);
+                .sort((a, b) => {
+                    if (b[1].plays !== a[1].plays) {
+                        return b[1].plays - a[1].plays;
+                    }
+                    // Tiebreaker is older play
+                    const aOldest = userChartData.recentTracks.findLastIndex(t => t.artist.name === a[0]);
+                    const bOldest = userChartData.recentTracks.findLastIndex(t => t.artist.name === b[0]);
+                    return bOldest - aOldest;
+                });
             const artistIndex = sortedArtists.findIndex(([artistName]) => artistName === recentTrack.artist.name);
             isTopArtist = artistIndex >= 0 && artistIndex < 4;
         }
@@ -118,7 +126,21 @@ async function updateBlock(block, key = store.keys.KEY) {
         if (userChartData && userChartData.trackPlays) {
             const trackKey = `${trimmedName}::${recentTrack.artist.name}`;
             const sortedTracks = Object.entries(userChartData.trackPlays)
-                .sort((a, b) => b[1].plays - a[1].plays);
+                .sort((a, b) => {
+                    if (b[1].plays !== a[1].plays) {
+                        return b[1].plays - a[1].plays;
+                    }
+                    // Tiebreaker is older play
+                    const aOldest = userChartData.recentTracks.findLastIndex(t => {
+                        const tKey = `${t.name.trim()}::${t.artist.name}`;
+                        return tKey === a[0];
+                    });
+                    const bOldest = userChartData.recentTracks.findLastIndex(t => {
+                        const tKey = `${t.name.trim()}::${t.artist.name}`;
+                        return tKey === b[0];
+                    });
+                    return bOldest - aOldest;
+                });
             const trackIndex = sortedTracks.findIndex(([key]) => key === trackKey);
             isTopTrack = trackIndex >= 0 && trackIndex < 8;
         }
