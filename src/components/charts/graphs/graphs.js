@@ -46,6 +46,10 @@ export function createHourlyChart() {
                     usePointStyle: true,
                     enabled: false,
                     external: function(context) {
+                        if (!context.tooltip || !context.tooltip.dataPoints || context.tooltip.dataPoints.length === 0) {
+                            return;
+                        }
+
                         const tooltipEl = document.createElement('div');
                         tooltipEl.style.background = 'rgba(0, 0, 0, 0.8)';
                         tooltipEl.style.borderRadius = '4px';
@@ -241,6 +245,10 @@ export function createDailyChart() {
                     usePointStyle: true,
                     enabled: false,
                     external: function(context) {
+                        if (!context.tooltip || !context.tooltip.dataPoints || context.tooltip.dataPoints.length === 0) {
+                            return;
+                        }
+
                         const tooltipEl = document.createElement('div');
                         tooltipEl.style.background = 'rgba(0, 0, 0, 0.8)';
                         tooltipEl.style.borderRadius = '4px';

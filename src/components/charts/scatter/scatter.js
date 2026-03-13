@@ -190,8 +190,10 @@ export function createScatterPlot() {
                             tooltipEl.style.marginTop = '-8px';
                             tooltipEl.style.maxHeight = '400px';
                             tooltipEl.style.overflowY = 'auto';
-                            document.body.appendChild(tooltipEl);
                             context.chart.canvas._tooltipEl = tooltipEl;
+                        }
+                        if (!document.body.contains(tooltipEl)) {
+                            document.body.appendChild(tooltipEl);
                         }
 
                         tooltipEl.style.opacity = 1;

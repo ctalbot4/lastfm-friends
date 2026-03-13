@@ -570,22 +570,103 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     transform: scale(1.15);
 }
 
-/* Show usernames on hover */
-.listener-container:not(.others):hover::after {
-    content: attr(data-user) " - " attr(data-plays);
-    position: absolute;
-    bottom: -28px;
-    left: 50%;
-    transform: translateX(-65%);
-    background: rgba(255, 255, 255, 0.9);
-    color: rgba(21, 21, 21);
-    padding: 0px 8px;
-    border-radius: 4px;
-    font-size: 9.5px;
-    font-weight: normal;
-    white-space: nowrap;
-    z-index: 3;
+.listener-tooltip {
+    position: fixed;
+    opacity: 0;
     pointer-events: none;
+    background: rgba(22, 22, 22, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 12px;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+    max-width: 210px;
+    transform: translateY(5px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    line-height: 1.4;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.listener-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.listener-tooltip-name {
+    font-weight: 600;
+    color: white;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.listener-tooltip-plays {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.listener-tooltip-recency {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    margin-top: 2px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.listener-tooltip-recency .now-icon {
+    width: 9px;
+    height: 9px;
+    display: block;
+    filter: brightness(0) invert(1);
+    opacity: 0.45;
+    margin-top: -1px;
+}
+
+.listener-tooltip-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.day-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.day-fill {
+    width: 7px;
+    min-height: 0px;
+    border-radius: 2px 2px 1px 1px;
+    background: rgba(120, 120, 255, 0.55);
+    transition: background 0.1s ease;
+}
+
+.day-fill.peak {
+    background: rgba(160, 155, 255, 0.95);
+}
+
+.day-label {
+    font-size: 7.5px;
+    color: rgba(255, 255, 255, 0.28);
+    line-height: 1;
+    user-select: none;
+}
+
+.day-label.today {
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
 }
 
 /* Custom spacing for items with one listener */

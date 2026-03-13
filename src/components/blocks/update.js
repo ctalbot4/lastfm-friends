@@ -31,7 +31,7 @@ export function setUserPlayCounts(playCounts) {
 
 // Fetch data for a block and update
 async function updateBlock(block, key = store.keys.KEY) {
-    if (block.classList.contains("private")) {
+    if (block.classList.contains("private") || block.classList.contains("empty")) {
         return block;
     }
     const username = block.dataset.username;
@@ -42,8 +42,10 @@ async function updateBlock(block, key = store.keys.KEY) {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
 
         if (data.recenttracks["@attr"]["total"] == 0) {
-            // Remove if no tracks played
-            return null;
+            // Hide if no tracks played
+            newBlock.classList.add("removed");
+            newBlock.classList.add("empty");
+            return newBlock;
         }
 
         // Get user's entire recent listening history if more than 1 page of tracks

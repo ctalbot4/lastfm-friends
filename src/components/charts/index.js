@@ -116,10 +116,9 @@ function toggleCharts() {
     }
 
     // Clear tooltips
-    const tooltip = document.querySelector('.chart-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
+    document.querySelectorAll('.chart-tooltip').forEach(el => el.remove());
+    document.querySelectorAll('.scatter-tooltip').forEach(el => el.remove());
+    document.querySelectorAll('.listener-tooltip').forEach(el => el.remove());
 
     charts.classList.toggle('collapsed');
 
@@ -167,10 +166,9 @@ function toggleView(view) {
     }
 
     // Clear tooltips
-    const tooltip = document.querySelector('.chart-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
+    document.querySelectorAll('.chart-tooltip').forEach(el => el.remove());
+    document.querySelectorAll('.scatter-tooltip').forEach(el => el.remove());
+    document.querySelectorAll('.listener-tooltip').forEach(el => el.remove());
 
     // Reset scroll position
     scrollable.scrollTop = 0;

@@ -45,6 +45,19 @@ export function calculateChartData(tracks, username) {
     const userArtists = {};
     const userAlbums = {};
     const userTracks = {};
+
+    // Track plays per-day for listener tooltips
+    const dailyTotals = new Map(); // dateKey -> { total, dayOfMonth, artists: {}, albums: {}, tracks: {} }
+
+    function toDateKey(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+            d.getDate()
+        ).padStart(2, "0")}`;
+    }
+    function fromDateKey(key) {
+        const [year, month, day] = key.split("-").map(Number);
+        return new Date(year, month - 1, day);
+    }
     
     // Track streaks using buffers
     let artistStreakBuffer = { current: null, count: 0, startDate: null, endDate: null };
@@ -63,6 +76,7 @@ export function calculateChartData(tracks, username) {
         const trackName = track.name.trim();
         const artistName = track.artist.name;
         const albumName = track.album?.["#text"];
+        const uts = parseInt(track.date.uts);
 
         // Count artists
         const artistUrl = track.artist.url;
@@ -71,8 +85,14 @@ export function calculateChartData(tracks, username) {
         } else {
             userArtists[artistName] = {
                 plays: 1,
-                artistUrl
+                artistUrl,
+                lastListen: null
             };
+        }
+
+        // Track last listen
+        if (!Number.isNaN(uts) && uts > userArtists[artistName].lastListen) {
+            userArtists[artistName].lastListen = uts;
         }
 
         // Count albums
@@ -92,8 +112,14 @@ export function calculateChartData(tracks, username) {
                     plays: 1,
                     artistUrl,
                     albumUrl,
-                    img: track.image[1]["#text"]
+                    img: track.image[1]["#text"],
+                    lastListen: null
                 };
+            }
+
+            // Track last listen
+            if (!Number.isNaN(uts) && uts > userAlbums[key].lastListen) {
+                userAlbums[key].lastListen = uts;
             }
         }
 
@@ -109,8 +135,14 @@ export function calculateChartData(tracks, username) {
                 trackName,
                 plays: 1,
                 trackUrl,
-                artistUrl
+                artistUrl,
+                lastListen: null
             };
+        }
+
+        // Track last listen
+        if (!Number.isNaN(uts) && uts > userTracks[trackKey].lastListen) {
+            userTracks[trackKey].lastListen = uts;
         }
 
         // Track artist streak
@@ -217,6 +249,24 @@ export function calculateChartData(tracks, username) {
             listeningStreakBuffer.endDate = trackDate;
         }
         listeningStreakBuffer.lastTrackDate = trackDate;
+
+         // Increment per-day play counts for listener tooltips
+        if (!Number.isNaN(uts)) {
+            const d = new Date(uts * 1000);
+            const key = toDateKey(d);
+            if (!dailyTotals.has(key)) {
+                dailyTotals.set(key, { total: 0, dayOfMonth: d.getDate(), artists: {}, albums: {}, tracks: {} });
+            }
+            const entry = dailyTotals.get(key);
+            entry.total++;
+            entry.artists[artistName] = (entry.artists[artistName] || 0) + 1;
+            const albumKeyForDaily = albumName ? `${albumName}::${artistName}` : null;
+            if (albumKeyForDaily) {
+                entry.albums[albumKeyForDaily] = (entry.albums[albumKeyForDaily] || 0) + 1;
+            }
+            const trackKeyForDaily = `${trackName}::${artistName}`;
+            entry.tracks[trackKeyForDaily] = (entry.tracks[trackKeyForDaily] || 0) + 1;
+        }
     });
     
     // Save any remaining streaks
@@ -263,6 +313,60 @@ export function calculateChartData(tracks, username) {
         });
     }
 
+    // Ensure today is present in dailyTotals so charts are anchored to current date
+    const today = new Date();
+    const todayKey = toDateKey(today);
+    if (!dailyTotals.has(todayKey)) {
+        dailyTotals.set(todayKey, { total: 0, dayOfMonth: today.getDate(), artists: {}, albums: {}, tracks: {} });
+    }
+    
+    // Ensure there are no gaps between the first day with plays and today
+    const existingKeys = [...dailyTotals.keys()];
+    if (existingKeys.length > 0) {
+        const sortedKeys = existingKeys.sort();
+        const firstDate = fromDateKey(sortedKeys[0]);
+        const endDate = fromDateKey(todayKey);
+        for (let d = new Date(firstDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const key = toDateKey(d);
+            if (!dailyTotals.has(key)) {
+                dailyTotals.set(key, { total: 0, dayOfMonth: d.getDate(), artists: {}, albums: {}, tracks: {} });
+            }
+        }
+    }
+
+    const sortedDailyEntries = [...dailyTotals.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
+
+    // Attach dailyData arrays to each artist/album/track
+    Object.entries(userArtists).forEach(([artistName, artistData]) => {
+        artistData.dailyData = sortedDailyEntries.map(([, v]) => {
+            const itemCount = v.artists[artistName] || 0;
+            return {
+                label: v.dayOfMonth.toString(),
+                ratio: v.total > 0 ? itemCount / v.total : 0
+            };
+        });
+    });
+
+    Object.entries(userAlbums).forEach(([albumKey, albumData]) => {
+        albumData.dailyData = sortedDailyEntries.map(([, v]) => {
+            const itemCount = v.albums[albumKey] || 0;
+            return {
+                label: v.dayOfMonth.toString(),
+                ratio: v.total > 0 ? itemCount / v.total : 0
+            };
+        });
+    });
+
+    Object.entries(userTracks).forEach(([trackKey, trackData]) => {
+        trackData.dailyData = sortedDailyEntries.map(([, v]) => {
+            const itemCount = v.tracks[trackKey] || 0;
+            return {
+                label: v.dayOfMonth.toString(),
+                ratio: v.total > 0 ? itemCount / v.total : 0
+            };
+        });
+    });
+
     chartDataPerUser[username] = {
         artistPlays: userArtists,
         albumPlays: userAlbums,
@@ -286,8 +390,9 @@ export async function calculateListeningTime() {
 
     const blockContainer = document.getElementById("block-container");
     const blocks = blockContainer.getElementsByClassName("block");
-    const blocksArr = Array.from(blocks);
-    
+    // Ignore users with no plays this week
+    const blocksArr = Array.from(blocks).filter(block => !block.classList.contains("empty"));
+
     const chunks = [];
     chunks.push(blocksArr.slice(0, 200));
     

@@ -11,8 +11,32 @@ import { userPlayCounts } from "../../blocks/update.js";
 import { audioState, hasPreview } from "../../preview/index.js";
 import { playChartPreview } from "../../preview/charts.js";
 
+// Charts
+import { chartDataPerUser } from "../update.js";
+import { showListenerTooltip, hideListenerTooltip } from "./tooltip.js";
+
 // Cache for images and previews
 export const imageCache = new Map();
+
+// Helper function to format time
+function formatTimeAgo(timestamp) {
+    const now = Date.now();
+    const diff = Math.floor((now - (timestamp * 1000)) / 1000);
+
+    if (diff < 60) {
+        return "just now";
+    } else if (diff < 60 * 60) {
+        const minutes = Math.floor(diff / 60);
+        return `${minutes}m ago`;
+    } else if (diff < 60 * 60 * 24) {
+        const hours = Math.floor(diff / (60 * 60));
+        return `${hours}h ago`;
+    } else if (diff < 60 * 60 * 24 * 7) {
+        const days = Math.floor(diff / (60 * 60 * 24));
+        return `${days}d ago`;
+    }
+    return null;
+}
 
 // Helper function to format duration
 function formatDuration(totalSeconds, includeMinutes = false) {
@@ -147,8 +171,31 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
             continue;
         }
         const listener = itemData.listeners[i];
+
+        // Store data for listener tooltip
         span.dataset.user = listener.user;
-        span.dataset.plays = `${listener.plays.toLocaleString()} ${listener.plays === 1 ? 'play' : 'plays'}`;
+        span.dataset.plays = listener.plays;
+        span.dataset.lastListen = listener.lastListen;
+        if (listener.dailyData) {
+            span.dataset.dailyData = listener.dailyData
+                    .map(({ label, ratio }) => `${label}:${ratio.toFixed(4)}`)
+                    .join(',');
+        }
+        if (isTrack) {
+            span.dataset.itemType = 'track';
+            span.dataset.itemName = itemData.name;
+            span.dataset.itemArtist = itemData.artist;
+        } else if (isAlbum) {
+            span.dataset.itemType = 'album';
+            span.dataset.itemName = itemData.name;
+            span.dataset.itemArtist = itemData.artist;
+        } else {
+            span.dataset.itemType = 'artist';
+            span.dataset.itemName = itemData.name;
+        }
+
+        span.addEventListener('mouseenter', () => showListenerTooltip(span, li.classList.contains('streak-item') ? itemData.plays : null));
+        span.addEventListener('mouseleave', hideListenerTooltip);
 
         span.innerHTML = `<img class="listener-img" src="${listener.img}">`;
         li.querySelector(".listeners").appendChild(span);
@@ -190,13 +237,21 @@ export async function createArtistCharts(sortedArtistPlays, artistsMax) {
             plays: artistInfo.plays,
             image: imageUrl,
             url: artistInfo.url,
-            listeners: artistUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
+            listeners: artistUsers.map(([username, plays]) => {
+                const artistData = chartDataPerUser[username].artistPlays[artistName];
+                const lastListen = formatTimeAgo(artistData.lastListen);
+                const dailyData = artistData.dailyData;
+
+                return {
+                    user: username,
+                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                    plays: plays,
+                    url: ``,
+                    lastListen,
+                    dailyData
+                };
+            })
         };
     });
 
@@ -221,13 +276,22 @@ export async function createAlbumCharts(sortedAlbumPlays, albumsMax) {
             image: albumInfo.img,
             url: albumInfo.url,
             artistUrl: albumInfo.artistUrl,
-            listeners: sortedAlbumUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
+            listeners: sortedAlbumUsers.map(([username, plays]) => {
+                const albumKey = `${albumInfo.albumName}::${albumInfo.artist}`;
+                const albumData = chartDataPerUser[username].albumPlays[albumKey];
+                const lastListen = formatTimeAgo(albumData.lastListen);
+                const dailyData = albumData.dailyData;
+
+                return {
+                    user: username,
+                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                    plays: plays,
+                    url: ``,
+                    lastListen,
+                    dailyData
+                };
+            })
         };
     });
 
@@ -316,13 +380,22 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
             artistUrl: trackInfo.artistUrl,
             image: foundTrack?.album?.cover_medium,
             preview: foundTrack?.preview,
-            listeners: sortedTrackUsers.map(([username, plays]) => ({
-                user: username,
-                img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                    document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
-                plays: plays,
-                url: ``
-            }))
+            listeners: sortedTrackUsers.map(([username, plays]) => {
+                const trackKey = `${trackInfo.trackName}::${trackInfo.artist}`;
+                const trackData = chartDataPerUser[username].trackPlays[trackKey];
+                const lastListen = formatTimeAgo(trackData.lastListen);
+                const dailyData = trackData.dailyData;
+
+                return {
+                    user: username,
+                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
+                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                    plays: plays,
+                    url: ``,
+                    lastListen,
+                    dailyData
+                };
+            })
         };
     });
 
@@ -465,6 +538,11 @@ export async function createArtistStreaksChart(sortedStreaks, maxStreak) {
         const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
         const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
 
+        const artistData = chartDataPerUser[streak.username].artistPlays[artistName];
+        const lastListen = formatTimeAgo(artistData.lastListen);
+        const dailyData = artistData.dailyData;
+        const totalPlays = artistData.plays;
+
         // Fetch artist image from Deezer
         let imageUrl;
         const cacheKey = `artist:${artistName}`;
@@ -492,8 +570,10 @@ export async function createArtistStreaksChart(sortedStreaks, maxStreak) {
             listeners: [{
                 user: streak.username,
                 img: profilePic,
-                plays: streak.count,
-                url: `https://www.last.fm/user/${streak.username}`
+                plays: totalPlays,
+                url: `https://www.last.fm/user/${streak.username}`,
+                lastListen,
+                dailyData
             }]
         };
     });
@@ -512,6 +592,12 @@ export async function createAlbumStreaksChart(sortedStreaks, maxStreak) {
         const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
         const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
 
+        const albumKey = `${albumName}::${artistName}`;
+        const albumData = chartDataPerUser[streak.username].albumPlays[albumKey];
+        const lastListen = formatTimeAgo(albumData.lastListen);
+        const dailyData = albumData.dailyData;
+        const totalPlays = albumData.plays;
+
         return {
             name: albumName,
             artist: artistName,
@@ -523,8 +609,10 @@ export async function createAlbumStreaksChart(sortedStreaks, maxStreak) {
             listeners: [{
                 user: streak.username,
                 img: profilePic,
-                plays: streak.count,
-                url: `https://www.last.fm/user/${streak.username}`
+                plays: totalPlays,
+                url: `https://www.last.fm/user/${streak.username}`,
+                lastListen,
+                dailyData
             }]
         };
     });
@@ -542,6 +630,12 @@ export async function createTrackStreaksChart(sortedStreaks, maxStreak) {
         const artistName = streak.artist;
         const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
         const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+
+        const trackKey = `${trackName}::${artistName}`;
+        const trackData = chartDataPerUser[streak.username].trackPlays[trackKey];
+        const lastListen = formatTimeAgo(trackData.lastListen);
+        const dailyData = trackData.dailyData;
+        const totalPlays = trackData.plays;
 
         // Search for track on Deezer to get album image and preview
         const cacheKey = `track:${trackName}:${artistName}`;
@@ -590,8 +684,10 @@ export async function createTrackStreaksChart(sortedStreaks, maxStreak) {
             listeners: [{
                 user: streak.username,
                 img: profilePic,
-                plays: streak.count,
-                url: `https://www.last.fm/user/${streak.username}`
+                plays: totalPlays,
+                url: `https://www.last.fm/user/${streak.username}`,
+                lastListen,
+                dailyData
             }]
         };
     });

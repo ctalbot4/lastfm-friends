@@ -122,19 +122,9 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                         friendBlock.querySelector("#pfp")?.src ||
                         'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png';
 
-                    // Find last listen time from chart data
-                    let lastListenTime = null;
-                    if (chartDataPerUser[friendUsername]?.recentTracks) {
-                        const tracks = chartDataPerUser[friendUsername].recentTracks;
-                        for (let track of tracks) {
-                            if (track.name.trim() === trackName && track.artist.name === artistName) {
-                                if (track.date?.uts) {
-                                    lastListenTime = formatTimeAgo(track.date.uts);
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    // Get last listen time for track
+                    const trackKey = `${trackName.trim()}::${artistName}`;
+                    const lastListenTime = formatTimeAgo(chartDataPerUser[friendUsername]?.trackPlays?.[trackKey]?.lastListen);
 
                     return {
                         username: friendUsername,
@@ -312,19 +302,8 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
                         friendBlock.querySelector("#pfp")?.src ||
                         'https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png';
 
-                    // Find last listen time from chart data
-                    let lastListenTime = null;
-                    if (chartDataPerUser[friendUsername]?.recentTracks) {
-                        const tracks = chartDataPerUser[friendUsername].recentTracks;
-                        for (let track of tracks) {
-                            if (track.artist.name === artistName) {
-                                if (track.date?.uts) {
-                                    lastListenTime = formatTimeAgo(track.date.uts);
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    // Get last listen time for artist
+                    const lastListenTime = formatTimeAgo(chartDataPerUser[friendUsername]?.artistPlays?.[artistName]?.lastListen);
 
                     return {
                         username: friendUsername,
