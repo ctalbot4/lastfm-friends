@@ -39,6 +39,10 @@ export function setUserListeningTime(listeningTime) {
 
 export let chartDataPerUser = {};
 
+// Different from "Activity By Day" in weekly charts - this is total plays per day, starting today, going back the last 8 days
+// dateKey -> total plays that day across all users
+export let allUsersDailyTotals = {};
+
 // Calculate top artists, albums, and tracks from recent track data
 export function calculateChartData(tracks, username) {
 
@@ -338,39 +342,46 @@ export function calculateChartData(tracks, username) {
 
     // Attach dailyData arrays to each artist/album/track
     Object.entries(userArtists).forEach(([artistName, artistData]) => {
-        artistData.dailyData = sortedDailyEntries.map(([, v]) => {
+        artistData.dailyData = sortedDailyEntries.map(([key, v]) => {
             const itemCount = v.artists[artistName] || 0;
             return {
+                key,
                 label: v.dayOfMonth.toString(),
-                ratio: v.total > 0 ? itemCount / v.total : 0
+                count: itemCount
             };
         });
     });
 
     Object.entries(userAlbums).forEach(([albumKey, albumData]) => {
-        albumData.dailyData = sortedDailyEntries.map(([, v]) => {
+        albumData.dailyData = sortedDailyEntries.map(([key, v]) => {
             const itemCount = v.albums[albumKey] || 0;
             return {
+                key,
                 label: v.dayOfMonth.toString(),
-                ratio: v.total > 0 ? itemCount / v.total : 0
+                count: itemCount
             };
         });
     });
 
     Object.entries(userTracks).forEach(([trackKey, trackData]) => {
-        trackData.dailyData = sortedDailyEntries.map(([, v]) => {
+        trackData.dailyData = sortedDailyEntries.map(([key, v]) => {
             const itemCount = v.tracks[trackKey] || 0;
             return {
+                key,
                 label: v.dayOfMonth.toString(),
-                ratio: v.total > 0 ? itemCount / v.total : 0
+                count: itemCount
             };
         });
     });
+
+    const userDailyTotals = {};
+    sortedDailyEntries.forEach(([key, v]) => { userDailyTotals[key] = v.total; });
 
     chartDataPerUser[username] = {
         artistPlays: userArtists,
         albumPlays: userAlbums,
         trackPlays: userTracks,
+        userDailyTotals,
         streaks: {
             artists: allArtistStreaks,
             albums: allAlbumStreaks,
@@ -544,6 +555,14 @@ export async function updateCharts() {
         };
     });
         
+    // Add up total plays per day for the last 8 days across all users
+    allUsersDailyTotals = {};
+    Object.values(chartDataPerUser).forEach(userData => {
+        Object.entries(userData.userDailyTotals || {}).forEach(([key, total]) => {
+            allUsersDailyTotals[key] = (allUsersDailyTotals[key] || 0) + total;
+        });
+    });
+
     sortedData.artists = Object.entries(artistPlays).sort((a, b) => {
         const aScore = b[1].userCount * b[1].cappedPlays;
         const bScore = a[1].userCount * a[1].cappedPlays;

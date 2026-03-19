@@ -87,7 +87,7 @@ export function createHourlyChart() {
 
                         if (sortedListeners.length > 0) {
                             sortedListeners.forEach(([username, count]) => {
-                                const userBlock = document.querySelector(`[data-username="${username}"]`);
+                                const userBlock = document.querySelector(`.block[data-username="${username}"]`);
                                 const profileUrl = userBlock ?
                                     userBlock.querySelector('#pfp').src :
                                     `https://lastfm.freetls.fastly.net/i/u/300x300/5c66a0d6f81115c6d551493c9298b43b.png`;
@@ -282,7 +282,7 @@ export function createDailyChart() {
 
                         if (sortedListeners.length > 0) {
                             sortedListeners.forEach(([username, count]) => {
-                                const userBlock = document.querySelector(`[data-username="${username}"]`);
+                                const userBlock = document.querySelector(`.block[data-username="${username}"]`);
                                 const profileUrl = userBlock ?
                                     userBlock.querySelector('#pfp').src :
                                     `https://lastfm.freetls.fastly.net/i/u/300x300/5c66a0d6f81115c6d551493c9298b43b.png`;

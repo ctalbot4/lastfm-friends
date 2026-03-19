@@ -147,13 +147,41 @@ async function updateBlock(block, key = store.keys.KEY) {
             isTopTrack = trackIndex >= 0 && trackIndex < 8;
         }
 
+        // Determine if track is on repeat
+        let trackStreakCount = 0;
+        const streakTrackName = recentTrack.name.trim();
+        const streakArtistName = recentTrack.artist.name;
+        for (const track of userChartData.recentTracks) {
+            if (track.name.trim() === streakTrackName && track.artist.name === streakArtistName) {
+                trackStreakCount++;
+            } else {
+                break;
+            }
+        }
+        const isTrackOnRepeat = trackStreakCount > 1;
+
+        // Determine if artist is on repeat
+        let artistStreakCount = 0;
+        const streakArtist = recentTrack.artist.name;
+        for (const track of userChartData.recentTracks) {
+            if (track.artist.name === streakArtist) {
+                artistStreakCount++;
+            } else {
+                break;
+            }
+        }
+        const isArtistOnRepeat = artistStreakCount > 4;
+
+        const showTrackRepeat = isTrackOnRepeat;
+        const showArtistRepeat = !isTrackOnRepeat && isArtistOnRepeat;
+
         newBlock.querySelector(".bottom > .track-info > .song-title > a").innerHTML = `
                         <span class="rest">${frontTrackString}</span>
-                        <span class="no-break">${backTrackString}<svg class="heart-icon${recentTrack.loved === "1" ? '' : ' removed'}" viewBox="0 0 120 120" fill="white"><path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/></svg><img class="star-icon${isTopTrack ? '' : ' removed'}" src="icons/star.png" title="Top 8 track"></span>`;
-        
+                        <span class="no-break">${backTrackString}<svg class="heart-icon${recentTrack.loved === "1" ? '' : ' removed'}" title="Loved track" viewBox="0 0 120 120" fill="white"><path class="st0" d="M60.83,17.19C68.84,8.84,74.45,1.62,86.79,0.21c23.17-2.66,44.48,21.06,32.78,44.41 c-3.33,6.65-10.11,14.56-17.61,22.32c-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.56C29.16,76.9,0.95,55.93,0.02,29.95 C-0.63,11.75,13.73,0.09,30.25,0.3C45.01,0.5,51.22,7.84,60.83,17.19L60.83,17.19L60.83,17.19z"/></svg><img class="star-icon${isTopTrack ? '' : ' removed'}" src="icons/star.png" title="Top 8 track this week"><img class="repeat-icon${showTrackRepeat ? '' : ' removed'}" src="icons/repeat.svg" title="On repeat (${trackStreakCount} in a row)"></span>`;
+
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").innerHTML = `
                         <span class="rest">${frontArtistString}</span>
-                        <span class="no-break">${backArtistString}<img class="star-icon${isTopArtist ? '' : ' removed'}" src="icons/star.png" title="Top 4 artist"></span>`;
+                        <span class="no-break">${backArtistString}<img class="star-icon${isTopArtist ? '' : ' removed'}" src="icons/star.png" title="Top 4 artist this week"><img class="repeat-icon${showArtistRepeat ? '' : ' removed'}" src="icons/repeat.svg" title="On repeat (${artistStreakCount} in a row)"></span>`;
         
         newBlock.querySelector(".bottom > .track-info > .song-title > a").href = songLink;
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;

@@ -247,8 +247,8 @@ export function createScatterPlot() {
                         let tooltipContent = `<div style="margin-bottom: 4px; font-weight: bold;">${dayStr} ${timeStr}</div>`;
                         
                         // Add hovered point info
-                        const userBlock = document.querySelector(`[data-username="${raw.user}"]`);
-                        const profileUrl = userBlock ? 
+                        const userBlock = document.querySelector(`.block[data-username="${raw.user}"]`);
+                        const profileUrl = userBlock ?
                             userBlock.querySelector('#pfp').src :
                             `https://lastfm.freetls.fastly.net/i/u/300x300/5c66a0d6f81115c6d551493c9298b43b.png`;
                         
@@ -285,8 +285,8 @@ export function createScatterPlot() {
                                                     .sort((a, b) => b[1] - a[1])
                                                     .slice(0, 3)
                                                     .map(([username]) => {
-                                                        const listenerBlock = document.querySelector(`[data-username="${username}"]`);
-                                                        const listenerProfileUrl = listenerBlock ? 
+                                                        const listenerBlock = document.querySelector(`.block[data-username="${username}"]`);
+                                                        const listenerProfileUrl = listenerBlock ?
                                                             listenerBlock.querySelector('#pfp').src :
                                                             `https://lastfm.freetls.fastly.net/i/u/300x300/5c66a0d6f81115c6d551493c9298b43b.png`;
                                                         return `<img src="${listenerProfileUrl}" style="width: 16px; height: 16px; border-radius: 50%;" title="${username}">`;
@@ -312,8 +312,8 @@ export function createScatterPlot() {
                                             ${otherPlays.map(play => {
                                                 const playDate = new Date(play.timestamp * 1000);
                                                 const playTimeStr = playDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                                                const playUserBlock = document.querySelector(`[data-username="${play.username}"]`);
-                                                const playProfileUrl = playUserBlock ? 
+                                                const playUserBlock = document.querySelector(`.block[data-username="${play.username}"]`);
+                                                const playProfileUrl = playUserBlock ?
                                                     playUserBlock.querySelector('#pfp').src :
                                                     `https://lastfm.freetls.fastly.net/i/u/300x300/5c66a0d6f81115c6d551493c9298b43b.png`;
                                                 

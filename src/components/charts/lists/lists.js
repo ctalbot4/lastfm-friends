@@ -178,7 +178,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         span.dataset.lastListen = listener.lastListen;
         if (listener.dailyData) {
             span.dataset.dailyData = listener.dailyData
-                    .map(({ label, ratio }) => `${label}:${ratio.toFixed(4)}`)
+                    .map(({ label, count }) => `${label}:${count}`)
                     .join(',');
         }
         if (isTrack) {
@@ -244,8 +244,8 @@ export async function createArtistCharts(sortedArtistPlays, artistsMax) {
 
                 return {
                     user: username,
-                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                    img: document.querySelector(`.block[data-username="${username}"] .profile-picture img`) ?
+                        document.querySelector(`.block[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
                     plays: plays,
                     url: ``,
                     lastListen,
@@ -284,8 +284,8 @@ export async function createAlbumCharts(sortedAlbumPlays, albumsMax) {
 
                 return {
                     user: username,
-                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                    img: document.querySelector(`.block[data-username="${username}"] .profile-picture img`) ?
+                        document.querySelector(`.block[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
                     plays: plays,
                     url: ``,
                     lastListen,
@@ -388,8 +388,8 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
 
                 return {
                     user: username,
-                    img: document.querySelector(`[data-username="${username}"] .profile-picture img`) ?
-                        document.querySelector(`[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                    img: document.querySelector(`.block[data-username="${username}"] .profile-picture img`) ?
+                        document.querySelector(`.block[data-username="${username}"] .profile-picture img`).src : "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
                     plays: plays,
                     url: ``,
                     lastListen,
@@ -411,8 +411,8 @@ export function createTopListenersChart(sortedListeners, maxDuration) {
         const li = document.createElement("li");
         li.classList.add("list-item");
 
-        const userBlock = document.querySelector(`[data-username="${username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userBlock = document.querySelector(`.block[data-username="${username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img')?.src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         const userUrl = `https://www.last.fm/user/${username}`;
         const totalPlays = userPlayCounts[username] || 0;
 
@@ -442,8 +442,8 @@ export function createUniqueArtistsChart(sortedUsers, maxArtists) {
         const li = document.createElement("li");
         li.classList.add("list-item");
 
-        const userBlock = document.querySelector(`[data-username="${username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userBlock = document.querySelector(`.block[data-username="${username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img')?.src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         const userUrl = `https://www.last.fm/user/${username}`;
         const totalPlays = userPlayCounts[username] || 0;
 
@@ -473,8 +473,8 @@ export function createUniqueTracksChart(sortedUsers, maxTracks) {
         const li = document.createElement("li");
         li.classList.add("list-item");
 
-        const userBlock = document.querySelector(`[data-username="${username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userBlock = document.querySelector(`.block[data-username="${username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img')?.src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         const userUrl = `https://www.last.fm/user/${username}`;
         const totalPlays = userPlayCounts[username] || 0;
 
@@ -535,8 +535,8 @@ export async function createArtistStreaksChart(sortedStreaks, maxStreak) {
 
     const artistChartPromises = sortedStreaks.map(async (streak) => {
         const artistName = streak.name;
-        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userBlock = document.querySelector(`.block[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img')?.src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
 
         const artistData = chartDataPerUser[streak.username].artistPlays[artistName];
         const lastListen = formatTimeAgo(artistData.lastListen);
@@ -589,8 +589,8 @@ export async function createAlbumStreaksChart(sortedStreaks, maxStreak) {
     const albumChartPromises = sortedStreaks.map(async (streak) => {
         const albumName = streak.name;
         const artistName = streak.artist;
-        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userBlock = document.querySelector(`.block[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img')?.src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
 
         const albumKey = `${albumName}::${artistName}`;
         const albumData = chartDataPerUser[streak.username].albumPlays[albumKey];
@@ -628,8 +628,8 @@ export async function createTrackStreaksChart(sortedStreaks, maxStreak) {
     const trackChartPromises = sortedStreaks.map(async (streak) => {
         const trackName = streak.name;
         const artistName = streak.artist;
-        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userBlock = document.querySelector(`.block[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img')?.src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
 
         const trackKey = `${trackName}::${artistName}`;
         const trackData = chartDataPerUser[streak.username].trackPlays[trackKey];
@@ -704,8 +704,8 @@ export function createListeningStreaksChart(sortedStreaks, maxStreak) {
         const li = document.createElement("li");
         li.classList.add("list-item");
 
-        const userBlock = document.querySelector(`[data-username="${streak.username}"]`);
-        const profilePic = userBlock?.querySelector('.profile-picture img').src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
+        const userBlock = document.querySelector(`.block[data-username="${streak.username}"]`);
+        const profilePic = userBlock?.querySelector('.profile-picture img')?.src || "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         const userUrl = `https://www.last.fm/user/${streak.username}`;
         const streakDays = formatStreakDays(streak.startDate, streak.endDate);
         const durationFormatted = formatDuration(streak.duration, true);

@@ -162,6 +162,34 @@ export async function getArtistInfo(user, key = store.keys.KEY, artist) {
     return data;
 }
 
+export async function getAlbumInfo(key = store.keys.KEY, artist, album) {
+    const cacheKey = `${artist}:${album}`;
+    const cached = await getData('album-info-cache', cacheKey);
+
+    if (cached && cached.timestamp) {
+        const now = Date.now();
+        const age = now - cached.timestamp;
+        if (age < store.updateTimers.listening.interval) {
+            return cached.data;
+        }
+    }
+
+    const data = await callApi("album.getInfo", {
+        artist,
+        album
+    }, key);
+
+    setData('album-info-cache', cacheKey, {
+        data: data,
+        timestamp: Date.now()
+    });
+
+    // Keep only 1000 newest entries
+    cleanCache('album-info-cache', 1000);
+
+    return data;
+}
+
 export function getTopArtists(user, key = store.keys.KEY) {
     return callApi("user.gettopartists", {
         user,

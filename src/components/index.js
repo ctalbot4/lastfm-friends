@@ -46,17 +46,21 @@ export async function initDashboard() {
     document.getElementById("progress-container").classList.add("removed");
 
     scheduleUpdates();
-    setupBlocks();
     initCharts();
     
     // Start ticker after blocks are updated
     startTicker();
 
+    // Restart updates when user returns to page, and reset ticker if away for more than 5 minutes
+    let hiddenAt = null;
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
+            const wasAwayMs = hiddenAt ? Date.now() - hiddenAt : 0;
             scheduleUpdates();
             tryNetworkUpdate();
+            if (wasAwayMs > 5 * 60 * 1000) startTicker();
         } else {
+            hiddenAt = Date.now();
             cancelUpdates();
         }
     });

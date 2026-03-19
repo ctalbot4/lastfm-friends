@@ -82,7 +82,7 @@ export function updateNetworkData() {
         userArtistsList.sort((a, b) => b.plays - a.plays);
         const topArtists = userArtistsList.slice(0, 3);
         
-        const userBlock = document.querySelector(`[data-username="${username}"]`);
+        const userBlock = document.querySelector(`.block[data-username="${username}"]`);
         const profilePic = userBlock?.querySelector('.profile-picture img')?.src || 
             "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png";
         

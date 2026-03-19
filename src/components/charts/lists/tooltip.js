@@ -20,7 +20,7 @@ export function showListenerTooltip(span, streak) {
 
     const username = span.dataset.user;
     const plays = span.dataset.plays;
-    const playsText = `${plays.toLocaleString()} ${plays === 1 ? 'play' : 'plays'}`;
+    const playsText = `${plays.toLocaleString()} ${parseInt(plays, 10) === 1 ? 'play' : 'plays'}`;
     const lastListen = span.dataset.lastListen;
 
     // Check if this listener is currently listening to this artist/album/track
@@ -29,7 +29,7 @@ export function showListenerTooltip(span, streak) {
     const itemName = span.dataset.itemName;
     const itemArtist = span.dataset.itemArtist;
     let isNowPlaying = false;
-    if (currentTrack?.["@attr"]?.nowplaying && itemType) {
+    if (currentTrack?.["@attr"]?.nowplaying) {
         if (itemType === "artist") {
             isNowPlaying = currentTrack.artist.name === itemName;
         } else if (itemType === "album") {
@@ -54,30 +54,56 @@ export function showListenerTooltip(span, streak) {
                 : `last listened ${lastListen}`;
     }
 
+    // Constants for mini bar chart
+    const MAX_HEIGHT_PX = 16;
+    const FLOOR_PX = 3;
+
     // Build mini bar chart for weekly plays
-    let barsHtml = "";
-    const rawData = span.dataset.dailyData;
-    if (rawData) {
-        const days = rawData.split(",").map((s) => {
-            const [label, ratio] = s.split(":");
-            return { label, ratio: parseFloat(ratio) };
-        });
-        const maxRatio = Math.max(...days.map((d) => d.ratio), 0.001);
-        const cols = days
-            .map(({ label, ratio }, i) => {
-                const isToday = i === days.length - 1;
-                const heightPx = Math.round((ratio / maxRatio) * 16);
-                const isPeak = ratio === maxRatio && ratio > 0;
-                return (
-                    `<div class="day-col">` +
-                    `<div class="day-fill${isPeak ? " peak" : ""}${isToday ? " today" : ""}" style="height:${heightPx}px"></div>` +
-                    `<div class="day-label${isToday ? " today" : ""}">${label}</div>` +
-                    `</div>`
-                );
-            })
-            .join("");
-        barsHtml = `<div class="listener-tooltip-bars" style="margin-left: 2px;">${cols}</div>`;
-    }
+    const DAY_ABBRS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const today = new Date();
+    const days = span.dataset.dailyData.split(",").map((s) => {
+        const parts = s.split(":");
+        return { count: parseInt(parts[1], 10) };
+    });
+
+    // Global max single-day count across all users for this item
+    let globalMaxDayCount = Math.max(...days.map(d => d.count), 1);
+    Object.values(chartDataPerUser).forEach(userData => {
+        let dailyData = null;
+        if (itemType === 'artist') {
+            dailyData = userData.artistPlays?.[itemName]?.dailyData;
+        } else if (itemType === 'album') {
+            dailyData = userData.albumPlays?.[`${itemName}::${itemArtist}`]?.dailyData;
+        } else if (itemType === 'track') {
+            dailyData = userData.trackPlays?.[`${itemName}::${itemArtist}`]?.dailyData;
+        }
+        if (dailyData) {
+            const userDayMax = Math.max(...dailyData.map(d => d.count));
+            if (userDayMax > globalMaxDayCount) globalMaxDayCount = userDayMax;
+        }
+    });
+
+    const userMaxDayCount = Math.max(...days.map(d => d.count));
+    const cols = days
+        .map(({ count }, i) => {
+            const isToday = i === days.length - 1;
+            // x^0.75 scaling to reduce effect of outlier users
+            const barHeight = count === 0 ? 0 : Math.round(FLOOR_PX + (Math.pow(count, 0.75) / Math.pow(globalMaxDayCount, 0.75)) * (MAX_HEIGHT_PX - FLOOR_PX));
+            const isPeak = count === userMaxDayCount && count > 0 && barHeight >= MAX_HEIGHT_PX * 0.4;
+            const date = new Date(today);
+            date.setDate(today.getDate() - (days.length - 1 - i));
+            const label = DAY_ABBRS[date.getDay()];
+            return (
+                `<div class="day-col">` +
+                `<div style="height:${MAX_HEIGHT_PX}px;display:flex;align-items:flex-end;">` +
+                `<div class="day-fill${isPeak ? " peak" : ""}${isToday ? " today" : ""}" style="height:${barHeight}px"></div>` +
+                `</div>` +
+                `<div class="day-label${isToday ? " today" : ""}">${label}</div>` +
+                `</div>`
+            );
+        })
+        .join("");
+    const barsHtml = `<div class="listener-tooltip-bars" style="margin-left: 2px;">${cols}</div>`;
 
     const recencyHtml = recencyText
         ? `<div class="listener-tooltip-recency">${

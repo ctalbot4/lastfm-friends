@@ -61,11 +61,11 @@ export async function playBlockPreview(trackTitle, artistName, block) {
         audioState.currentAudio.play();
 
         audioState.currentAudioBlock = block;
-        document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
+        document.getElementById("block-container").querySelector(`.block[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "true";
 
         // Reset preview state when audio ends
         audioState.currentAudio.onended = () => {
-            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+            document.getElementById("block-container").querySelector(`.block[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
         };
 
         gtag('event', 'block_play', {

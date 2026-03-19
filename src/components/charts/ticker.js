@@ -54,12 +54,9 @@ export async function startTicker() {
         refreshTimeout = null;
     }
 
-    // Wait a moment to give charts a chance to update
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Wait for chart data to finish updating
+    // Wait for any active updates to finish
     while (store.isUpdatingBlocks || store.isUpdatingListening) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     generateTickerMessages();

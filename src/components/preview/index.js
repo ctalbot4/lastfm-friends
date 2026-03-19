@@ -41,6 +41,7 @@ export function initPreview() {
             if (!store.isSoundOn || !charts.classList.contains("collapsed")) return;
             const block = e.target.closest(".block");
             if (!block) return;
+            if (block.querySelector('.listeners-container.active')) return;
 
             // If same track, don't restart
             if (audioState.currentBlock && audioState.currentBlock.querySelector('.song-title a')?.textContent.trim() == block.querySelector('.song-title a')?.textContent.trim() &&
@@ -56,7 +57,7 @@ export function initPreview() {
             // Clear previous timeout and save preview time on previous block if mouseout wasn't triggered
             if (audioState.currentBlock) {
                 // Need to get block again, might have old copy after refresh
-                const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${audioState.currentBlock.dataset.username}"]`);
+                const updatedCurrentBlock = document.getElementById("block-container").querySelector(`.block[data-username="${audioState.currentBlock.dataset.username}"]`);
                 updatedCurrentBlock.dataset.previewPlaying = "false";
                 clearTimeout(audioState.hoverTimers[audioState.currentBlock.dataset.username]);
 
@@ -89,6 +90,7 @@ export function initPreview() {
         blockContainer.addEventListener("mouseout", function(e) {
             const block = e.target.closest(".block");
             if (!block || e.relatedTarget?.closest('.block') === block) return;
+            if (e.relatedTarget?.closest('.block')?.querySelector('.listeners-container.active')) return;
 
             // Clear any previous timeout
             if (audioState.hoverTimers[block.dataset.username]) {
@@ -105,7 +107,7 @@ export function initPreview() {
                 }
                 audioState.currentAudioBlock = null;
             }
-            document.getElementById("block-container").querySelector(`[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+            document.getElementById("block-container").querySelector(`.block[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
             audioState.currentBlock = null;
         });
     }
@@ -216,7 +218,7 @@ export function handleScroll() {
         // Clear previous timeout on previous block 
         if (audioState.currentBlock) {
             // Need to get block again, might have old copy after refresh
-            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`[data-username="${audioState.currentBlock.dataset.username}"]`);
+            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`.block[data-username="${audioState.currentBlock.dataset.username}"]`);
             updatedCurrentBlock.dataset.previewPlaying = "false";
 
             // Check if currentBlock is the block playing audio

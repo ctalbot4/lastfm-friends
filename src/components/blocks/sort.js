@@ -39,7 +39,7 @@ export async function sortBlocks(blocks) {
 
     // If user is scrolling listeners list, wait to rebuild DOM
     while (store.isScrolling) {
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 16));
     }
 
     const newBlocks = [];
@@ -61,14 +61,14 @@ export async function sortBlocks(blocks) {
             const artistContent = newBlock.querySelector('.listeners-content-artist');
             const listenersHeader = newBlock.querySelector('.listeners-header');
             
-            trackTab.classList.add('active');
-            artistTab.classList.remove('active');
-            trackContent.style.display = 'flex';
-            artistContent.style.display = 'none';
+            artistTab.classList.add('active');
+            trackTab.classList.remove('active');
+            artistContent.style.display = 'flex';
+            trackContent.style.display = 'none';
             listenersHeader.style.display = "none";
             
             delete newBlock.dataset.reset;
-        } else if (originalBlock.dataset.trackListenersLoaded != "0") {
+        } else if (originalBlock.dataset.artistListenersLoaded != "0") {
             // Listeners screen has been opened
             newBlock.querySelector(".listeners-container").className =
                 originalBlock.querySelector(".listeners-container").className;
@@ -97,9 +97,10 @@ export async function sortBlocks(blocks) {
 
     document.querySelectorAll('.listeners-list').forEach(list => {
         const block = list.closest('.block');
-        // Get scroll position of active listeners list
-        if (!block || list.parentElement.style.display === 'none') return;
-        scrollPositions[block.dataset.username] = list.scrollTop;
+        const contentPanel = list.closest('.listeners-content-track, .listeners-content-artist');
+        if (!block || !contentPanel || contentPanel.style.display === 'none') return;
+        const tab = contentPanel.classList.contains('listeners-content-track') ? 'track' : 'artist';
+        scrollPositions[`${block.dataset.username}:${tab}`] = list.scrollTop;
     });
 
     const container = document.getElementById("block-container");
@@ -109,12 +110,13 @@ export async function sortBlocks(blocks) {
     });
     newBlocks.forEach(block => {
         const name = block.dataset.username;
-        const domLists = block.querySelectorAll('.listeners-list');
-        domLists.forEach(domList => {
-            // Restore scroll position of active listeners lists
-            if (domList && domList.parentElement.style.display !== 'none' && scrollPositions[name] != null) {
-                domList.scrollTop = scrollPositions[name];
-            }
+        ['track', 'artist'].forEach(tab => {
+            const pos = scrollPositions[`${name}:${tab}`];
+            if (pos == null) return;
+            const contentPanel = block.querySelector(`.listeners-content-${tab}`);
+            if (!contentPanel || contentPanel.style.display === 'none') return;
+            const domList = contentPanel.querySelector('.listeners-list');
+            if (domList) domList.scrollTop = pos;
         });
     });
 

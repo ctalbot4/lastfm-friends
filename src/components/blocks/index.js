@@ -27,9 +27,9 @@ export function setupBlocks() {
                 otherBlock.querySelector(".listeners-container").classList.remove("active");
             })
 
-            if (trackTab.classList.contains('active')) {
+            if (artistTab.classList.contains('active')) {
                 if (!store.keys.KEY3) store.keys.KEY3 = await getKey(3);
-                await fetchTrackListeners(block);
+                await fetchArtistListeners(block);
             }
         });
 
@@ -68,11 +68,47 @@ export function setupBlocks() {
             list.addEventListener('scroll', () => {
                 store.isScrolling = true;
                 clearTimeout(store.scrollTimeoutId);
-                store.scrollTimeoutId = setTimeout(() => {
+                store.scrollTimeoutId = setTimeout(() => { store.isScrolling = false; }, 2000);
+            }, { passive: true });
+            if ('onscrollend' in window) {
+                list.addEventListener('scrollend', () => {
+                    clearTimeout(store.scrollTimeoutId);
                     store.isScrolling = false;
-                }, 3000);
-            }, {
-                passive: true
+                }, { passive: true });
+            }
+        });
+
+        // Expand/collapse listener rows
+        function setRowExpanded(row, expanded) {
+            const nameEl = row.querySelector('.listener-username-text');
+            const username = row.dataset.username;
+            if (expanded) {
+                const url = row.dataset.libraryUrl;
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.className = 'listener-username-text';
+                link.innerHTML = username + `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px;position:relative;top:-0.75px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+                nameEl.replaceWith(link);
+                row.classList.add('expanded');
+            } else {
+                const span = document.createElement('span');
+                span.className = 'listener-username-text';
+                span.textContent = username;
+                nameEl.replaceWith(span);
+                row.classList.remove('expanded');
+            }
+        }
+
+        [trackContent, artistContent].forEach(content => {
+            content.addEventListener('click', (e) => {
+                if (e.target.closest('a')) return;
+                const row = e.target.closest('.listener-item-expandable');
+                if (!row) return;
+                const isExpanded = row.classList.contains('expanded');
+                content.querySelectorAll('.listener-item-expandable.expanded')
+                    .forEach(r => setRowExpanded(r, false));
+                if (!isExpanded) setRowExpanded(row, true);
             });
         });
     })

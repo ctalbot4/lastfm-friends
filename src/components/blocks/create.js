@@ -29,13 +29,13 @@ export function createBlock(user, mainUser = false) {
         </div>
         <div class="listeners-header" style="display: none;">
             <div class="listeners-tabs">
-                <button class="listeners-tab active" data-tab="track">
-                    <img class="tab-image album-image" src="" alt="" style="display: none;">
-                    <span>Track</span>
-                </button>
-                <button class="listeners-tab" data-tab="artist">
+                <button class="listeners-tab active" data-tab="artist">
                     <img class="tab-image artist-image" src="" alt="" style="display: none;">
                     <span>Artist</span>
+                </button>
+                <button class="listeners-tab" data-tab="track">
+                    <img class="tab-image album-image" src="" alt="" style="display: none;">
+                    <span>Track</span>
                 </button>
             </div>
         </div>
