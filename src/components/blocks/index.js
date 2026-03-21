@@ -28,6 +28,9 @@ export function setupBlocks() {
             })
 
             if (artistTab.classList.contains('active')) {
+                if (block.dataset.artistListenersLoaded != "2") {
+                    artistContent.innerHTML = `<div class="listeners-loading"><div>Loading listeners...</div></div>`;
+                }
                 if (!store.keys.KEY3) store.keys.KEY3 = await getKey(3);
                 await fetchArtistListeners(block);
             }

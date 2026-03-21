@@ -13,8 +13,17 @@ async function callApi(method, params = {}, key = store.keys.KEY, retry = 0) {
         url.searchParams.set(k, v);
     });
 
-    const response = await fetch(url.toString());
-    
+    let response;
+    try {
+        response = await fetch(url.toString());
+    } catch (e) {
+        if (retry < 3) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return callApi(method, params, key, retry + 1);
+        }
+        throw e;
+    }
+
     // Handle random HTML responses from Last.fm
     let data;
     try {
