@@ -177,9 +177,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         span.dataset.plays = listener.plays;
         span.dataset.lastListen = listener.lastListen;
         if (listener.dailyData) {
-            span.dataset.dailyData = listener.dailyData
-                    .map(({ label, count }) => `${label}:${count}`)
-                    .join(',');
+            span.dataset.dailyData = listener.dailyData.map(({ count }) => count).join(',');
         }
         if (isTrack) {
             span.dataset.itemType = 'track';

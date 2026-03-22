@@ -61,13 +61,10 @@ export function showListenerTooltip(span, streak) {
     // Build mini bar chart for weekly plays
     const DAY_ABBRS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     const today = new Date();
-    const days = span.dataset.dailyData.split(",").map((s) => {
-        const parts = s.split(":");
-        return { count: parseInt(parts[1], 10) };
-    });
+    const counts = span.dataset.dailyData.split(",").map(Number);
 
     // Global max single-day count across all users for this item
-    let globalMaxDayCount = Math.max(...days.map(d => d.count), 1);
+    let globalMaxDayCount = Math.max(...counts, 1);
     Object.values(chartDataPerUser).forEach(userData => {
         let dailyData = null;
         if (itemType === 'artist') {
@@ -83,15 +80,15 @@ export function showListenerTooltip(span, streak) {
         }
     });
 
-    const userMaxDayCount = Math.max(...days.map(d => d.count));
-    const cols = days
-        .map(({ count }, i) => {
-            const isToday = i === days.length - 1;
+    const userMaxDayCount = Math.max(...counts);
+    const cols = counts
+        .map((count, i) => {
+            const isToday = i === 7;
             // x^0.75 scaling to reduce effect of outlier users
             const barHeight = count === 0 ? 0 : Math.round(FLOOR_PX + (Math.pow(count, 0.75) / Math.pow(globalMaxDayCount, 0.75)) * (MAX_HEIGHT_PX - FLOOR_PX));
             const isPeak = count === userMaxDayCount && count > 0 && barHeight >= MAX_HEIGHT_PX * 0.4;
             const date = new Date(today);
-            date.setDate(today.getDate() - (days.length - 1 - i));
+            date.setDate(today.getDate() - (7 - i));
             const label = DAY_ABBRS[date.getDay()];
             return (
                 `<div class="day-col">` +

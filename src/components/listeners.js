@@ -67,10 +67,7 @@ function buildListenerExpandBody(username, itemKey, itemType, globalMaxDayCount)
     }
 
     // Mini bar chart
-    const dayCounts = new Array(8).fill(0);
-    if (itemData?.dailyData && itemData.dailyData.length > 0) {
-        itemData.dailyData.forEach((d, i) => { dayCounts[i] = d.count; });
-    }
+    const dayCounts = itemData?.dailyData?.map(d => d.count) ?? new Array(8).fill(0);
     const userMaxDayCount = Math.max(...dayCounts, 0);
     const todayDate = new Date();
     const sparkBars = dayCounts.map((val, i) => {
@@ -146,10 +143,8 @@ function buildListenerStatsPanel(listeners, itemKey, itemType, genreNames) {
         return recent.artist.name === itemKey;
     }).length;
 
-    // Sorted date keys for the last 8 days
-    const recentKeys = [...new Set([...playsByDate.keys(), ...Object.keys(allUsersDailyTotals)])].sort();
-
     // Calculate ratio of this artist/track's plays to all plays that day
+    const recentKeys = Object.keys(allUsersDailyTotals).sort();
     const dayRatios = recentKeys.map(key => {
         const plays = playsByDate.get(key) || 0;
         const total = allUsersDailyTotals[key] || 0;

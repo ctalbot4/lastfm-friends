@@ -58,10 +58,6 @@ export function calculateChartData(tracks, username) {
             d.getDate()
         ).padStart(2, "0")}`;
     }
-    function fromDateKey(key) {
-        const [year, month, day] = key.split("-").map(Number);
-        return new Date(year, month - 1, day);
-    }
     
     // Track streaks using buffers
     let artistStreakBuffer = { current: null, count: 0, startDate: null, endDate: null };
@@ -317,24 +313,14 @@ export function calculateChartData(tracks, username) {
         });
     }
 
-    // Ensure today is present in dailyTotals so charts are anchored to current date
+    // Ensure all 8 days are present so graph shows a full week
     const today = new Date();
-    const todayKey = toDateKey(today);
-    if (!dailyTotals.has(todayKey)) {
-        dailyTotals.set(todayKey, { total: 0, dayOfMonth: today.getDate(), artists: {}, albums: {}, tracks: {} });
-    }
-    
-    // Ensure there are no gaps between the first day with plays and today
-    const existingKeys = [...dailyTotals.keys()];
-    if (existingKeys.length > 0) {
-        const sortedKeys = existingKeys.sort();
-        const firstDate = fromDateKey(sortedKeys[0]);
-        const endDate = fromDateKey(todayKey);
-        for (let d = new Date(firstDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-            const key = toDateKey(d);
-            if (!dailyTotals.has(key)) {
-                dailyTotals.set(key, { total: 0, dayOfMonth: d.getDate(), artists: {}, albums: {}, tracks: {} });
-            }
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    for (let d = new Date(sevenDaysAgo); d <= today; d.setDate(d.getDate() + 1)) {
+        const key = toDateKey(d);
+        if (!dailyTotals.has(key)) {
+            dailyTotals.set(key, { total: 0, dayOfMonth: d.getDate(), artists: {}, albums: {}, tracks: {} });
         }
     }
 
@@ -342,36 +328,15 @@ export function calculateChartData(tracks, username) {
 
     // Attach dailyData arrays to each artist/album/track
     Object.entries(userArtists).forEach(([artistName, artistData]) => {
-        artistData.dailyData = sortedDailyEntries.map(([key, v]) => {
-            const itemCount = v.artists[artistName] || 0;
-            return {
-                key,
-                label: v.dayOfMonth.toString(),
-                count: itemCount
-            };
-        });
+        artistData.dailyData = sortedDailyEntries.map(([key, v]) => ({ key, count: v.artists[artistName] || 0 }));
     });
 
     Object.entries(userAlbums).forEach(([albumKey, albumData]) => {
-        albumData.dailyData = sortedDailyEntries.map(([key, v]) => {
-            const itemCount = v.albums[albumKey] || 0;
-            return {
-                key,
-                label: v.dayOfMonth.toString(),
-                count: itemCount
-            };
-        });
+        albumData.dailyData = sortedDailyEntries.map(([key, v]) => ({ key, count: v.albums[albumKey] || 0 }));
     });
 
     Object.entries(userTracks).forEach(([trackKey, trackData]) => {
-        trackData.dailyData = sortedDailyEntries.map(([key, v]) => {
-            const itemCount = v.tracks[trackKey] || 0;
-            return {
-                key,
-                label: v.dayOfMonth.toString(),
-                count: itemCount
-            };
-        });
+        trackData.dailyData = sortedDailyEntries.map(([key, v]) => ({ key, count: v.tracks[trackKey] || 0 }));
     });
 
     const userDailyTotals = {};
