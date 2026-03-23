@@ -78,8 +78,8 @@ export function initPreview() {
 
             // Wait for 200 ms then start song search
             audioState.hoverTimers[block.dataset.username] = setTimeout(() => {
-                const artistName = block.querySelector(".artist-title > a").innerText;
-                const trackTitle = block.querySelector(".song-title > a").innerText;
+                const artistName = block.querySelector(".artist-title > a").innerText.replace(/\s+/g, ' ').trim();
+                const trackTitle = block.querySelector(".song-title > a").innerText.replace(/\s+/g, ' ').trim();
                 playBlockPreview(trackTitle, artistName, block);
             }, 200);
         });
@@ -236,8 +236,8 @@ export function handleScroll() {
 
         audioState.currentBlock = block;
 
-        const artistName = block.querySelector(".artist-title > a").innerText;
-        const trackTitle = block.querySelector(".song-title > a").innerText;
+        const artistName = block.querySelector(".artist-title > a").innerText.replace(/\s+/g, ' ').trim();
+        const trackTitle = block.querySelector(".song-title > a").innerText.replace(/\s+/g, ' ').trim();
         playBlockPreview(trackTitle, artistName, block);
     }
 }

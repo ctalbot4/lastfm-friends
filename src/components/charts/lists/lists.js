@@ -222,7 +222,9 @@ export async function createArtistCharts(sortedArtistPlays, artistsMax) {
             try {
                 const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
                 const response = await getJSONP(fetchUrl);
-                imageUrl = response.data[0]?.picture || null;
+                const artistWords = artistName.toLowerCase().split(/\s+/);
+                const match = response.data.find(a => artistWords.some(w => a.name.toLowerCase().includes(w)));
+                imageUrl = match?.picture || null;
                 imageCache.set(cacheKey, imageUrl);
             } catch (error) {
                 console.error(`Error fetching artist image for ${artistName}:`, error);
@@ -551,7 +553,9 @@ export async function createArtistStreaksChart(sortedStreaks, maxStreak) {
             try {
                 const fetchUrl = `https://api.deezer.com/search/artist?q="${artistName}"&output=jsonp`;
                 const response = await getJSONP(fetchUrl);
-                imageUrl = response.data[0]?.picture || null;
+                const artistWords = artistName.toLowerCase().split(/\s+/);
+                const match = response.data.find(a => artistWords.some(w => a.name.toLowerCase().includes(w)));
+                imageUrl = match?.picture || null;
                 imageCache.set(cacheKey, imageUrl);
             } catch (error) {
                 console.error(`Error fetching artist image for ${artistName}:`, error);

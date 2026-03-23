@@ -503,7 +503,9 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
         try {
             const fetchUrl = `https://api.deezer.com/search/artist?q="${encodeURIComponent(artistName)}"&output=jsonp`;
             const response = await getJSONP(fetchUrl, 5000);
-            artistImageUrl = response.data[0]?.picture_medium || 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.jpg';
+            const artistWords = artistName.toLowerCase().split(/\s+/);
+            const match = response.data.find(a => artistWords.some(w => a.name.toLowerCase().includes(w)));
+            artistImageUrl = match?.picture_medium || 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.jpg';
         } catch (error) {
             artistImageUrl = 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.jpg';
             console.error(`Error fetching artist image for ${artistName}:`, error);

@@ -18,7 +18,7 @@ async function callApi(method, params = {}, key = store.keys.KEY, retry = 0) {
         response = await fetch(url.toString());
     } catch (e) {
         if (retry < 3) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 100));
             return callApi(method, params, key, retry + 1);
         }
         throw e;
@@ -30,7 +30,7 @@ async function callApi(method, params = {}, key = store.keys.KEY, retry = 0) {
         data = await response.json();
     } catch (e) {
         if (retry < 3) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 100));
             return callApi(method, params, key, retry + 1);
         }
         const err = new Error(`Last.fm ${method} returned non-JSON response`);
@@ -42,7 +42,7 @@ async function callApi(method, params = {}, key = store.keys.KEY, retry = 0) {
         if (data.error) {
             // Retry up to 2 times if server error
             if (data.error == 8 && retry < 3) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 100));
                 return callApi(method, params, key, retry + 1);
             } else if (data.error == 29) {
                 gtag('event', 'rate_limit-general', {});
