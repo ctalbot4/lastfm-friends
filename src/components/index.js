@@ -36,8 +36,8 @@ export async function initDashboard() {
     await initialFetch();
 
     await Promise.all([
-        store.foundListeningCache ? null : calculateListeningTime(),
-        store.foundBlocksCache ? null : updateAllBlocks()
+        calculateListeningTime(),
+        updateAllBlocks()
     ].filter(Boolean));
 
     document.getElementById("block-container").classList.remove("hidden");
@@ -110,11 +110,6 @@ async function initialFetch() {
         store.username = user.name;
         document.title = `${user.name} | lastfmfriends.live`;
 
-        store.cacheKeys.friends = `lfl_friends_${user.name}`;
-        store.cacheKeys.blocks = `lfl_blocks_${user.name}`;
-        store.cacheKeys.ticker = `lfl_ticker_${user.name}`;
-        store.cacheKeys.schedule = `lfl_schedule_${user.name}`;
-
         gtag('event', 'page_view', {
             'page_title': document.title,
             'page_location': window.location.href,
@@ -124,10 +119,10 @@ async function initialFetch() {
         blockContainer.appendChild(createBlock(user, true));
 
         // Fetch friends data
-        const friendsData = await lastfm.getFriends(store.username, store.keys.KEY, 500);
+        const friendsData = await lastfm.getFriends(store.username, store.keys.KEY, 400);
 
-        store.friendCount = Math.min(parseInt(friendsData.friends["@attr"].total, 10), parseInt(friendsData.friends["@attr"].perPage, 10)) + 1;
         const friends = friendsData.friends.user;
+        store.friendCount = friends.length + 1;
 
         // Set conservative refreshes to try to avoid API rate limit
         store.updateTimers.blocks.interval = Math.max(5000, (store.friendCount / 5) * 1200);

@@ -264,15 +264,32 @@ export async function updateAllBlocks() {
     const newBlocks = [];
 
     chunks.push(blocksArr.slice(0, 200));
-    const blockPromises = await Promise.all(chunks[0].map(block => updateBlock(block)));
-    newBlocks.push(...blockPromises);
 
-    // Update second chunk if necessary
     if (store.friendCount > 200) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Start chunk2 when 180 of chunk1 are done
+        let triggerChunk2;
+        const chunk2Start = new Promise(r => triggerChunk2 = r);
+        let resolvedCount = 0;
+
+        const chunk1Promises = chunks[0].map(block =>
+            updateBlock(block).then(result => {
+                if (++resolvedCount === 180) triggerChunk2();
+                return result;
+            })
+        );
+        Promise.all(chunk1Promises).then(triggerChunk2);
+
+        await chunk2Start;
         chunks.push(blocksArr.slice(200, 400));
-        const blockPromises = await Promise.all(chunks[1].map(block => updateBlock(block, store.keys.KEY2)));
-        newBlocks.push(...blockPromises);
+
+        const [chunk1Results, chunk2Results] = await Promise.all([
+            Promise.all(chunk1Promises),
+            Promise.all(chunks[1].map(b => updateBlock(b, store.keys.KEY2)))
+        ]);
+        newBlocks.push(...chunk1Results, ...chunk2Results);
+    } else {
+        const chunk1Results = await Promise.all(chunks[0].map(block => updateBlock(block)));
+        newBlocks.push(...chunk1Results);
     }
 
     // Call sortBlocks after all updates are done

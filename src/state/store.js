@@ -25,15 +25,6 @@ export const store = {
         },
         timeoutId: null
     },
-    foundBlocksCache: false,
-    foundTickerCache: false,
-    foundListeningCache: false,
-    cacheKeys: {
-        friends: null,
-        blocks: null,
-        ticker: null,
-        schedule: null
-    }
 }
 
 // Check if touch screen to know which type of preview play to enable

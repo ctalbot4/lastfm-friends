@@ -64,7 +64,7 @@ async function callApi(method, params = {}, key = store.keys.KEY, retry = 0) {
 }
 
 // Helpers
-export function getFriends(user, key = store.keys.KEY, limit = 500) {
+export function getFriends(user, key = store.keys.KEY, limit = 400) {
     return callApi("user.getfriends", {
         user,
         limit

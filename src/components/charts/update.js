@@ -11,7 +11,7 @@ import { pageState, displayPage } from './pages.js';
 import { audioState } from '../preview/index.js';
 
 // UI
-import { updateProgress } from '../../ui/progress.js';
+import { updateProgress, updateProgressText } from '../../ui/progress.js';
 
 export let userStats = {};
 
@@ -371,23 +371,37 @@ export async function calculateListeningTime() {
 
     const chunks = [];
     chunks.push(blocksArr.slice(0, 200));
-    
-    // Fetch listening time for first chunk
-    const listeningPromises = Array.from(chunks[0]).map(block => fetchListeningTime(block));
-    await Promise.all(listeningPromises);
-    
-    // Fetch second chunk if necessary
+
     if (store.friendCount > 200) {
-        await new Promise(resolve => setTimeout(resolve, 8000));
+        // Start chunk2 when 180 of chunk1 are done
+        let triggerChunk2;
+        const chunk2Start = new Promise(r => triggerChunk2 = r);
+        let resolvedCount = 0;
+
+        const chunk1Promises = chunks[0].map(block =>
+            fetchListeningTime(block).then(result => {
+                if (++resolvedCount === 180) triggerChunk2();
+                return result;
+            })
+        );
+        Promise.all(chunk1Promises).then(triggerChunk2);
+
+        await chunk2Start;
         chunks.push(blocksArr.slice(200, 400));
-        const listeningPromises = Array.from(chunks[1]).map(block => fetchListeningTime(block, store.keys.KEY2));
-        await Promise.all(listeningPromises);
+
+        await Promise.all([
+            Promise.all(chunk1Promises),
+            Promise.all(chunks[1].map(b => fetchListeningTime(b, store.keys.KEY2)))
+        ]);
+    } else {
+        await Promise.all(chunks[0].map(block => fetchListeningTime(block)));
     }
 
     displayPage("listeners");
 
     store.updateTimers.listening.lastUpdate = Date.now();
     store.isUpdatingListening = false;
+    updateProgressText();
 }
 
 // Fetch listening time for a single user

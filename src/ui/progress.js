@@ -7,13 +7,17 @@ const progressText = document.getElementById("progress-text");
 
 export function updateProgress(kind, username) {
     store.completed++;
-    const progress = ((store.completed) / ((store.friendCount) * (store.foundListeningCache ? 1 : 2))) * 100;
+    const progress = ((store.completed) / ((store.friendCount) * 2)) * 100;
     progressBar.style.width = progress + "%";
     usersLoaded.textContent = `Received ${username}'s ${kind}`;
 }
 
+// Counter hits two when both blocks and listening are done
+let ready = 0;
 export function updateProgressText() {
-    if (store.isUpdatingBlocks || store.isFetchingCharts) return;
-    progressText.innerHTML = `Processing data<span class="loading-dots"></span>`;
-    usersLoaded.style.visibility = "hidden";
+    ready++;
+    if (ready === 2) {
+        progressText.innerHTML = `Processing data<span class="loading-dots"></span>`;
+        usersLoaded.style.visibility = "hidden";
+    }
 }
