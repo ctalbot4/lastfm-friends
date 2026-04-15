@@ -31,12 +31,18 @@ export function setUserPlayCounts(playCounts) {
 
 // Fetch data for a block and update
 async function updateBlock(block, key = store.keys.KEY) {
-    if (block.classList.contains("private") || block.classList.contains("empty")) {
-        return block;
-    }
     const username = block.dataset.username;
+    const oldSongRest = block.querySelector('.song-title .rest').innerText;
+    const oldSongNoBreak = block.querySelector('.song-title .no-break').innerText;
+    const savedPreviewPlaying = block.dataset.previewPlaying || "false";
+    block = null;
+
+    const liveBlock = document.querySelector(`.block[data-username="${username}"]`);
+    if (liveBlock.classList.contains("private") || liveBlock.classList.contains("empty")) {
+        return liveBlock;
+    }
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-    const newBlock = block.cloneNode(true);
+    const newBlock = liveBlock.cloneNode(true);
     newBlock.classList.remove("removed");
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
@@ -67,7 +73,7 @@ async function updateBlock(block, key = store.keys.KEY) {
 
         const recentTrack = data.recenttracks.track[0];
         const trimmedName = recentTrack.name.trim();
-        const oldName = (`${block.querySelector('.song-title .rest').innerText}${block.querySelector('.song-title .rest').innerText ? " " : ""}${block.querySelector('.song-title .no-break').innerText}`).trim();
+        const oldName = (`${oldSongRest}${oldSongRest ? " " : ""}${oldSongNoBreak}`).trim();
 
         // Reset block if track changes
         if (trimmedName != oldName) {
@@ -237,7 +243,7 @@ async function updateBlock(block, key = store.keys.KEY) {
         updateProgress("activity", username);
     }
 
-    newBlock.dataset.previewPlaying = block.dataset.previewPlaying || "false";
+    newBlock.dataset.previewPlaying = savedPreviewPlaying;
 
     return newBlock;
 }

@@ -62,7 +62,7 @@ export function initPreview() {
                 clearTimeout(audioState.hoverTimers[audioState.currentBlock.dataset.username]);
 
                 // Check if currentBlock is the block playing audio
-                if (audioState.currentAudioBlock?.dataset.username == audioState.currentBlock?.dataset.username) {
+                if (audioState.currentAudioBlock == audioState.currentBlock?.dataset.username) {
                     updatedCurrentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
                 }
             }
@@ -102,7 +102,7 @@ export function initPreview() {
             if (audioState.currentAudio) {
                 audioState.currentAudio.pause();
                 // Check if block is the block playing audio
-                if (audioState.currentAudioBlock?.dataset.username == block.dataset.username) {
+                if (audioState.currentAudioBlock == block.dataset.username) {
                     block.dataset.previewTime = audioState.currentAudio.currentTime;
                 }
                 audioState.currentAudioBlock = null;
@@ -222,7 +222,7 @@ export function handleScroll() {
             updatedCurrentBlock.dataset.previewPlaying = "false";
 
             // Check if currentBlock is the block playing audio
-            if (audioState.currentAudioBlock?.dataset.username == audioState.currentBlock?.dataset.username) {
+            if (audioState.currentAudioBlock == audioState.currentBlock?.dataset.username) {
                 updatedCurrentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
             }
         }

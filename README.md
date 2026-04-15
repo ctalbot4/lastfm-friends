@@ -6,9 +6,7 @@ A real-time dashboard for [Last.fm](https://last.fm) that shows what your friend
 
 **Live friend grid** — blocks update automatically in the background, sorting now-playing users to the top. Each block shows the current track, artist, and album art, with small indicators for loved tracks, top weekly artists/tracks, and repeat listening. Hovering (desktop) or scrolling to a block (mobile) allows you to "listen in" to what your friend is playing.
 
-<figure align="center">
-  <img src="assets/blocks-preview.png" width="700"/>
-</figure>
+<img src="assets/blocks-preview.png" width="700"/>
 
 **Weekly charts** — top charts are ranked by a score of listener count × capped play count, which prevents a single high-volume listener from dominating. Each entry shows listener avatars and a play button for audio previews, and hovering an avatar shows a tooltip with that person's play count and a sparkline of their daily listening over the past week. Charts include: 
 
@@ -18,34 +16,25 @@ A real-time dashboard for [Last.fm](https://last.fm) that shows what your friend
 - Longest listening streaks
 - Activity by Hour/Day
 
-<figure align="center">
-  <img src="assets/charts-preview.png" width="900"/>
-</figure>
+<img src="assets/charts-preview.png" width="900"/>
 
 **Who listens panel** — click the friends icon on any block to see everyone in your group who has played that artist or track. Each listener row shows all-time play counts, weekly plays, last listen time, and a sparkline of their daily plays for the week. A stats panel on the left shows the item's weekly rank, total plays across all listeners, a graph of its share of each day's total group listening, and genre tags. New listeners (discovered this week) and each user's current #1 artist/track are automatically badged.
 
-<figure align="center">
-  <img src="assets/listeners-preview.png" width="300"/>
-</figure>
+<img src="assets/listeners-preview.png" width="300"/>
 
 **Scatter plot** — every play from every friend plotted across a week-by-day grid, color-coded by the top artists. Points are jittered outward in concentric rings when the friend count is large to keep dense periods readable. Hovering a point shows the track, album art, and other friends who were listening at the same time, and automatically scrolls if the list is too long to fit.
 
-<figure align="center">
-  <img src="assets/scatter-preview.png" width="400"/>
-  <figcaption>Tyler, The Creator's 6am album release visualized</figcaption>
-</figure>
+<img src="assets/scatter-preview.png" width="400"/>
+<sub>Tyler, The Creator's 6am album release visualized</sub>
+<br></br>
 
 **Network graph** — a D3 force-directed graph connecting users to their most-played artists. Users naturally cluster near the artists they've been playing and friends with similar taste, which can show new artists in your circle you haven't heard yet. Node sizes scale to play counts, link widths reflect listening strength, and hovering a node highlights its connections up to two hops out.
 
-<figure align="center">
-  <img src="assets/network-preview.png" width="600"/>
-</figure>
+<img src="assets/network-preview.png" width="500"/>
 
 **Stats ticker** — a scrolling news-style bar that generates natural headlines from your group's data. It detects things like one listener dominating an artist's plays, two users neck-and-neck on the same album, someone being the sole fan of an artist, identical top-three taste between two friends, synchronous listening moments, peak hours and days, and more.
 
-<figure align="center">
-  <img src="assets/ticker-preview.png" width="800"/>
-</figure>
+<img src="assets/ticker-preview.png" width="800"/>
 
 ## How It Works
 
@@ -75,6 +64,4 @@ The app is pure client-side JavaScript. All listening data comes from the Last.f
 
 Or [try it with my profile](https://lastfmfriends.live/dashboard#ctalbot4).
 
-<figure align="center">
-  <img src="assets/index-preview.png" width="800"/>
-</figure>
+<img src="assets/index-preview.png" width="800"/>
