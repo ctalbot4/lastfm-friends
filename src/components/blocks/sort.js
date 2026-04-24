@@ -108,6 +108,16 @@ export async function sortBlocks(blocks) {
     newBlocks.forEach(block => {
         container.appendChild(block);
     });
+
+    // Limit grid width for small groups
+    const count = Array.from(container.querySelectorAll('.block'))
+        .filter(b =>
+            !b.classList.contains('removed') &&
+            !b.classList.contains('hidden')
+        ).length;
+    const maxWidth = count * 500;
+    container.style.maxWidth = `${maxWidth}px`;
+
     newBlocks.forEach(block => {
         const name = block.dataset.username;
         ['track', 'artist'].forEach(tab => {
