@@ -389,8 +389,9 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                                 const userTrackPlaysMap = chartDataPerUser[listener.username]?.trackPlays;
                                 const isTop = listener.weekPlays > 0 && userTrackPlaysMap &&
                                     Object.entries(userTrackPlaysMap).sort((a, b) => (b[1].plays || 0) - (a[1].plays || 0)).findIndex(([key]) => key === trackKey) === 0;
+                                const isSelf = listener.username === username;
                                 return `
-                                <div class="listener-item${expandBody ? ' listener-item-expandable' : ''}${isNew ? ' new-listener' : ''}${isTop ? ' top-item' : ''}" data-username="${listener.username}"${expandBody ? ` data-library-url="${listener.trackUrl}"` : ''} style="--lbar:${barWidth}%">
+                                <div class="listener-item${expandBody ? ' listener-item-expandable' : ''}${isNew ? ' new-listener' : ''}${isTop ? ' top-item' : ''}${isSelf ? ' listener-item-self' : ''}" data-username="${listener.username}"${expandBody ? ` data-library-url="${listener.trackUrl}"` : ''} style="--lbar:${barWidth}%">
                                     <div class="listener-chevron"${!expandBody ? ' style="visibility:hidden"' : ''}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
                                     <img class="listener-pfp" src="${listener.imageUrl}">
                                     <div class="listener-info">
@@ -665,8 +666,9 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
                                 const userArtistPlaysMap = chartDataPerUser[listener.username]?.artistPlays;
                                 const isTop = listener.weekPlays > 0 && userArtistPlaysMap &&
                                     Object.entries(userArtistPlaysMap).sort((a, b) => (b[1].plays || 0) - (a[1].plays || 0)).findIndex(([key]) => key === artistName) === 0;
+                                const isSelf = listener.username === username;
                                 return `
-                                <div class="listener-item${expandBody ? ' listener-item-expandable' : ''}${isNew ? ' new-listener' : ''}${isTop ? ' top-item' : ''}" data-username="${listener.username}"${expandBody ? ` data-library-url="${listener.artistUrl}"` : ''} style="--lbar:${barWidth}%">
+                                <div class="listener-item${expandBody ? ' listener-item-expandable' : ''}${isNew ? ' new-listener' : ''}${isTop ? ' top-item' : ''}${isSelf ? ' listener-item-self' : ''}" data-username="${listener.username}"${expandBody ? ` data-library-url="${listener.artistUrl}"` : ''} style="--lbar:${barWidth}%">
                                     <div class="listener-chevron"${!expandBody ? ' style="visibility:hidden"' : ''}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
                                     <img class="listener-pfp" src="${listener.imageUrl}">
                                     <div class="listener-info">

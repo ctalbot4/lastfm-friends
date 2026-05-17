@@ -669,6 +669,17 @@ a {
     filter: none;
 }
 
+.listener-item-self .listener-username-text,
+.listener-item-self .listener-last-listen,
+.listener-item-self .listener-playcount-alltime,
+.listener-item-self .listener-week-plays {
+    font-weight: 700;
+}
+
+.listener-item-self .listener-username-text {
+    color: #ffffff;
+}
+
 .listener-username {
     font-size: 14px;
     font-weight: 500;

@@ -1028,14 +1028,14 @@ const messageGenerators = {
     identicalTaste: (data) => {
         const messages = [];
         
-        // Get top 3 artists for each user and check for matches
+        // Get top 2 artists for each user and check for matches
         const userTopArtists = Object.entries(data.chartDataPerUser).map(([username, userData]) => {
             const artists = Object.entries(userData.artistPlays)
                 .sort((a, b) => b[1].plays - a[1].plays)
-                .slice(0, 3)
+                .slice(0, 2)
                 .map(([artistName]) => artistName);
             return { username, artists };
-        }).filter(({ artists }) => artists.length >= 3);
+        }).filter(({ artists }) => artists.length >= 2);
         
         // Compare pairs
         for (let i = 0; i < userTopArtists.length; i++) {
@@ -1044,11 +1044,11 @@ const messageGenerators = {
             for (let j = i + 1; j < userTopArtists.length; j++) {
                 const { username: user2, artists: artists2 } = userTopArtists[j];
                 
-                // Check if top 3 artists are matches in order
+                // Check if top 2 artists are matches in order
                 if (artists1.every((artist, index) => artist === artists2[index])) {
                     const templates = [
-                        `${user1} and ${user2} have the same top 3 artists this week: ${artists1.join(', ')}`,
-                        `${user1} and ${user2} share identical taste with the same top 3 artists: ${artists1.join(', ')}`
+                        `${user1} and ${user2} have the same top 2 artists this week: ${artists1.join(', ')}`,
+                        `${user1} and ${user2} share identical taste with the same top 2 artists: ${artists1.join(', ')}`
                     ];
                     messages.push(random(templates));
                     return messages;

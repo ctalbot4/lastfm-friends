@@ -1,6 +1,6 @@
 # [lastfmfriends.live](https://lastfmfriends.live)
 
-A real-time dashboard for [Last.fm](https://last.fm) that shows what your friends are listening to and explores weekly listening trends across your whole group. Enter your username and get a live grid of everyone's current track, weekly charts, a scrolling ticker of auto-generated stats, and more, all running entirely in the browser.
+A real-time dashboard for [Last.fm](https://last.fm) that shows what your friends are listening to and explores weekly listening trends across your whole group. Enter your username and get a live grid of everyone's current track, weekly charts, a scrolling ticker of auto-generated stats, and more.
 
 ## Features
 
@@ -18,7 +18,7 @@ A real-time dashboard for [Last.fm](https://last.fm) that shows what your friend
 
 <img src="assets/charts-preview.png" width="900"/>
 
-**Who listens panel** — click the friends icon on any block to see everyone in your group who has played that artist or track. Each listener row shows all-time play counts, weekly plays, last listen time, and a sparkline of their daily plays for the week. A stats panel on the left shows the item's weekly rank, total plays across all listeners, a graph of its share of each day's total group listening, and genre tags. New listeners (discovered this week) and each user's current #1 artist/track are automatically badged.
+**Who listens panel** — click the friends icon on any block to see everyone in your group who has played that artist or track. Each listener row shows all-time play counts, weekly plays, last listen time, and a sparkline of their daily plays for the week. A stats panel on the left shows the item's weekly rank, total plays across all listeners, a graph of its share of each day's total group listening, and genre tags. New listeners (discovered this week) and each user's current #1 artist/track are highlighted.
 
 <img src="assets/listeners-preview.png" width="300"/>
 
@@ -32,15 +32,15 @@ A real-time dashboard for [Last.fm](https://last.fm) that shows what your friend
 
 <img src="assets/network-preview.png" width="500"/>
 
-**Stats ticker** — a scrolling news-style bar that generates natural headlines from your group's data. It detects things like one listener dominating an artist's plays, two users neck-and-neck on the same album, someone being the sole fan of an artist, identical top-three taste between two friends, synchronous listening moments, peak hours and days, and more.
+**Stats ticker** — a scrolling news-style bar that generates natural headlines from your group's data. It detects things like one listener dominating an artist's plays, two users neck-and-neck on the same album, someone being the sole fan of an artist, identical top-two artists between two friends, synchronous listening, peak hours and days, and more.
 
 <img src="assets/ticker-preview.png" width="800"/>
 
 ## How It Works
 
-The app is pure client-side JavaScript. All listening data comes from the Last.fm API. The API is often slow and unreliable, so it uses several strategies to help. It also uses Deezer to fill in the gaps for artist/track images and audio previews, since Last.fm doesn't provide those.
+The app is client-side JavaScript. All listening data comes from the Last.fm API. The API is often slow and unreliable, so it uses several strategies to help. It also uses Deezer to fill in the gaps for artist/track images and audio previews, since Last.fm doesn't provide those.
 
-**API reliability** — Last.fm API frequently returns a variety of errors, so it uses retry logic to resubmit fetches. This prevents missing data from users on errors. 
+**API reliability** — Last.fm API frequently returns a variety of errors, so it uses retry logic to resubmit fetches.
 
 **Caching** — an IndexedDB database caches fetched data to reduce API calls, which reduces time waiting for data. Entries are timestamped so stale data is automatically bypassed on the next fetch.
 
@@ -50,9 +50,9 @@ The app is pure client-side JavaScript. All listening data comes from the Last.f
 
 **Ticker generation** — each refresh runs 20+ generator functions that evaluate different statistical patterns in the data with tiered conditions and multiple phrasings. The ticker measures the actual rendered pixel width of the generated content and injects an animation rule timed to scroll at exactly 60px/second.
 
-**Cross-API fuzzy matching** — Last.fm track titles rarely map 1:1 with Deezer's database. When searching for a preview or image, it checks for any word overlap in the artist/title rather than requiring an exact match. If that still fails, it strips content in parentheses ("(Remastered)", "(feat. ...)") from the title and tries again.
+**Cross-API fuzzy matching** — Last.fm track titles sometimes don't map 1:1 with Deezer's database. When searching for a preview or image, it checks for any word overlap in the artist/title rather than requiring an exact match. If that still fails, it strips content in parentheses ("(Remastered)", "(feat. ...)") from the title and tries again.
 
-**Scatter plot rendering** — plays are bucketed into 4-minute time slots. For groups larger than 25 friends, overlapping points in the same bucket are spread outward using a concentric ring offset formula so dense moments stay readable. 
+**Scatter plot rendering** — plays are bucketed into 4-minute time slots. For groups larger than 25 friends, overlapping points in the same bucket are spread outward using concentric ring offsets so dense times stay readable. 
 
 **Sparkline scaling** — bar heights in the various sparklines are scaled using polynomial curves rather than linearly, so a user who has many more plays doesn't completely flatten the bars of someone with fewer plays.
 

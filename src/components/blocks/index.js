@@ -8,18 +8,19 @@ import { fetchTrackListeners, fetchArtistListeners } from "../listeners.js";
 function setRowExpanded(row, expanded) {
     const nameEl = row.querySelector('.listener-username-text');
     const username = row.dataset.username;
+    const isSelf = row.classList.contains('listener-item-self');
     if (expanded) {
         const url = row.dataset.libraryUrl;
         const link = document.createElement('a');
         link.href = url;
         link.target = '_blank';
-        link.className = 'listener-username-text';
+        link.className = `listener-username-text${isSelf ? ' listener-self' : ''}`;
         link.innerHTML = username + `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:3px;position:relative;top:-0.75px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
         nameEl.replaceWith(link);
         row.classList.add('expanded');
     } else {
         const span = document.createElement('span');
-        span.className = 'listener-username-text';
+        span.className = `listener-username-text${isSelf ? ' listener-self' : ''}`;
         span.textContent = username;
         nameEl.replaceWith(span);
         row.classList.remove('expanded');
