@@ -7,6 +7,7 @@ import { getJSONP } from "../api/deezer.js";
 
 // Charts
 import { chartDataPerUser, sortedData, allUsersDailyTotals } from "./charts/update.js";
+import { releaseYearCache } from "../api/releaseYear.js";
 
 // Charts - Lists
 import { imageCache } from "./charts/lists/lists.js";
@@ -96,7 +97,7 @@ function buildListenerExpandBody(username, itemKey, itemType, globalMaxDayCount)
 }
 
 // Build the left stats panel HTML for the listeners screen
-function buildListenerStatsPanel(listeners, itemKey, itemType, genreNames) {
+function buildListenerStatsPanel(listeners, itemKey, itemType, genreNames, albumName = null, scrobbleAlbum = null) {
     // Rank lookup
     const rankedList = itemType === 'track' ? sortedData.tracks : sortedData.artists;
     const rankIndex = rankedList.findIndex(([key]) => key === itemKey);
@@ -176,6 +177,15 @@ function buildListenerStatsPanel(listeners, itemKey, itemType, genreNames) {
         ? `<div class="split-stat split-stat-live"><div class="split-stat-val"><span class="split-live-dot"></span>${nowCount}</div><div class="split-stat-key">listening now</div></div>`
         : '';
 
+    let releaseYearHtml = '';
+    const releaseAlbum = scrobbleAlbum || albumName;
+    if (itemType === 'track' && releaseAlbum) {
+        const sep = itemKey.indexOf('::');
+        const artistName = itemKey.slice(sep + 2);
+        const year = releaseYearCache[`${artistName}::${releaseAlbum}`];
+        if (year) releaseYearHtml = `<div class="split-genres split-release-year"><div class="split-stat-key">released</div><span>${year}</span></div>`;
+    }
+
     return `
         <div class="split-left">
             <div class="split-rank"><div class="split-rank-num">${rank ? `#${formatCount(rank)}` : '-'}</div><div class="split-rank-label">${itemType} this week</div></div>
@@ -183,6 +193,7 @@ function buildListenerStatsPanel(listeners, itemKey, itemType, genreNames) {
             <div class="split-stat split-stat-alltime"><div class="split-stat-val">${formatCount(allTimePlays)}</div><div class="split-stat-key">all time</div></div>
             ${liveHtml}
             ${tagsHtml}
+            ${releaseYearHtml}
             <div class="split-graph">${graphCols}</div>
         </div>`;
 }
@@ -220,6 +231,7 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
 
     let genreNames = tagCache.get(cacheKey) || [];
     let albumName = null;
+    const scrobbleAlbum = block.dataset.currentAlbum || null;
 
     let trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
 
@@ -305,6 +317,12 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
             return;
         }
 
+        // Fall back to album name stored on block dataset
+        if (!albumName) {
+            block = document.querySelector(`.block[data-username="${username}"]`);
+            albumName = block.dataset.currentAlbum || null;
+        }
+
         // Fall back to album tags, then artist tags if track has none
         if (genreNames.length === 0 && albumName) {
             const albumCacheKey = `album:${albumName}::${artistName}`;
@@ -379,7 +397,7 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
             const maxPlaysTrack = Math.max(listeners[0].playCount, 1);
             listenersContent.innerHTML = `
                 <div class="listeners-split">
-                    ${buildListenerStatsPanel(listeners, trackKey, 'track', genreNames)}
+                    ${buildListenerStatsPanel(listeners, trackKey, 'track', genreNames, albumName, scrobbleAlbum)}
                     <div class="listeners-right-col">
                         <div class="listeners-list">
                             ${listeners.map(listener => {

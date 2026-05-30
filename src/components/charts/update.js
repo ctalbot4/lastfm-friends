@@ -3,6 +3,7 @@ import { store } from '../../state/store.js';
 
 // API
 import * as lastfm from '../../api/lastfm.js';
+import { getAlbumReleaseYears } from '../../api/releaseYear.js';
 
 // Charts - Pages
 import { pageState, displayPage } from './pages.js';
@@ -76,6 +77,7 @@ export function calculateChartData(tracks, username) {
         const trackName = track.name.trim();
         const artistName = track.artist.name;
         const albumName = track.album?.["#text"];
+        const albumMbid = track.album?.mbid;
         const uts = parseInt(track.date.uts);
 
         // Count artists
@@ -101,6 +103,9 @@ export function calculateChartData(tracks, username) {
             const key = `${albumName}::${artistName}`;
             if (userAlbums[key]) {
                 userAlbums[key].plays += 1;
+                if (!userAlbums[key].mbid && albumMbid) {
+                    userAlbums[key].mbid = albumMbid;
+                }
                 // If we have blank album image currently, try to replace it with valid one
                 if (userAlbums[key].img === 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png') {
                     userAlbums[key].img = track.image[1]["#text"];
@@ -109,6 +114,7 @@ export function calculateChartData(tracks, username) {
                 userAlbums[key] = {
                     artistName,
                     albumName,
+                    mbid: albumMbid,
                     plays: 1,
                     artistUrl,
                     albumUrl,
@@ -481,10 +487,12 @@ export async function updateCharts() {
             if (albumPlays[albumKey]) {
                 albumPlays[albumKey].plays += plays;
                 albumPlays[albumKey].cappedPlays += cappedPlays;
+                albumPlays[albumKey].mbid = albumData.mbid;
             } else {
                 albumPlays[albumKey] = {
                     artist,
                     albumName,
+                    mbid: albumData.mbid,
                     plays,
                     cappedPlays,
                     url,
@@ -558,6 +566,21 @@ export async function updateCharts() {
         }
         return pseudoHash(a[0]) - pseudoHash(b[0]);
     });
+
+    const nowPlayingAlbums = Array.from(document.querySelectorAll('.block[data-now-playing="true"][data-now-playing-album]'))
+        .map(block => ({ artist: block.dataset.nowPlayingArtist, album: block.dataset.nowPlayingAlbum, mbid: block.dataset.nowPlayingMbid || null }));
+
+    const sortedAlbums = [...sortedData.albums]
+        .sort((a, b) => b[1].plays - a[1].plays)
+        .slice(0, 20000)
+        .map(([, data]) => ({ artist: data.artist, album: data.albumName, mbid: data.mbid }));
+
+    getAlbumReleaseYears(sortedAlbums, nowPlayingAlbums).then(() => {
+        displayPage('albums');
+        displayPage('album-streaks');
+    });
+
+
     sortedData.tracks = Object.entries(trackPlays).sort((a, b) => {
         const aScore = b[1].userCount * b[1].cappedPlays;
         const bScore = a[1].userCount * a[1].cappedPlays;

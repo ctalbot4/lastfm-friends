@@ -118,10 +118,14 @@ async function initialFetch() {
 
         blockContainer.appendChild(createBlock(user, true));
 
-        // Fetch friends data
-        const friendsData = await lastfm.getFriends(store.username, store.keys.KEY, 400);
-
-        const friends = friendsData.friends.user;
+        // Fetch friends data (ignore error if no friends)
+        let friends = [];
+        try {
+            const friendsData = await lastfm.getFriends(store.username, store.keys.KEY, 300);
+            friends = friendsData.friends.user;
+        } catch (e) {
+            if (e.code !== 6) throw e;
+        }
         store.friendCount = friends.length + 1;
 
         // Set conservative refreshes to try to avoid API rate limit

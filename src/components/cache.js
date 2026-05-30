@@ -1,5 +1,5 @@
 const dbName = 'lastfmfriends';
-const dbVersion = 7;
+const dbVersion = 8;
 let db;
 
 export function initCache() {
@@ -25,6 +25,7 @@ export function initCache() {
             db.createObjectStore('track-info-cache');
             db.createObjectStore('artist-info-cache');
             db.createObjectStore('album-info-cache');
+            db.createObjectStore('album-release-year-cache');
         };
     });
 }

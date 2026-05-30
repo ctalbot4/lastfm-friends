@@ -941,6 +941,12 @@ a {
     text-transform: lowercase;
 }
 
+.split-release-year span {
+    font-size: 13px;
+    color: rgba(255, 255, 255, .6);
+    text-transform: none;
+}
+
 .split-graph {
     margin-top: auto;
     padding-bottom: 10px;

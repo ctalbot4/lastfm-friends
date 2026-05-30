@@ -193,6 +193,7 @@ async function updateBlock(block, key = store.keys.KEY) {
         newBlock.querySelector(".bottom > .track-info > .artist-title > a").href = artistLink;
 
         const imageUrl = recentTrack.image[3]["#text"];
+        newBlock.dataset.currentAlbum = recentTrack.album?.["#text"] || '';
 
         // If Last.fm errors and gives blank album image, ignore it and use the image we already have
         if (newBlock.dataset.reset === "true" || imageUrl !== 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png') {
@@ -205,8 +206,17 @@ async function updateBlock(block, key = store.keys.KEY) {
         if (nowPlaying) {
             newBlock.dataset.nowPlaying = "true";
             newBlock.dataset.date = Math.floor(Date.now() / 1000);
+            const npAlbum = recentTrack.album?.["#text"];
+            if (npAlbum) {
+                newBlock.dataset.nowPlayingAlbum = npAlbum;
+                newBlock.dataset.nowPlayingArtist = recentTrack.artist.name;
+                newBlock.dataset.nowPlayingMbid = recentTrack.album?.mbid || '';
+            } else {
+                delete newBlock.dataset.nowPlayingAlbum;
+            }
         } else {
             newBlock.dataset.nowPlaying = "false";
+            delete newBlock.dataset.nowPlayingAlbum;
             newBlock.dataset.date = recentTrack.date.uts;
             const diff = Math.floor((Date.now() - (newBlock.dataset.date * 1000)) / 1000);
 

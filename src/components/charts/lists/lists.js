@@ -13,6 +13,7 @@ import { playChartPreview } from "../../preview/charts.js";
 
 // Charts
 import { chartDataPerUser } from "../update.js";
+import { releaseYearCache } from "../../../api/releaseYear.js";
 import { showListenerTooltip, hideListenerTooltip } from "./tooltip.js";
 
 // Cache for images and previews
@@ -116,7 +117,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
           </div>
           <div class="item-info">
             <div class="item-name">
-              <a href="${itemData.url}" target="_blank">${itemData.name}</a>
+              <a href="${itemData.url}" target="_blank">${itemData.name}</a>${isAlbum && itemData.releaseYear ? ` <span class="release-year">${itemData.releaseYear}</span>` : ''}
             </div>
             <div class="item-subtext">
               ${isTrack || isAlbum ? `<span class="artist-subtext"><a href="${itemData.artistUrl}" target="_blank">${itemData.artist}</a></span>` : ""}
@@ -276,6 +277,7 @@ export async function createAlbumCharts(sortedAlbumPlays, albumsMax) {
             image: albumInfo.img,
             url: albumInfo.url,
             artistUrl: albumInfo.artistUrl,
+            releaseYear: releaseYearCache[`${albumInfo.artist}::${albumInfo.albumName}`] || null,
             listeners: sortedAlbumUsers.map(([username, plays]) => {
                 const albumKey = `${albumInfo.albumName}::${albumInfo.artist}`;
                 const albumData = chartDataPerUser[username].albumPlays[albumKey];
@@ -607,6 +609,7 @@ export async function createAlbumStreaksChart(sortedStreaks, maxStreak) {
             image: streak.image,
             url: `https://www.last.fm/music/${encodeURIComponent(artistName)}/${encodeURIComponent(albumName)}`,
             artistUrl: `https://www.last.fm/music/${encodeURIComponent(artistName)}`,
+            releaseYear: releaseYearCache[`${artistName}::${albumName}`] || null,
             streakDays: formatStreakDays(streak.startDate, streak.endDate),
             listeners: [{
                 user: streak.username,

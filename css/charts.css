@@ -467,6 +467,16 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     white-space: nowrap;
 }
 
+.release-year {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.75em;
+    font-weight: 400;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: relative;
+    top: 1.5px;
+}
+
 .play-button {
     width: 40px;
     height: 40px;
