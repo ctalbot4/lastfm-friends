@@ -6,69 +6,17 @@ const SUPABASE_ANON_KEY =
 const INSERT_WORKER_URL = "https://album-release-post.ctalbot4.workers.dev/";
 const WORKER_VERSION = 1;
 const STORE = 'album-release-year-cache';
-const MB_SLEEP = 1100;    // 1 req/sec
-const ITUNES_SLEEP = 3000; // 20 req/min
 
 export const releaseYearCache = {};
 
-const mbQueue = [];
-const mbNameQueue = [];
-const itunesQueue = [];
 const resultsBuffer = [];
 const inFlight = new Set();
 let totalSent = 0;
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-async function processMbQueue() {
-    let useNameQueue = false;
-    while (true) {
-        const queue = (useNameQueue && mbNameQueue.length) ? mbNameQueue
-                    : mbQueue.length ? mbQueue
-                    : mbNameQueue.length ? mbNameQueue
-                    : null;
-        if (!queue) { await sleep(500); continue; }
-        useNameQueue = !useNameQueue;
-
-        const album = queue.shift();
-        const id = `${album.artist}::${album.album}`;
-        try {
-            const fetch = album.searchByName
-                ? fetchFromMusicBrainzByName(album.artist, album.album)
-                : fetchFromMusicBrainz(album.mbid);
-            const [year] = await Promise.all([fetch, sleep(MB_SLEEP)]);
-            if (year) {
-                await saveResult(id, year, album.searchByName ? 'MB-name' : 'MB');
-            } else if (!album.searchByName) {
-                itunesQueue.unshift(album);
-            }
-        } catch (e) {
-            //console.warn(`[releaseYear] MB failed for ${id}:`, e.message);
-            if (!album.searchByName) itunesQueue.unshift(album);
-            await sleep(MB_SLEEP);
-        }
-    }
-}
-
-async function processItunesQueue() {
-    while (true) {
-        if (itunesQueue.length === 0) { await sleep(500); continue; }
-        const album = itunesQueue.shift();
-        const id = `${album.artist}::${album.album}`;
-        try {
-            const [year] = await Promise.all([fetchFromItunes(album.artist, album.album), sleep(ITUNES_SLEEP)]);
-            if (year) await saveResult(id, year, 'iTunes');
-            else mbNameQueue.unshift({ ...album, searchByName: true });
-        } catch (e) {
-            //console.warn(`[releaseYear] iTunes failed for ${id}:`, e.message);
-            await sleep(ITUNES_SLEEP);
-        }
-    }
-}
-
-
-processMbQueue();
-processItunesQueue();
+const worker = new Worker(new URL('./releaseYearWorker.js', import.meta.url), { type: 'module' });
+worker.onmessage = ({ data }) => {
+    if (data.type === 'result') saveResult(data.id, data.year, data.source);
+};
 
 export async function getAlbumReleaseYears(albums, priorityAlbums = []) {
     const allAlbums = [...priorityAlbums, ...albums];
@@ -130,69 +78,13 @@ export async function getAlbumReleaseYears(albums, priorityAlbums = []) {
         const key = `${album.artist}::${album.album}`;
         if (inFlight.has(key)) continue;
         inFlight.add(key);
-        const isPriority = priorityKeys.has(key);
-        if (album.mbid) {
-            isPriority ? mbQueue.unshift(album) : mbQueue.push(album);
-        } else {
-            isPriority ? itunesQueue.unshift(album) : itunesQueue.push(album);
-        }
     }
 
-    //console.log(`[releaseYear] ${missing.length} queued (${mbQueue.length} MB, ${itunesQueue.length} iTunes), ${Object.keys(cached).length} total cached`);
+    const toEnqueue = missing.map(a => ({ ...a, priority: priorityKeys.has(`${a.artist}::${a.album}`) }));
+    if (toEnqueue.length) worker.postMessage({ type: 'enqueue', albums: toEnqueue });
+
+    //console.log(`[releaseYear] ${missing.length} queued, ${Object.keys(cached).length} total cached`);
     return cached;
-}
-
-const MB_HEADERS = { "User-Agent": "lastfmfriends/1.0", Accept: "application/json" };
-
-async function fetchFromMusicBrainz(mbid) {
-    const res = await fetch(`https://musicbrainz.org/ws/2/release/${mbid}?inc=release-groups&fmt=json`, {
-        headers: MB_HEADERS,
-    });
-    if (res.status === 429 || res.status >= 500) throw new Error(`MB ${res.status}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const date = data["release-group"]?.["first-release-date"];
-    return date ? date.split("-")[0] : null;
-}
-
-async function fetchFromMusicBrainzByName(artist, album) {
-    const escape = s => s.replace(/"/g, '\\"');
-    const query = encodeURIComponent(`artist:"${escape(artist)}" AND releasegroup:"${escape(album)}"`);
-    const res = await fetch(`https://musicbrainz.org/ws/2/release-group?query=${query}&fmt=json`, {
-        headers: MB_HEADERS,
-    });
-    if (res.status === 429 || res.status >= 500) throw new Error(`MB ${res.status}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const rg = data['release-groups']?.[0];
-    return rg?.['first-release-date'] ? rg['first-release-date'].split('-')[0] : null;
-}
-
-async function fetchFromItunes(artist, album) {
-    const artistWords = artist.toLowerCase().split(/\s+/);
-
-    async function search(albumTitle) {
-        const term = encodeURIComponent(`${artist} ${albumTitle}`);
-        const res = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=30`);
-        if (res.status === 429 || res.status >= 500) throw new Error(`iTunes ${res.status}`);
-        if (!res.ok) return { error: true };
-        const data = await res.json();
-        if (!data.results?.length) return { empty: true };
-        const albumWords = albumTitle.toLowerCase().split(/\s+/);
-        const match = data.results.find(r => {
-            return artistWords.some(w => r.artistName.toLowerCase().includes(w)) &&
-                   albumWords.some(w => r.collectionName.toLowerCase().includes(w));
-        });
-        return match ? new Date(match.releaseDate).getFullYear().toString() : { noMatch: true };
-    }
-
-    const result = await search(album);
-    if ((result?.empty || result?.noMatch) && album.includes('(')) {
-        const stripped = album.replace(/\(.*?\)/g, '').trim();
-        const retry = await search(stripped);
-        return typeof retry === 'string' ? retry : null;
-    }
-    return typeof result === 'string' ? result : null;
 }
 
 async function saveResult(id, releaseYear, source) {
@@ -202,7 +94,7 @@ async function saveResult(id, releaseYear, source) {
     const sep = id.indexOf('::');
     resultsBuffer.push({ artist: id.slice(0, sep), album: id.slice(sep + 2), release_year: releaseYear });
     //console.log(`[releaseYear] Found ${id} → ${releaseYear} via ${source} (${resultsBuffer.length} buffered)`);
-    const threshold = totalSent < 100 ? 25 : 150;
+    const threshold = totalSent < 100 ? 10 : 100;
     if (resultsBuffer.length >= threshold) sendResultsToWorker();
 }
 
