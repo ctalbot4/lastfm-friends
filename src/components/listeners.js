@@ -7,7 +7,7 @@ import { getJSONP } from "../api/deezer.js";
 
 // Charts
 import { chartDataPerUser, sortedData, allUsersDailyTotals } from "./charts/update.js";
-import { releaseYearCache } from "../api/releaseYear.js";
+import { releaseYearCache } from "../api/metadata.js";
 
 // Charts - Lists
 import { imageCache } from "./charts/lists/lists.js";
@@ -183,7 +183,7 @@ function buildListenerStatsPanel(listeners, itemKey, itemType, genreNames, album
         const sep = itemKey.indexOf('::');
         const artistName = itemKey.slice(sep + 2);
         const year = releaseYearCache[`${artistName}::${releaseAlbum}`];
-        if (year) releaseYearHtml = `<div class="split-genres split-release-year"><div class="split-stat-key">released</div><span>${year}</span></div>`;
+        if (year) releaseYearHtml = `<div class="split-release-year"><div class="split-stat-key">released</div><span>${year}</span></div>`;
     }
 
     return `

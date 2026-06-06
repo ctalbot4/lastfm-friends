@@ -13,11 +13,79 @@ import { playChartPreview } from "../../preview/charts.js";
 
 // Charts
 import { chartDataPerUser } from "../update.js";
-import { releaseYearCache } from "../../../api/releaseYear.js";
-import { showListenerTooltip, hideListenerTooltip } from "./tooltip.js";
+import { releaseYearCache } from "../../../api/metadata.js";
+import { showListenerTooltip, hideListenerTooltip, showOthersTooltip } from "./tooltip.js";
 
 // Cache for images and previews
 export const imageCache = new Map();
+
+// Cache for extracted hues keyed by image URL
+const hueCache = new Map();
+
+// Helper function to extract dominant color from image
+function extractDominantColor(img) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    try {
+        ctx.drawImage(img, 0, 0, 32, 32);
+        const data = ctx.getImageData(0, 0, 32, 32).data;
+        const buckets = new Array(36).fill(0);
+        const chromaSums = new Array(36).fill(0);
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            const chroma = max - min;
+            const l = (max + min) / 2;
+            if (chroma < 0.2 || l < 0.08 || l > 0.92) continue;
+            let h;
+            if (max === r) h = ((g - b) / chroma) % 6;
+            else if (max === g) h = (b - r) / chroma + 2;
+            else h = (r - g) / chroma + 4;
+            h = Math.round(h * 60);
+            if (h < 0) h += 360;
+            const bucket = Math.floor(h / 10);
+            const weight = chroma * chroma;
+            buckets[bucket] += weight;
+            chromaSums[bucket] += chroma * weight;
+        }
+        const peak = Math.max(...buckets);
+        if (peak === 0) return null;
+        const peakBucket = buckets.indexOf(peak);
+        const hue = peakBucket * 10 + 5;
+        const avgChroma = chromaSums[peakBucket] / peak;
+        const sat = Math.round(Math.min(0.60, Math.max(0.2, avgChroma)) * 100);
+        return { hue, sat };
+    } catch {
+        return null;
+    }
+}
+
+// Helper function to check cache and apply hue to image
+function applyImageHue(li, imageUrl) {
+    if (!imageUrl) return;
+    if (hueCache.has(imageUrl)) {
+        const color = hueCache.get(imageUrl);
+        if (color) {
+            li.style.setProperty('--item-hue', color.hue);
+            li.style.setProperty('--item-sat', `${color.sat}%`);
+        }
+        return;
+    }
+    const colorImg = new Image();
+    colorImg.crossOrigin = "anonymous";
+    colorImg.onload = () => {
+        const color = extractDominantColor(colorImg);
+        hueCache.set(imageUrl, color);
+        if (color) {
+            li.style.setProperty('--item-hue', color.hue);
+            li.style.setProperty('--item-sat', `${color.sat}%`);
+        }
+    };
+    colorImg.onerror = () => hueCache.set(imageUrl, null);
+    colorImg.src = imageUrl;
+}
 
 // Helper function to format time
 function formatTimeAgo(timestamp) {
@@ -120,10 +188,10 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
               <a href="${itemData.url}" target="_blank">${itemData.name}</a>${isAlbum && itemData.releaseYear ? ` <span class="release-year">${itemData.releaseYear}</span>` : ''}
             </div>
             <div class="item-subtext">
-              ${isTrack || isAlbum ? `<span class="artist-subtext"><a href="${itemData.artistUrl}" target="_blank">${itemData.artist}</a></span>` : ""}
+              ${isTrack || isAlbum ? `<span class="artist-subtext"><a href="${itemData.artistUrl}" target="_blank">${itemData.artist}</a></span>` : itemData.subtext ? `<span class="artist-subtext">${itemData.subtext}</span>` : ""}
               ${itemData.streakDays ? 
-                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} ${itemData.plays === 1 ? 'play' : 'plays'} ${itemData.streakDays.includes('-') ? 'from' : 'on'} ${itemData.streakDays}</span>` :
-                `<span class="plays">${(isTrack || isAlbum) ? `- ` : ""}${itemData.plays.toLocaleString()} ${itemData.plays === 1 ? 'play' : 'plays'}</span>`
+                `<span class="plays">${(isTrack || isAlbum || itemData.subtext) ? `- ` : ""}${itemData.plays.toLocaleString()} ${itemData.plays === 1 ? 'play' : 'plays'} ${itemData.streakDays.includes('-') ? 'from' : 'on'} ${itemData.streakDays}</span>` :
+                `<span class="plays">${(isTrack || isAlbum || itemData.subtext) ? `- ` : ""}${itemData.plays.toLocaleString()} ${itemData.plays === 1 ? 'play' : 'plays'}</span>`
               }
             </div>
           </div>
@@ -146,7 +214,7 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
                 audioState.currentChartAudio = null;
             } else {
                 // Play the preview
-                await playChartPreview(itemData.name, isTrack || isAlbum ? itemData.artist : null, li, !isTrack && !isAlbum, isAlbum);
+                await playChartPreview(itemData.previewName ?? itemData.name, isTrack || isAlbum ? itemData.artist : null, li, !isTrack && !isAlbum, isAlbum);
                 playIcon.style.display = 'none';
                 pauseIcon.style.display = 'block';
             }
@@ -165,6 +233,15 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         if (i == 2 && count > 3) {
             span.innerHTML = `+${count - 2}`;
             span.classList.add("others");
+            const othersListeners = itemData.listeners.slice(2, 7);
+            span.dataset.othersData = JSON.stringify(othersListeners.map(l => ({
+                user: l.user,
+                img: l.img,
+                plays: l.plays
+            })));
+            span.dataset.othersTotal = count;
+            span.addEventListener('mouseenter', () => showOthersTooltip(span));
+            span.addEventListener('mouseleave', hideListenerTooltip);
             li.querySelector(".listeners").appendChild(span);
             imgIndex--;
             continue;
@@ -188,6 +265,9 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
             span.dataset.itemType = 'album';
             span.dataset.itemName = itemData.name;
             span.dataset.itemArtist = itemData.artist;
+        } else if (itemData.itemType === 'tag') {
+            span.dataset.itemType = 'tag';
+            span.dataset.itemName = itemData.name;
         } else {
             span.dataset.itemType = 'artist';
             span.dataset.itemName = itemData.name;
@@ -200,6 +280,8 @@ async function createListItem(itemData, maxPlays, isTrack = false, isAlbum = fal
         li.querySelector(".listeners").appendChild(span);
         imgIndex--;
     }
+
+    applyImageHue(li, itemData.image || null);
 
     return li;
 }
@@ -225,7 +307,7 @@ export async function createArtistCharts(sortedArtistPlays, artistsMax) {
                 const response = await getJSONP(fetchUrl);
                 const artistWords = artistName.toLowerCase().split(/\s+/);
                 const match = response.data.find(a => artistWords.some(w => a.name.toLowerCase().includes(w)));
-                imageUrl = match?.picture || null;
+                imageUrl = match?.picture_medium || null;
                 imageCache.set(cacheKey, imageUrl);
             } catch (error) {
                 console.error(`Error fetching artist image for ${artistName}:`, error);
@@ -270,11 +352,17 @@ export async function createAlbumCharts(sortedAlbumPlays, albumsMax) {
 
         const sortedAlbumUsers = albumUsers.sort((a, b) => b[1] - a[1]);
 
+        // Album image cache to avoid blank images that Last.fm gives
+        const albumCacheKey = `album-img:${albumInfo.artist}::${albumInfo.albumName}`;
+        const isBlank = albumInfo.img === 'https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png';
+        let albumImage = isBlank ? (imageCache.get(albumCacheKey) ?? null) : albumInfo.img;
+        if (!isBlank) imageCache.set(albumCacheKey, albumInfo.img);
+
         return {
             name: albumInfo.albumName,
             artist: albumInfo.artist,
             plays: albumInfo.plays,
-            image: albumInfo.img,
+            image: albumImage,
             url: albumInfo.url,
             artistUrl: albumInfo.artistUrl,
             releaseYear: releaseYearCache[`${albumInfo.artist}::${albumInfo.albumName}`] || null,
@@ -406,6 +494,54 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
     return await Promise.all(listItemPromises);
 }
 
+// Create tag charts
+export async function createTagCharts(sortedTagPlays, tagsMax) {
+    const tagChartPromises = sortedTagPlays.map(async ([tagName, tagInfo]) => {
+        const chosenArtist = tagInfo.chosenArtist;
+
+        const cacheKey = `artist:${chosenArtist}`;
+        let imageUrl;
+        if (imageCache.has(cacheKey)) {
+            imageUrl = imageCache.get(cacheKey);
+        } else {
+            try {
+                const fetchUrl = `https://api.deezer.com/search/artist?q="${chosenArtist}"&output=jsonp`;
+                const response = await getJSONP(fetchUrl);
+                const artistWords = chosenArtist.toLowerCase().split(/\s+/);
+                const match = response.data.find(a => artistWords.some(w => a.name.toLowerCase().includes(w)));
+                imageUrl = match?.picture_medium || null;
+                imageCache.set(cacheKey, imageUrl);
+            } catch (e) {
+                imageUrl = null;
+            }
+        }
+
+        const tagUsers = Object.entries(tagInfo.users).sort((a, b) => b[1] - a[1]);
+
+        return {
+            name: tagName.replace(/\b\w/g, c => c.toUpperCase()),
+            subtext: tagInfo.artists.slice(0, 5).map(a => `<a href="${a.url}" target="_blank">${a.name}</a>`).join(', '),
+            previewName: chosenArtist,
+            itemType: 'tag',
+            plays: tagInfo.plays,
+            image: imageUrl,
+            url: `https://www.last.fm/tag/${encodeURIComponent(tagName)}`,
+            listeners: tagUsers.map(([username, plays]) => ({
+                user: username,
+                img: document.querySelector(`.block[data-username="${username}"] .profile-picture img`)?.src
+                    ?? "https://lastfm.freetls.fastly.net/i/u/avatar170s/818148bf682d429dc215c1705eb27b98.png",
+                plays,
+                url: '',
+                lastListen: tagInfo.userLastListen?.[username] ? formatTimeAgo(tagInfo.userLastListen[username]) : '',
+                dailyData: tagInfo.userDailyData?.[username] || []
+            }))
+        };
+    });
+
+    const tagResults = await Promise.all(tagChartPromises);
+    return await Promise.all(tagResults.map(data => createListItem(data, tagsMax)));
+}
+
 // Create top listeners chart
 export function createTopListenersChart(sortedListeners, maxDuration) {
 
@@ -432,6 +568,7 @@ export function createTopListenersChart(sortedListeners, maxDuration) {
             </div>
         `;
 
+        applyImageHue(li, profilePic);
         return li;
     });
     return listenerItems;
@@ -463,6 +600,7 @@ export function createUniqueArtistsChart(sortedUsers, maxArtists) {
             </div>
         `;
 
+        applyImageHue(li, profilePic);
         return li;
     });
     return listenerItems;
@@ -494,6 +632,7 @@ export function createUniqueTracksChart(sortedUsers, maxTracks) {
             </div>
         `;
 
+        applyImageHue(li, profilePic);
         return li;
     });
     return listenerItems;
@@ -557,7 +696,7 @@ export async function createArtistStreaksChart(sortedStreaks, maxStreak) {
                 const response = await getJSONP(fetchUrl);
                 const artistWords = artistName.toLowerCase().split(/\s+/);
                 const match = response.data.find(a => artistWords.some(w => a.name.toLowerCase().includes(w)));
-                imageUrl = match?.picture || null;
+                imageUrl = match?.picture_medium || null;
                 imageCache.set(cacheKey, imageUrl);
             } catch (error) {
                 console.error(`Error fetching artist image for ${artistName}:`, error);
@@ -602,11 +741,17 @@ export async function createAlbumStreaksChart(sortedStreaks, maxStreak) {
         const dailyData = albumData.dailyData;
         const totalPlays = albumData.plays;
 
+        // Album image cache to avoid blank images that Last.fm gives
+        const albumCacheKey = `album-img:${artistName}::${albumName}`;
+        const isBlank = streak.image === 'https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png';
+        const albumImage = isBlank ? (imageCache.get(albumCacheKey) ?? null) : streak.image;
+        if (!isBlank) imageCache.set(albumCacheKey, streak.image);
+
         return {
             name: albumName,
             artist: artistName,
             plays: streak.count,
-            image: streak.image,
+            image: albumImage,
             url: `https://www.last.fm/music/${encodeURIComponent(artistName)}/${encodeURIComponent(albumName)}`,
             artistUrl: `https://www.last.fm/music/${encodeURIComponent(artistName)}`,
             releaseYear: releaseYearCache[`${artistName}::${albumName}`] || null,
@@ -729,6 +874,7 @@ export function createListeningStreaksChart(sortedStreaks, maxStreak) {
             </div>
         `;
 
+        applyImageHue(li, profilePic);
         return li;
     });
     return listenerItems;

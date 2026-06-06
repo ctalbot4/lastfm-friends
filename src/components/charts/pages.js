@@ -1,8 +1,9 @@
 // Charts
 import { sortedData } from "./update.js";
+import { store } from "../../state/store.js";
 
 // Charts - Lists
-import { createAlbumCharts, createArtistCharts, createTrackCharts, createUniqueArtistsChart, createUniqueTracksChart, createTopListenersChart, createArtistStreaksChart, createAlbumStreaksChart, createTrackStreaksChart, createListeningStreaksChart } from './lists/lists.js';
+import { createAlbumCharts, createArtistCharts, createTrackCharts, createUniqueArtistsChart, createUniqueTracksChart, createTopListenersChart, createArtistStreaksChart, createAlbumStreaksChart, createTrackStreaksChart, createListeningStreaksChart, createTagCharts } from './lists/lists.js';
 
 // Page state
 export const pageState = {
@@ -15,11 +16,12 @@ export const pageState = {
     'artist-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
     'album-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
     'track-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
-    'listening-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 }
+    'listening-streaks': { currentPage: 1, itemsPerPage: 9, totalItems: 0 },
+    tags: { currentPage: 1, itemsPerPage: 9, totalItems: 0 }
 };
 
 // Display a page for a list
-export async function displayPage(listType) {
+export async function displayPage(listType, animate = false) {
     const state = pageState[listType];
     const data = sortedData[listType];
     
@@ -72,11 +74,22 @@ export async function displayPage(listType) {
         chartItems = await createTrackStreaksChart(pageData, maxValue);
     } else if (listType === 'listening-streaks') {
         chartItems = await createListeningStreaksChart(pageData, maxValue);
+    } else if (listType === 'tags') {
+        chartItems = await createTagCharts(pageData, maxValue);
     }
 
     const listElement = document.getElementById(`${listType}-list`);
+    if (!animate) {
+        while (store.isAnimatingBars) {
+            await new Promise(r => setTimeout(r, 16));
+        }
+    }
     listElement.innerHTML = '';
     chartItems.forEach(item => listElement.appendChild(item));
+    if (animate) {
+        listElement.classList.add('bars-animate');
+        setTimeout(() => listElement.classList.remove('bars-animate'), 600);
+    }
 
     updatePageControls(listType);
 }
@@ -106,5 +119,7 @@ export async function navigatePage(listType, direction) {
         return;
     }
 
-    await displayPage(listType);
+    store.isAnimatingBars = true;
+    await displayPage(listType, true);
+    setTimeout(() => { store.isAnimatingBars = false; }, 1000);
 }

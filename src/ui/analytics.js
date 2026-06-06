@@ -55,6 +55,11 @@ export function initAnalytics() {
                 click_type: "track_streaks",
                 target_track: target.textContent,
             });
+        } else if (target.closest("#tags-list") && target.closest("a")) {
+            gtag("event", "chart_click", {
+                click_type: "tags",
+                target_tag: target.textContent,
+            });
         }
 
         // Track clicks in block-container

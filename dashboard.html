@@ -115,6 +115,16 @@
                     </div>
                     <ul id="tracks-list" class="top-list"></ul>
                 </div>
+                <div id="tags-section" class="chart-section stats-section">
+                    <div class="chart-header">
+                        <h2>Top Genres <span id="tags-cache-pct" class="cache-indicator" style="display:none">Incomplete <span class="cache-i">i</span><span class="cache-tooltip"></span></span></h2>
+                        <div class="page-controls">
+                            <button class="page-button" data-list="tags" data-direction="prev">‹</button>
+                            <button class="page-button" data-list="tags" data-direction="next">›</button>
+                        </div>
+                    </div>
+                    <ul id="tags-list" class="top-list"><li class="chart-loading">Loading...</li></ul>
+                </div>
                 <div id="listeners-section" class="chart-section stats-section">
                     <div class="chart-header">
                         <h2>Top Listeners</h2>
@@ -162,6 +172,14 @@
                 <div id="daily-section" class="chart-section stats-section">
                     <h2>Activity by Day</h2>
                     <div id="daily-chart" class="activity-chart"></div>
+                </div>
+                <div id="decade-section" class="chart-section stats-section">
+                    <h2>Plays by Decade <span id="decade-cache-pct" class="cache-indicator" style="display:none">Incomplete <span class="cache-i">i</span><span class="cache-tooltip"></span></span></h2>
+                    <div id="decade-chart" class="activity-chart"><span class="chart-loading">Loading...</span></div>
+                </div>
+                <div id="year-section" class="chart-section stats-section">
+                    <h2>Plays by Year <span id="year-cache-pct" class="cache-indicator" style="display:none">Incomplete <span class="cache-i">i</span><span class="cache-tooltip"></span></span></h2>
+                    <div id="year-chart" class="activity-chart"><span class="chart-loading">Loading...</span></div>
                 </div>
                 <div id="artist-streaks-section" class="chart-section stats-section">
                     <div class="chart-header">

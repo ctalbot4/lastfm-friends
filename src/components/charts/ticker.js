@@ -13,6 +13,9 @@ import { hourlyActivity, hourlyListeners, dailyActivity, dailyListeners } from "
 // Charts - Scatter
 import { tempBuckets } from "./scatter/data.js";
 
+// Metadata caches
+import { releaseYearCache, artistTagsCache } from "../../api/metadata.js";
+
 export let tickerMessages = [];
 let refreshTimeout = null;
 
@@ -58,7 +61,14 @@ export async function startTicker() {
     while (store.isUpdatingBlocks || store.isUpdatingListening) {
         await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
+    // Wait for tag and release year initial fetches to complete
+    const metaWaitStart = Date.now();
+    while (!store.tagsLoaded || !store.releaseYearsLoaded) {
+        if (Date.now() - metaWaitStart > 20000) break;
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     generateTickerMessages();
     
     if (tickerMessages.length === 0) return;
@@ -362,11 +372,20 @@ const messageGenerators = {
                 addedMessage = true;
             }
             
-            // Tier 6 - basic fallback
-            if (!addedMessage && artistInfo.plays >= 15 && index < 5) {
+            // Tier 6
+            if (!addedMessage && artistInfo.plays >= 15 && index < 5 && listenerCount >= 2) {
                 const templates = [
                     `${listenerCount}/${store.friendCount} friends played ${artistName} ${artistInfo.plays.toLocaleString()} times (${avgPlays} each on average)`,
                     `${artistName} has ${artistInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''} (${avgPlays} per friend)`
+                ];
+                messages.push(random(templates));
+            }
+
+            // Tier 7 - basic fallback
+            if (!addedMessage && artistInfo.plays >= 15 && index < 5) {
+                const templates = [
+                    `${listenerCount}/${store.friendCount} friends played ${artistName} ${artistInfo.plays.toLocaleString()} times`,
+                    `${artistName} has ${artistInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`
                 ];
                 messages.push(random(templates));
             }
@@ -621,11 +640,20 @@ const messageGenerators = {
                 addedMessage = true;
             }
             
-            // Tier 6 - basic fallback
-            if (!addedMessage && albumInfo.plays >= 12 && index < 5) {
+            // Tier 6
+            if (!addedMessage && albumInfo.plays >= 12 && index < 5 && listenerCount >= 2) {
                 const templates = [
                     `${albumDisplay} has ${albumInfo.plays} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''} (${avgPlays} per friend)`,
                     `${albumInfo.artist}'s ${albumInfo.albumName} got ${albumInfo.plays} plays from ${listenerCount} friend${listenerCount > 1 ? 's' : ''} (${avgPlays} per friend)`
+                ];
+                messages.push(random(templates));
+            }
+
+            // Tier 7 - basic fallback
+            if (!addedMessage && albumInfo.plays >= 12 && index < 5) {
+                const templates = [
+                    `${albumDisplay} has ${albumInfo.plays} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`,
+                    `${albumInfo.artist}'s ${albumInfo.albumName} got ${albumInfo.plays} plays from ${listenerCount} friend${listenerCount > 1 ? 's' : ''}`
                 ];
                 messages.push(random(templates));
             }
@@ -932,7 +960,7 @@ const messageGenerators = {
                 const secondTracks = topDiversity[1] ? topDiversity[1][1].totalTracks : 0;
                 const margin = stats.totalTracks - secondTracks;
                 
-                if (margin >= 10) {
+                if (margin >= 20) {
                     const templates = [
                         `${username} explored the most songs with ${stats.totalTracks.toLocaleString()} different tracks (${margin} more than anyone else)`,
                         `${username} has the biggest library with ${stats.totalTracks.toLocaleString()} different tracks played this week (${margin} more than anyone else)`,
@@ -1429,6 +1457,407 @@ const messageGenerators = {
         return messages;
     },
 
+    // Top 3 genres group-wide
+    topGenre: (data) => {
+        const messages = [];
+        if (!data.tags.length) return messages;
+
+        data.tags.slice(0, 3).forEach(([tagName, tagInfo], index) => {
+            if (tagInfo.plays < 20) return;
+            const tag = tagName.charAt(0).toUpperCase() + tagName.slice(1);
+            const listenerCount = tagInfo.userCount;
+            const percentage = Math.round((listenerCount / store.friendCount) * 100);
+
+            if (index === 0) {
+                if (percentage >= 80) {
+                    messages.push(random([
+                        `${tag} tops the genre charts with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`,
+                        `${tag} leads the week with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`
+                    ]));
+                } else if (percentage >= 40) {
+                    messages.push(random([
+                        `${tag} is the top genre this week with ${tagInfo.plays.toLocaleString()} plays from ${percentage}% of friends`,
+                        `${tag} leads the genre charts with ${tagInfo.plays.toLocaleString()} plays from ${percentage}% of friends`
+                    ]));
+                } else {
+                    messages.push(random([
+                        `${tag} leads the group with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`,
+                        `${tag} is the most-played genre this week with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`
+                    ]));
+                }
+            } else if (index === 1) {
+                if (percentage >= 40) {
+                    messages.push(random([
+                        `${tag} is the #2 genre this week with ${tagInfo.plays.toLocaleString()} plays from ${percentage}% of friends`,
+                        `${tag} comes second in genre charts with ${tagInfo.plays.toLocaleString()} plays from ${percentage}% of friends`
+                    ]));
+                } else {
+                    messages.push(random([
+                        `${tag} is the #2 genre this week with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`,
+                        `${tag} comes second in genre charts with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`
+                    ]));
+                }
+            } else {
+                messages.push(random([
+                    `${tag} rounds out the top 3 genres with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`,
+                    `${tag} is the #3 genre this week with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`
+                ]));
+            }
+        });
+
+        return messages;
+    },
+
+    // One genre dominates a user's listening
+    genreMonopoly: (data) => {
+        const messages = [];
+        if (!data.tags.length) return messages;
+
+        const userTagPlays = {};
+        for (const [tag, tagInfo] of data.tags) {
+            for (const [user, plays] of Object.entries(tagInfo.users)) {
+                if (!userTagPlays[user]) userTagPlays[user] = {};
+                userTagPlays[user][tag] = (userTagPlays[user][tag] || 0) + plays;
+            }
+        }
+
+        Object.entries(userTagPlays).forEach(([username, tagMap]) => {
+            const total = Object.values(tagMap).reduce((s, p) => s + p, 0);
+            if (total < 15) return;
+            const [topTag, topPlays] = Object.entries(tagMap).sort((a, b) => b[1] - a[1])[0];
+            const pct = Math.round((topPlays / total) * 100);
+            if (pct < 40) return;
+            const tag = topTag.charAt(0).toUpperCase() + topTag.slice(1);
+            const templates = [
+                `${pct}% of ${username}'s week is ${tag} (${topPlays} plays)`,
+                `${username}'s listening is ${pct}% ${tag} this week (${topPlays} plays)`,
+                `${tag} dominates ${username}'s week at ${pct}% of their tagged plays`
+            ];
+            messages.push(random(templates));
+        });
+
+        return messages.sort(() => Math.random() - 0.5).slice(0, 2);
+    },
+
+    // User who spanned the most genres
+    genreExplorer: (data) => {
+        const messages = [];
+        if (!data.tags.length) return messages;
+
+        const userGenreCount = {};
+        for (const [, tagInfo] of data.tags) {
+            for (const user of Object.keys(tagInfo.users)) {
+                userGenreCount[user] = (userGenreCount[user] || 0) + 1;
+            }
+        }
+
+        const sorted = Object.entries(userGenreCount).sort((a, b) => b[1] - a[1]);
+        if (!sorted.length || sorted[0][1] < 4) return messages;
+        const [username, count] = sorted[0];
+        const secondCount = sorted[1]?.[1] || 0;
+        const margin = count - secondCount;
+
+        if (margin >= 3) {
+            const templates = [
+                `${username} spanned ${count} different genres this week, more than anyone else`,
+                `${username} explored the most genres this week with ${count} different genres`,
+                `${username} listened to the most genres this week with ${count} (${margin} more than anyone else)`
+            ];
+            messages.push(random(templates));
+        } else {
+            const templates = [
+                `${username} spanned ${count} different genres this week, more than anyone else`,
+                `${username} explored the most genres this week with ${count} different genres`
+            ];
+            messages.push(random(templates));
+        }
+
+        return messages;
+    },
+
+    // Two users share the same top genre
+    sharedGenre: (data) => {
+        const messages = [];
+        if (!data.tags.length) return messages;
+
+        const userTopGenre = {};
+        for (const [tag, tagInfo] of data.tags) {
+            for (const [user, plays] of Object.entries(tagInfo.users)) {
+                if (!userTopGenre[user] || plays > userTopGenre[user].plays) {
+                    userTopGenre[user] = { tag, plays };
+                }
+            }
+        }
+
+        // Group users by top genre, skip the group's overall top 3
+        const topGroupGenres = new Set(data.tags.slice(0, 3).map(([tag]) => tag));
+        const genreUsers = {};
+        for (const [user, { tag, plays }] of Object.entries(userTopGenre)) {
+            if (topGroupGenres.has(tag)) continue;
+            if (!genreUsers[tag]) genreUsers[tag] = [];
+            genreUsers[tag].push({ user, plays });
+        }
+
+        // Find the genre shared by the most users with the most combined plays
+        const candidates = Object.entries(genreUsers)
+            .filter(([, users]) => users.length >= 2)
+            .sort((a, b) => b[1].reduce((s, u) => s + u.plays, 0) - a[1].reduce((s, u) => s + u.plays, 0));
+
+        if (!candidates.length) return messages;
+        const [tag, users] = candidates[0];
+        const capitalized = tag.charAt(0).toUpperCase() + tag.slice(1);
+        const [u1, u2] = users;
+        messages.push(random([
+            `${u1.user} and ${u2.user} are both deep into ${capitalized} this week`,
+            `${u1.user} and ${u2.user} share a top genre this week: ${capitalized}`
+        ]));
+
+        return messages;
+    },
+
+    // Vintage vs modern split
+    vintageVsModern: (data) => {
+        const messages = [];
+        const entries = Object.entries(data.groupYearPlays);
+        if (!entries.length) return messages;
+
+        let pre2000 = 0, post2000 = 0;
+        for (const [y, plays] of entries) {
+            if (parseInt(y) < 2000) pre2000 += plays;
+            else post2000 += plays;
+        }
+        const total = pre2000 + post2000;
+        if (total < 50) return messages;
+
+        const prePct = Math.round((pre2000 / total) * 100);
+        const postPct = 100 - prePct;
+
+        if (prePct >= 40) {
+            const templates = [
+                `${prePct}% of this week's plays are from albums released before 2000`,
+                `The group was vintage this week - ${prePct}% of plays are from pre-2000 albums`
+            ];
+            messages.push(random(templates));
+        } else if (postPct >= 80) {
+            const templates = [
+                `${postPct}% of this week's plays are from albums released in 2000 or later`,
+                `The group is staying modern - ${postPct}% of plays are from 2000s albums or newer`
+            ];
+            messages.push(random(templates));
+        }
+
+        return messages;
+    },
+
+    // Decade with most group plays
+    decadeOfTheWeek: (data) => {
+        const messages = [];
+        const entries = Object.entries(data.groupYearPlays);
+        if (!entries.length) return messages;
+
+        const decadeNames = { 1960: '60s', 1970: '70s', 1980: '80s', 1990: '90s', 2000: '2000s', 2010: '2010s' };
+        const decadePlays = {};
+        for (const [y, plays] of entries) {
+            const decade = Math.floor(parseInt(y) / 10) * 10;
+            if (decade >= 1960 && decade <= 2010) {
+                decadePlays[decade] = (decadePlays[decade] || 0) + plays;
+            }
+        }
+
+        if (!Object.keys(decadePlays).length) return messages;
+        const [topDecade, topPlays] = Object.entries(decadePlays).sort((a, b) => b[1] - a[1])[0];
+        if (topPlays < 15) return messages;
+
+        const decadeName = decadeNames[parseInt(topDecade)];
+        const templates = [
+            `The ${decadeName} were popular this week with ${topPlays.toLocaleString()} plays`,
+            `It's a ${decadeName} week - ${topPlays.toLocaleString()} plays from that decade`,
+            `The group was loving ${decadeName} music this week (${topPlays.toLocaleString()} plays)`
+        ];
+        messages.push(random(templates));
+        return messages;
+    },
+
+    // Single year (pre-2010) with most group plays
+    bestSingleYear: (data) => {
+        const messages = [];
+        const preEntries = Object.entries(data.groupYearPlays).filter(([y]) => parseInt(y) < 2010);
+        if (!preEntries.length) return messages;
+
+        const [topYear, topPlays] = preEntries.sort((a, b) => b[1] - a[1])[0];
+        if (topPlays < 10) return messages;
+
+        const templates = [
+            `${topYear} is seeing a resurgence this week with ${topPlays.toLocaleString()} plays from that year`,
+            `The group went heavy on music from ${topYear} this week (${topPlays.toLocaleString()} plays)`
+        ];
+        messages.push(random(templates));
+        return messages;
+    },
+
+    // % of plays from current year albums
+    currentYearPlays: (data) => {
+        const messages = [];
+        const currentYear = new Date().getFullYear();
+        const total = Object.values(data.groupYearPlays).reduce((s, p) => s + p, 0);
+        if (total < 20) return messages;
+
+        const currentPlays = data.groupYearPlays[currentYear] || 0;
+        const pct = Math.round((currentPlays / total) * 100);
+
+        if (pct >= 10) {
+            const templates = [
+                `${pct}% of this week's plays are from albums released this year`,
+                `The group is keeping up with new releases - ${pct}% of plays are from albums released this year`
+            ];
+            messages.push(random(templates));
+        }
+
+        const userCurrentPlays = Object.entries(data.userYearPlays)
+            .map(([username, yearMap]) => [username, yearMap[currentYear] || 0])
+            .filter(([, p]) => p >= 10)
+            .sort((a, b) => b[1] - a[1]);
+
+        if (userCurrentPlays.length) {
+            const [username, plays] = userCurrentPlays[0];
+            const userTotal = Object.values(data.userYearPlays[username]).reduce((s, p) => s + p, 0);
+            const userPct = Math.round((plays / userTotal) * 100);
+            if (userPct >= 20) {
+                const templates = [
+                    `${username} is keeping up with new releases - ${userPct}% of their plays are from albums released this year`,
+                    `${username} is first on new releases: ${plays} plays from songs released this year (${userPct}% of their week)`
+                ];
+                messages.push(random(templates));
+            }
+        }
+
+        return messages.slice(0, 1);
+    },
+
+    // Average age of albums played by the group
+    albumAge: (data) => {
+        const messages = [];
+        const currentYear = new Date().getFullYear();
+        const entries = Object.entries(data.groupYearPlays);
+        if (!entries.length) return messages;
+
+        let weightedSum = 0, totalPlays = 0;
+        for (const [y, plays] of entries) {
+            weightedSum += parseInt(y) * plays;
+            totalPlays += plays;
+        }
+        if (totalPlays < 30) return messages;
+
+        const avgYear = Math.round(weightedSum / totalPlays);
+        const avgAge = currentYear - avgYear;
+
+        if (avgAge >= 3) {
+            const templates = [
+                `The group's average album this week is ${avgAge} years old (avg release year: ${avgYear})`
+            ];
+            messages.push(random(templates));
+        }
+
+        return messages;
+    },
+
+    // Show if the group has played music from every year since some point
+    groupEraSpread: (data) => {
+        const messages = [];
+        const currentYear = new Date().getFullYear();
+        const years = new Set(Object.keys(data.groupYearPlays).map(Number));
+        if (!years.size) return messages;
+
+        let continuousFrom = currentYear;
+        for (let y = currentYear; y >= 1960; y--) {
+            if (!years.has(y)) break;
+            continuousFrom = y;
+        }
+        if (continuousFrom > 1990) return messages;
+
+        const span = currentYear - continuousFrom;
+        const templates = [
+            `The group has played music from every year since ${continuousFrom}`,
+            `The group listened to music from every year of the last ${span} years`
+        ];
+        messages.push(random(templates));
+        return messages;
+    },
+
+    // User who covered the most distinct release years
+    timeTraveler: (data) => {
+        const messages = [];
+        const userYearCounts = Object.entries(data.userYearPlays)
+            .map(([username, yearMap]) => [username, Object.keys(yearMap).length])
+            .filter(([, count]) => count >= 10)
+            .sort((a, b) => b[1] - a[1]);
+
+        if (!userYearCounts.length) return messages;
+        const [username, count] = userYearCounts[0];
+        const secondCount = userYearCounts[1]?.[1] || 0;
+        const margin = count - secondCount;
+
+        if (margin >= 5) {
+            const templates = [
+                `${username}'s listening ranged across ${count} years of music this week (${margin} more than anyone else)`,
+                `${username}'s plays covered ${count} years of music this week (${margin} more than anyone else)`
+            ];
+            messages.push(random(templates));
+        } else {
+            const templates = [
+                `${username} ranged across ${count} years of music this week, more than anyone else`,
+                `${username} covered the most ground historically with ${count} years of music`
+            ];
+            messages.push(random(templates));
+        }
+
+        return messages;
+    },
+
+    // User with highest % of recent (last 2 years) plays
+    freshestListener: (data) => {
+        const messages = [];
+        const currentYear = new Date().getFullYear();
+
+        const candidates = Object.entries(data.userYearPlays).map(([username, yearMap]) => {
+            const total = Object.values(yearMap).reduce((s, p) => s + p, 0);
+            const recent = (yearMap[currentYear] || 0) + (yearMap[currentYear - 1] || 0);
+            return { username, total, recent, pct: total > 0 ? Math.round((recent / total) * 100) : 0 };
+        }).filter(d => d.total >= 15 && d.pct >= 20).sort((a, b) => b.pct - a.pct);
+
+        if (!candidates.length) return messages;
+        const { username, pct, recent } = candidates[0];
+        const templates = [
+            `${username} is keeping up with new releases - ${pct}% of their music is from the last two years`,
+            `${username} is the most recent listener - ${pct}% of their music is from the last two years`
+        ];
+        messages.push(random(templates));
+        return messages;
+    },
+
+    // User with lowest average release year
+    mostNostalgic: (data) => {
+        const messages = [];
+        const candidates = Object.entries(data.userYearPlays).map(([username, yearMap]) => {
+            const entries = Object.entries(yearMap);
+            const total = entries.reduce((s, [, p]) => s + p, 0);
+            if (total < 20) return null;
+            const weightedSum = entries.reduce((s, [y, p]) => s + parseInt(y) * p, 0);
+            return { username, avgYear: Math.round(weightedSum / total), total };
+        }).filter(Boolean).sort((a, b) => a.avgYear - b.avgYear);
+
+        if (!candidates.length) return messages;
+        const { username, avgYear } = candidates[0];
+        const age = new Date().getFullYear() - avgYear;
+
+        const templates = [
+            `${username} went the deepest into the archives this week, averaging albums released in ${avgYear}`,
+            `${username} is the most nostalgic listener - their average album is ${age} years old`
+        ];
+        messages.push(random(templates));
+        return messages;
+    },
+
     // Total group statistics
     totalCommunityStats: (data) => {
         const messages = [];
@@ -1486,11 +1915,43 @@ const messageGenerators = {
 // Generate all ticker messages based on chart data
 function generateTickerMessages() {
     tickerMessages = [];
-    
+
+    // Compute cache completion percentages
+    let tagLoadedPlays = 0, tagTotalPlays = 0;
+    for (const [artistName, artistInfo] of sortedData.artists) {
+        tagTotalPlays += artistInfo.plays;
+        if (artistTagsCache[artistName]) tagLoadedPlays += artistInfo.plays;
+    }
+    const tagCachePct = tagTotalPlays > 0 ? tagLoadedPlays / tagTotalPlays : 0;
+
+    let yearLoadedPlays = 0, yearTotalPlays = 0;
+    for (const [, albumInfo] of sortedData.albums) {
+        yearTotalPlays += albumInfo.plays;
+        if (releaseYearCache[`${albumInfo.artist}::${albumInfo.albumName}`]) yearLoadedPlays += albumInfo.plays;
+    }
+    const yearCachePct = yearTotalPlays > 0 ? yearLoadedPlays / yearTotalPlays : 0;
+
+    // Pre-compute release year data for all year-based generators
+    const currentYear = new Date().getFullYear();
+    const groupYearPlays = {};
+    const userYearPlays = {};
+    Object.entries(chartDataPerUser).forEach(([username, userData]) => {
+        userYearPlays[username] = {};
+        Object.values(userData.albumPlays || {}).forEach(albumData => {
+            const year = releaseYearCache[`${albumData.artistName}::${albumData.albumName}`];
+            if (!year) return;
+            const y = parseInt(year);
+            if (isNaN(y) || y < 1900 || y > currentYear) return;
+            userYearPlays[username][y] = (userYearPlays[username][y] || 0) + albumData.plays;
+            groupYearPlays[y] = (groupYearPlays[y] || 0) + albumData.plays;
+        });
+    });
+
     const data = {
         artists: sortedData.artists || [],
         albums: sortedData.albums || [],
         tracks: sortedData.tracks || [],
+        tags: sortedData.tags || [],
         listeners: sortedData.listeners || [],
         'unique-artists': sortedData['unique-artists'] || [],
         'unique-tracks': sortedData['unique-tracks'] || [],
@@ -1506,14 +1967,29 @@ function generateTickerMessages() {
         hourlyListeners: hourlyListeners || [],
         dailyActivity: dailyActivity || [],
         dailyListeners: dailyListeners || [],
-        scatterBuckets: tempBuckets || {} // Use tempBuckets because buckets not always populated
+        scatterBuckets: tempBuckets || {}, // Use tempBuckets because buckets not always populated
+        groupYearPlays,
+        userYearPlays,
+        tagCachePct,
+        yearCachePct,
     };
     
+    const genreGenerators = [messageGenerators.topGenre, messageGenerators.genreMonopoly, messageGenerators.genreExplorer, messageGenerators.sharedGenre];
+    const yearGenerators = [messageGenerators.vintageVsModern, messageGenerators.decadeOfTheWeek, messageGenerators.bestSingleYear, messageGenerators.currentYearPlays, messageGenerators.albumAge, messageGenerators.groupEraSpread, messageGenerators.timeTraveler, messageGenerators.freshestListener, messageGenerators.mostNostalgic];
+    const generators = new Set([...genreGenerators, ...yearGenerators]);
+
     // Generate messages from each generator
     Object.values(messageGenerators).forEach(generator => {
-        const messages = generator(data);
-        tickerMessages.push(...messages);
+        if (generators.has(generator)) return;
+        tickerMessages.push(...generator(data));
     });
+
+    if (tagCachePct >= 0.5) {
+        genreGenerators.forEach(g => tickerMessages.push(...g(data)));
+    }
+    if (yearCachePct >= 0.5) {
+        yearGenerators.forEach(g => tickerMessages.push(...g(data)));
+    }
     
     // Shuffle messages for variety
     tickerMessages = tickerMessages.sort(() => Math.random() - 0.5);

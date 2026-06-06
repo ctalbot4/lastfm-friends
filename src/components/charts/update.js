@@ -3,10 +3,13 @@ import { store } from '../../state/store.js';
 
 // API
 import * as lastfm from '../../api/lastfm.js';
-import { getAlbumReleaseYears } from '../../api/releaseYear.js';
+import { getAlbumReleaseYears, getArtistTags, artistTagsCache } from '../../api/metadata.js';
 
 // Charts - Pages
 import { pageState, displayPage } from './pages.js';
+
+// Charts - Graphs
+import { computeDecadeData, computeYearData } from './graphs/data.js';
 
 // Preview
 import { audioState } from '../preview/index.js';
@@ -28,8 +31,10 @@ export let sortedData = {
     'artist-streaks': [],
     'album-streaks': [],
     'track-streaks': [],
-    'listening-streaks': []
+    'listening-streaks': [],
+    tags: []
 };
+
 
 export let trackData = {};
 export let userListeningTime = {};
@@ -441,8 +446,112 @@ function pseudoHash(str) {
     return str.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
 }
 
+// Helper function
+function setCacheIndicator(id, loaded, total) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const pct = total > 0 ? Math.round(loaded / total * 100) : 0;
+    if (pct >= 75) {
+        el.style.display = 'none';
+    } else {
+        el.style.display = '';
+        el.querySelector('.cache-tooltip').innerHTML =
+            `<span class="cache-tooltip-title">Initial data still loading in the background</span><span class="cache-tooltip-pct">${pct}% complete</span>`;
+    }
+}
+
+const TAG_GROUPS = [['hip-hop', 'rap', 'hip hop'], ['k-pop', 'kpop']];
+export const tagGroupMap = new Map();
+for (const group of TAG_GROUPS) {
+    for (const tag of group) tagGroupMap.set(tag.toLowerCase(), group);
+}
+
+function computeTagData() {
+    const tagPlays = {};
+    const tagDailyData = {}; // tag -> user -> Map(dateKey -> count)
+
+    for (const [artistName, artistInfo] of sortedData.artists) {
+        const tags = artistTagsCache[artistName];
+        if (!tags?.length) continue;
+        const seenCanonical = new Set();
+        for (const tag of tags.slice(0, 3)) {
+            // Group tags considered the same
+            const group = tagGroupMap.get(tag.toLowerCase());
+            const canonical = group ? group[0] : tag;
+            if (seenCanonical.has(canonical)) continue;
+            seenCanonical.add(canonical);
+
+            // Initialize tag data
+            if (!tagPlays[canonical]) {
+                tagPlays[canonical] = { plays: 0, cappedPlays: 0, users: {}, artists: [] };
+                tagDailyData[canonical] = {};
+            }
+
+            // Update tag data with plays
+            const t = tagPlays[canonical];
+            t.plays += artistInfo.plays;
+            t.cappedPlays += artistInfo.cappedPlays;
+            t.artists.push({ name: artistName, url: artistInfo.url });
+
+            // Update tag with daily user data
+            for (const [user, userPlays] of Object.entries(artistInfo.users)) {
+                t.users[user] = (t.users[user] || 0) + userPlays;
+                const artistData = chartDataPerUser[user]?.artistPlays[artistName];
+                if (artistData?.dailyData) {
+                    if (!tagDailyData[canonical][user]) tagDailyData[canonical][user] = new Map();
+                    for (const { key, count } of artistData.dailyData) {
+                        tagDailyData[canonical][user].set(key, (tagDailyData[canonical][user].get(key) || 0) + count);
+                    }
+                }
+                if (artistData?.lastListen) {
+                    if (!t.userLastListen) t.userLastListen = {};
+                    if (!t.userLastListen[user] || artistData.lastListen > t.userLastListen[user]) {
+                        t.userLastListen[user] = artistData.lastListen;
+                    }
+                }
+            }
+        }
+    }
+
+    // Get user count and sort
+    for (const t of Object.values(tagPlays)) t.userCount = Object.keys(t.users).length;
+    for (const [tag, userMaps] of Object.entries(tagDailyData)) {
+        tagPlays[tag].userDailyData = {};
+        for (const [user, map] of Object.entries(userMaps)) {
+            tagPlays[tag].userDailyData[user] = [...map.entries()]
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([key, count]) => ({ key, count }));
+        }
+    }
+
+    sortedData.tags = Object.entries(tagPlays)
+        .sort((a, b) => {
+            const aScore = b[1].userCount * b[1].cappedPlays;
+            const bScore = a[1].userCount * a[1].cappedPlays;
+            return aScore !== bScore ? aScore - bScore : pseudoHash(a[0]) - pseudoHash(b[0]);
+        });
+
+    // Don't use same artist as cover image twice unless necessary
+    const usedArtists = new Set();
+    for (const [, tagInfo] of sortedData.tags) {
+        tagInfo.chosenArtist = (tagInfo.artists.find(a => !usedArtists.has(a.name)) ?? tagInfo.artists[0])?.name;
+        if (tagInfo.chosenArtist) usedArtists.add(tagInfo.chosenArtist);
+    }
+
+    // Count tagged plays vs all plays for "incomplete" indicator
+    let tagLoadedPlays = 0, tagTotalPlays = 0;
+    for (const [artistName, artistInfo] of sortedData.artists) {
+        tagTotalPlays += artistInfo.plays;
+        if (artistTagsCache[artistName]) tagLoadedPlays += artistInfo.plays;
+    }
+    setCacheIndicator('tags-cache-pct', tagLoadedPlays, tagTotalPlays);
+}
+
 // Update charts and ticker
 export async function updateCharts() {
+    store.tagsLoaded = false;
+    store.releaseYearsLoaded = false;
+
     let artistPlays = null;
     let albumPlays = null;
     let trackPlays = null;
@@ -567,17 +676,45 @@ export async function updateCharts() {
         return pseudoHash(a[0]) - pseudoHash(b[0]);
     });
 
+    // Combine played and now playing artists
+    const nowPlayingArtists = Array.from(document.querySelectorAll('.block[data-now-playing="true"]'))
+        .map(block => block.dataset.nowPlayingArtist)
+        .filter(Boolean);
+    const weeklyArtistNames = sortedData.artists.slice(0, 15000).map(([name]) => name);
+    const artistNamesForTags = [...new Set([...nowPlayingArtists, ...weeklyArtistNames])];
+
+    // Submit artists for tags
+    getArtistTags(artistNamesForTags).then(async () => {
+        computeTagData();
+        pageState.tags.totalItems = sortedData.tags.length;
+        store.tagsLoaded = true;
+        while (audioState.currentChartAudio) await new Promise(r => setTimeout(r, 100));
+        displayPage('tags');
+    });
+
     const nowPlayingAlbums = Array.from(document.querySelectorAll('.block[data-now-playing="true"][data-now-playing-album]'))
         .map(block => ({ artist: block.dataset.nowPlayingArtist, album: block.dataset.nowPlayingAlbum, mbid: block.dataset.nowPlayingMbid || null }));
 
-    const sortedAlbums = [...sortedData.albums]
-        .sort((a, b) => b[1].plays - a[1].plays)
+    const sortedAlbums = sortedData.albums
         .slice(0, 20000)
         .map(([, data]) => ({ artist: data.artist, album: data.albumName, mbid: data.mbid }));
 
-    getAlbumReleaseYears(sortedAlbums, nowPlayingAlbums).then(() => {
+    // Submit albums for release years
+    getAlbumReleaseYears(sortedAlbums, nowPlayingAlbums).then((releaseYears) => {
         displayPage('albums');
         displayPage('album-streaks');
+        computeDecadeData(chartDataPerUser, releaseYears);
+        computeYearData(chartDataPerUser, releaseYears);
+        store.releaseYearsLoaded = true;
+
+        // Count release year plays vs all plays for "incomplete" indicator
+        let yearLoadedPlays = 0, yearTotalPlays = 0;
+        for (const [, albumInfo] of sortedData.albums) {
+            yearTotalPlays += albumInfo.plays;
+            if (releaseYears[`${albumInfo.artist}::${albumInfo.albumName}`]) yearLoadedPlays += albumInfo.plays;
+        }
+        setCacheIndicator('year-cache-pct', yearLoadedPlays, yearTotalPlays);
+        setCacheIndicator('decade-cache-pct', yearLoadedPlays, yearTotalPlays);
     });
 
 
@@ -637,6 +774,11 @@ export async function updateCharts() {
         await new Promise(r => setTimeout(r, 100));
     }
 
+    // Wait for bar animation to finish if user navigated a page
+    while (store.isAnimatingBars) {
+        await new Promise(r => setTimeout(r, 16));
+    }
+
     pageState.artists.totalItems = sortedData.artists.length;
     pageState.albums.totalItems = sortedData.albums.length;
     pageState.tracks.totalItems = sortedData.tracks.length;
@@ -647,6 +789,7 @@ export async function updateCharts() {
     pageState['album-streaks'].totalItems = sortedData['album-streaks'].length;
     pageState['track-streaks'].totalItems = sortedData['track-streaks'].length;
     pageState['listening-streaks'].totalItems = sortedData['listening-streaks'].length;
+    pageState.tags.totalItems = sortedData.tags.length;
 
     await displayPage('artists');
     await displayPage('albums');
@@ -658,6 +801,7 @@ export async function updateCharts() {
     await displayPage('album-streaks');
     await displayPage('track-streaks');
     await displayPage('listening-streaks');
+    await displayPage('tags');
 
     // Expose new track data now that it's done updating
     trackData = trackPlays;

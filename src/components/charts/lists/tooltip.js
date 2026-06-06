@@ -1,5 +1,8 @@
 // Charts
-import { chartDataPerUser } from "../update.js";
+import { chartDataPerUser, sortedData, tagGroupMap } from "../update.js";
+
+// Metadata
+import { artistTagsCache } from "../../../api/metadata.js";
 
 function getListenerTooltip() {
     let tooltipEl = document.getElementById("listener-tooltip");
@@ -17,6 +20,11 @@ function getListenerTooltip() {
 
 export function showListenerTooltip(span, streak) {
     const tooltip = getListenerTooltip();
+
+    // Get color of chart entry
+    const li = span.closest('li');
+    const itemHue = li ? getComputedStyle(li).getPropertyValue('--item-hue').trim() || '220' : '220';
+    const itemSat = li ? getComputedStyle(li).getPropertyValue('--item-sat').trim() || '35%' : '35%';
 
     const username = span.dataset.user;
     const plays = span.dataset.plays;
@@ -40,6 +48,13 @@ export function showListenerTooltip(span, streak) {
             isNowPlaying =
                 currentTrack.artist.name === itemArtist &&
                 currentTrack.name.trim() === itemName;
+        } else if (itemType === "tag") {
+            const artistTags = artistTagsCache[currentTrack.artist.name];
+            const canonicalItem = tagGroupMap.get(itemName.toLowerCase())?.[0] ?? itemName.toLowerCase();
+            isNowPlaying = artistTags?.some(t => {
+                const canonical = tagGroupMap.get(t.toLowerCase())?.[0] ?? t.toLowerCase();
+                return canonical === canonicalItem;
+            }) ?? false;
         }
     }
 
@@ -65,20 +80,29 @@ export function showListenerTooltip(span, streak) {
 
     // Global max single-day count across all users for this item
     let globalMaxDayCount = Math.max(...counts, 1);
-    Object.values(chartDataPerUser).forEach(userData => {
-        let dailyData = null;
-        if (itemType === 'artist') {
-            dailyData = userData.artistPlays?.[itemName]?.dailyData;
-        } else if (itemType === 'album') {
-            dailyData = userData.albumPlays?.[`${itemName}::${itemArtist}`]?.dailyData;
-        } else if (itemType === 'track') {
-            dailyData = userData.trackPlays?.[`${itemName}::${itemArtist}`]?.dailyData;
-        }
-        if (dailyData) {
-            const userDayMax = Math.max(...dailyData.map(d => d.count));
+    if (itemType === 'tag') {
+        // Tags aren't in chartDataPerUser, so pull their per-user data from sortedData
+        const tagEntry = sortedData.tags.find(([t]) => t.toLowerCase() === itemName.toLowerCase());
+        Object.values(tagEntry?.[1].userDailyData || {}).forEach(days => {
+            const userDayMax = Math.max(...days.map(d => d.count));
             if (userDayMax > globalMaxDayCount) globalMaxDayCount = userDayMax;
-        }
-    });
+        });
+    } else {
+        Object.values(chartDataPerUser).forEach(userData => {
+            let dailyData = null;
+            if (itemType === 'artist') {
+                dailyData = userData.artistPlays?.[itemName]?.dailyData;
+            } else if (itemType === 'album') {
+                dailyData = userData.albumPlays?.[`${itemName}::${itemArtist}`]?.dailyData;
+            } else if (itemType === 'track') {
+                dailyData = userData.trackPlays?.[`${itemName}::${itemArtist}`]?.dailyData;
+            }
+            if (dailyData) {
+                const userDayMax = Math.max(...dailyData.map(d => d.count));
+                if (userDayMax > globalMaxDayCount) globalMaxDayCount = userDayMax;
+            }
+        });
+    }
 
     const userMaxDayCount = Math.max(...counts);
     const cols = counts
@@ -90,10 +114,13 @@ export function showListenerTooltip(span, streak) {
             const date = new Date(today);
             date.setDate(today.getDate() - (7 - i));
             const label = DAY_ABBRS[date.getDay()];
+            const fillColor = isPeak
+                ? `hsl(${itemHue}, calc(${itemSat} * 1.2), 58%)`
+                : `hsla(${itemHue}, calc(${itemSat} * 1.2), 40%, 0.7)`;
             return (
                 `<div class="day-col">` +
                 `<div style="height:${MAX_HEIGHT_PX}px;display:flex;align-items:flex-end;">` +
-                `<div class="day-fill${isPeak ? " peak" : ""}${isToday ? " today" : ""}" style="height:${barHeight}px"></div>` +
+                `<div class="day-fill${isToday ? " today" : ""}" style="height:${barHeight}px;background:${fillColor}"></div>` +
                 `</div>` +
                 `<div class="day-label${isToday ? " today" : ""}">${label}</div>` +
                 `</div>`
@@ -134,7 +161,44 @@ export function showListenerTooltip(span, streak) {
 export function hideListenerTooltip() {
     const tooltipEl = document.getElementById("listener-tooltip");
     if (tooltipEl) {
-        tooltipEl.classList.remove("visible");
+        tooltipEl.classList.remove("visible", "others-mode");
     }
+}
+
+export function showOthersTooltip(span) {
+    const tooltip = getListenerTooltip();
+    const others = JSON.parse(span.dataset.othersData);
+    const remaining = Number(span.dataset.othersTotal) - 7;
+
+    const rowsHtml = others.map(({ user, img, plays }) =>
+        `<div class="others-tooltip-row">
+            <img src="${img}" class="others-tooltip-img">
+            <span class="others-tooltip-user">${user}</span>
+            <span class="others-tooltip-plays">${Number(plays).toLocaleString()}</span>
+        </div>`
+    ).join('');
+
+    const moreHtml = remaining > 0
+        ? `<div class="others-tooltip-more">+${remaining} more</div>`
+        : '';
+
+    tooltip.innerHTML = rowsHtml + moreHtml;
+    tooltip.classList.add('others-mode');
+
+    const rect = span.getBoundingClientRect();
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+
+    let left = rect.left + rect.width / 2 - tw / 2;
+    let top = rect.bottom + 8;
+
+    // Ensure tooltip doesn't go off the screen
+    if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+    if (left < 8) left = 8;
+    if (top + th > window.innerHeight - 8) top = rect.top - th - 8;
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.classList.add("visible");
 }
 

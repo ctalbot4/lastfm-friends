@@ -915,7 +915,7 @@ a {
 }
 
 /* Hide genre list on small screens */
-@container (max-width: 350px) {
+@container (max-width: 400px) {
     .split-left:has(.split-stat-live) .split-genres {
         display: none;
     }

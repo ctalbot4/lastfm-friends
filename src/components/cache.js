@@ -1,5 +1,5 @@
 const dbName = 'lastfmfriends';
-const dbVersion = 8;
+const dbVersion = 9;
 let db;
 
 export function initCache() {
@@ -26,6 +26,7 @@ export function initCache() {
             db.createObjectStore('artist-info-cache');
             db.createObjectStore('album-info-cache');
             db.createObjectStore('album-release-year-cache');
+            db.createObjectStore('artist-tags-cache');
         };
     });
 }
@@ -39,6 +40,28 @@ export async function getData(storeName, key) {
 
 export function setData(storeName, key, value) {
     db.transaction(storeName, 'readwrite').objectStore(storeName).put(value, key);
+}
+
+// Clean random entries from cache store
+export async function cleanCacheRandom(storeName, maxEntries) {
+    return new Promise((resolve, reject) => {
+        const store = db.transaction(storeName, 'readwrite').objectStore(storeName);
+        const request = store.getAllKeys();
+        request.onsuccess = () => {
+            const keys = request.result;
+            if (keys.length <= maxEntries) { resolve(); return; }
+            for (let i = keys.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [keys[i], keys[j]] = [keys[j], keys[i]];
+            }
+            const deleteTransaction = db.transaction(storeName, 'readwrite');
+            const deleteStore = deleteTransaction.objectStore(storeName);
+            for (const key of keys.slice(maxEntries)) deleteStore.delete(key);
+            deleteTransaction.oncomplete = () => resolve();
+            deleteTransaction.onerror = () => reject(deleteTransaction.error);
+        };
+        request.onerror = () => reject(request.error);
+    });
 }
 
 // Keep only the 1000 newest entries in a cache store

@@ -40,7 +40,8 @@ body:has(#charts:not(.collapsed)) {
 
 #charts.collapsed .charts-scrollable {
     overflow: hidden;
-    padding: 0;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 #charts.collapsed .chart-section,
@@ -106,7 +107,9 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
 }
 
 #hourly-section,
-#daily-section {
+#daily-section,
+#decade-section,
+#year-section {
     max-width: 600px;
 }
 
@@ -148,6 +151,7 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     height: 370px;
     position: relative;
     padding-top: 50px;
+    margin-top: auto;
 }
 
 .activity-chart canvas {
@@ -347,6 +351,84 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     transform: none;
 }
 
+.chart-loading {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.85em;
+    padding: 8px 0;
+    display: block;
+}
+
+.cache-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px 2px 6px;
+    border-radius: 20px;
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    color: rgb(251, 191, 36);
+    font-size: 0.5em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+    cursor: default;
+    position: relative;
+    margin-left: 8px;
+}
+
+.cache-i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid rgb(251, 191, 36);
+    font-size: 9px;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.cache-tooltip {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+    background: rgba(15, 15, 15, 0.95);
+    width: 150px;
+    white-space: normal;
+    padding: 10px 16px;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 100;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.cache-indicator:hover .cache-tooltip {
+    display: flex;
+}
+
+.cache-tooltip-title {
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.03em;
+}
+
+.cache-tooltip-pct {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgb(251, 191, 36);
+    line-height: 1.1;
+}
+
 .top-list {
     list-style: none;
     padding: 0;
@@ -356,7 +438,7 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
 .list-item {
     position: relative;
     margin: 8px 0;
-    background: rgba(100, 100, 255, 0.188);
+    background: hsl(var(--item-hue, 220), calc(var(--item-sat, 35%) / 2.5), 15%);
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     display: grid;
@@ -366,6 +448,7 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     font-size: 0.9em;
     z-index: 1;
     height: 40px;
+    transition: background-color 0.2s ease;
 }
 
 .list-item:hover {
@@ -445,7 +528,7 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
 }
 
 .item-subtext {
-    color: #969595;
+    color: #c0bfbf;
     font-size: 0.85em;
     display: flex;
     flex-flow: row;
@@ -459,7 +542,7 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 135px;
+    max-width: 180px;
     white-space: nowrap;
 }
 
@@ -576,7 +659,7 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     user-select: none;
 }
 
-.listener-container:not(.others):hover {
+.listener-container:hover {
     transform: scale(1.15);
 }
 
@@ -679,6 +762,53 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     font-weight: 600;
 }
 
+.listener-tooltip.others-mode {
+    padding: 6px 9px;
+    font-size: 11px;
+}
+
+.others-tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 0;
+}
+
+.others-tooltip-row + .others-tooltip-row {
+    margin-top: 2px;
+}
+
+.others-tooltip-img {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.others-tooltip-user {
+    flex: 1;
+    color: white;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.others-tooltip-plays {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.others-tooltip-more {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 10px;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* Custom spacing for items with one listener */
 .list-item.streak-item {
     grid-template-columns: 40px 1fr 40px;
@@ -711,9 +841,20 @@ body:has(#network-section:not([style*="display: none"])) .charts-scrollable {
     left: 0;
     top: 0;
     height: 100%;
-    background: rgba(100, 100, 255, 0.5);
+    background: hsl(var(--item-hue, 220), var(--item-sat, 35%), 28.5%);
     border-radius: 8px;
     z-index: -1;
+    transition: background-color 0.2s ease;
+}
+
+.bars-animate .bar {
+    transform-origin: left center;
+    animation: bar-grow 0.5s ease-out both;
+}
+
+@keyframes bar-grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
 }
 
 .charts-collapse-handle {

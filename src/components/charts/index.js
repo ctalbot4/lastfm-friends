@@ -98,6 +98,15 @@ export function initCharts() {
     });
 }
 
+function animateStatsBars() {
+    document.querySelectorAll('.chart-section.stats-section:not([style*="display: none"]) .top-list').forEach(list => {
+        list.classList.remove('bars-animate');
+        void list.offsetWidth; // force reflow
+        list.classList.add('bars-animate');
+        setTimeout(() => list.classList.remove('bars-animate'), 600);
+    });
+}
+
 function toggleCharts() {
     const charts = document.querySelector('#charts');
     const isCollapsed = charts.classList.contains('collapsed');
@@ -125,6 +134,11 @@ function toggleCharts() {
     // Update network if it's what we're opening to
     if (isCollapsed && document.querySelector('#network-section').style.display !== 'none') {
         tryNetworkUpdate();
+    }
+
+    // Animate bars when opening on the stats view
+    if (isCollapsed && document.querySelector('#artists-section').style.display !== 'none') {
+        animateStatsBars();
     }
 
     gtag('event', 'charts_toggle', {
@@ -163,6 +177,7 @@ function toggleView(view) {
         chartSections.forEach(section => section.style.display = '');
         scatterSection.style.display = 'none';
         networkSection.style.display = 'none';
+        animateStatsBars();
     }
 
     // Clear tooltips
