@@ -85,11 +85,15 @@ export async function getRecentTracks(user, key = store.keys.KEY, from, page = 1
     if (cached && cached.timestamp) {
         const now = Date.now();
         const age = now - cached.timestamp;
-        if (age < store.updateTimers.blocks.interval) {
+        const noPlays = cached.data?.recenttracks?.["@attr"]?.total == 0;
+        const isInitialLoad = store.updateTimers.blocks.lastUpdate === 0;
+        // Ignore inactive users for a week on initial load, 2 hours on refreshes after that
+        const maxAge = noPlays ? (isInitialLoad ? 7 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000) : store.updateTimers.blocks.interval;
+        if (age < maxAge) {
             return cached.data;
         }
     }
-    
+
     const data = await callApi("user.getrecenttracks", {
         user,
         extended: 1,

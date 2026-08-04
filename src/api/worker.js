@@ -28,7 +28,7 @@ self.onmessage = ({ data }) => {
                 album.priority ? itunesQueue.unshift(album) : itunesQueue.push(album);
             }
         }
-        console.log(`[releaseYear] Queue: ${mbQueue.length} MB, ${itunesQueue.length} iTunes`);
+        //console.log(`[releaseYear] Queue: ${mbQueue.length} MB, ${itunesQueue.length} iTunes`);
     } else if (data.type === 'enqueue-tags') {
         if (data.key) tagsApiKey = data.key;
         for (const a of data.artists) tagsQueue.push(a);
