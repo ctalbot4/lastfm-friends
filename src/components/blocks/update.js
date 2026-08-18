@@ -196,7 +196,7 @@ async function updateBlock(block, key = store.keys.KEY) {
         newBlock.dataset.currentAlbum = recentTrack.album?.["#text"] || '';
 
         // If Last.fm errors and gives blank album image, ignore it and use the image we already have
-        if (newBlock.dataset.reset === "true" || imageUrl !== 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png') {
+        if (newBlock.dataset.reset === "true" || !['https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png', 'https://lastfm-img.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'].includes(imageUrl)) {
             newBlock.style.backgroundImage = `url(${imageUrl})`;
         }
 

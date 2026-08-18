@@ -354,7 +354,7 @@ export async function createAlbumCharts(sortedAlbumPlays, albumsMax) {
 
         // Album image cache to avoid blank images that Last.fm gives
         const albumCacheKey = `album-img:${albumInfo.artist}::${albumInfo.albumName}`;
-        const isBlank = albumInfo.img === 'https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png';
+        const isBlank = ['https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png', 'https://lastfm-img.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png'].includes(albumInfo.img);
         let albumImage = isBlank ? (imageCache.get(albumCacheKey) ?? null) : albumInfo.img;
         if (!isBlank) imageCache.set(albumCacheKey, albumInfo.img);
 
@@ -743,7 +743,7 @@ export async function createAlbumStreaksChart(sortedStreaks, maxStreak) {
 
         // Album image cache to avoid blank images that Last.fm gives
         const albumCacheKey = `album-img:${artistName}::${albumName}`;
-        const isBlank = streak.image === 'https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png';
+        const isBlank = ['https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png', 'https://lastfm-img.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png'].includes(streak.image);
         const albumImage = isBlank ? (imageCache.get(albumCacheKey) ?? null) : streak.image;
         if (!isBlank) imageCache.set(albumCacheKey, streak.image);
 
