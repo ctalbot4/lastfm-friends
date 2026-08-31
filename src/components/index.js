@@ -51,16 +51,12 @@ export async function initDashboard() {
     // Start ticker after blocks are updated
     startTicker();
 
-    // Restart updates when user returns to page, and reset ticker if away for more than 5 minutes
-    let hiddenAt = null;
+    // Pause blocks/listening updates while hidden
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
-            const wasAwayMs = hiddenAt ? Date.now() - hiddenAt : 0;
             scheduleUpdates();
             tryNetworkUpdate();
-            if (wasAwayMs > 5 * 60 * 1000) startTicker();
         } else {
-            hiddenAt = Date.now();
             cancelUpdates();
         }
     });
@@ -129,6 +125,7 @@ async function initialFetch() {
         store.friendCount = friends.length + 1;
 
         // Set conservative refreshes to try to avoid API rate limit
+        // (initial guess before we know who's actually active; refined after each blocks update)
         store.updateTimers.blocks.interval = Math.max(5000, (store.friendCount / 5) * 1200);
         store.updateTimers.listening.interval = Math.max(180000, (store.friendCount / 5) * 5 * 3000);
 

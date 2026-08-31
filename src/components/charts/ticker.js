@@ -18,6 +18,20 @@ import { releaseYearCache, artistTagsCache } from "../../api/metadata.js";
 
 export let tickerMessages = [];
 let refreshTimeout = null;
+let waitingForVisible = false;
+
+// Wait to start the ticker until the tab is visible again
+function waitForVisibleThenStart() {
+    if (waitingForVisible) return;
+    waitingForVisible = true;
+    document.addEventListener('visibilitychange', function onVisible() {
+        if (document.visibilityState === 'visible') {
+            document.removeEventListener('visibilitychange', onVisible);
+            waitingForVisible = false;
+            startTicker();
+        }
+    });
+}
 
 // Helper function to format streak days
 function formatStreakDays(startDate, endDate) {
@@ -51,6 +65,12 @@ function formatStreakDays(startDate, endDate) {
 
 // Populate and start the ticker
 export async function startTicker() {
+    // If tab not open, wait to start until it's visible again
+    if (document.visibilityState !== 'visible') {
+        waitForVisibleThenStart();
+        return;
+    }
+
     // Clear any existing refresh timeout
     if (refreshTimeout) {
         clearTimeout(refreshTimeout);
@@ -58,7 +78,7 @@ export async function startTicker() {
     }
 
     // Wait for any active updates to finish
-    while (store.isUpdatingBlocks || store.isUpdatingListening) {
+    while (store.isScheduling || store.isUpdatingBlocks || store.isUpdatingListening) {
         await new Promise(resolve => setTimeout(resolve, 100));
     }
 
@@ -149,7 +169,7 @@ const messageGenerators = {
             const users = getSortedUsers(artistInfo);
             const [topUsername, topPlays] = users[0];
             const listenerCount = artistInfo.userCount;
-            const percentage = Math.round((listenerCount / store.friendCount) * 100);
+            const percentage = Math.round((listenerCount / store.activeFriendCount) * 100);
             const avgPlays = Math.round(artistInfo.plays / listenerCount);
             
             let addedMessage = false;
@@ -158,9 +178,9 @@ const messageGenerators = {
             if (index === 0 && artistInfo.plays >= 40) {
                 if (percentage >= 80) {
                     const templates = [
-                        `${artistName} tops the charts with ${artistInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`,
-                        `${artistName} leads the week with ${artistInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`,
-                        `${artistName} is the chart-topper: ${artistInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`
+                        `${artistName} tops the charts with ${artistInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`,
+                        `${artistName} leads the week with ${artistInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`,
+                        `${artistName} is the chart-topper: ${artistInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`
                     ];
                     messages.push(random(templates));
                 } else if (percentage >= 40) {
@@ -172,9 +192,9 @@ const messageGenerators = {
                     messages.push(random(templates));
                 } else {
                     const templates = [
-                        `${artistName} tops the charts: ${listenerCount} friends played ${artistInfo.plays.toLocaleString()} times total`,
-                        `${artistName} leads the week: ${listenerCount} friends played ${artistInfo.plays.toLocaleString()} times total`,
-                        `${artistName} is the most-played artist: ${listenerCount} friends played ${artistInfo.plays.toLocaleString()} times total`
+                        `${artistName} tops the charts: ${listenerCount} friend${listenerCount > 1 ? 's' : ''} played ${artistInfo.plays.toLocaleString()} times total`,
+                        `${artistName} leads the week: ${listenerCount} friend${listenerCount > 1 ? 's' : ''} played ${artistInfo.plays.toLocaleString()} times total`,
+                        `${artistName} is the most-played artist: ${listenerCount} friend${listenerCount > 1 ? 's' : ''} played ${artistInfo.plays.toLocaleString()} times total`
                     ];
                     messages.push(random(templates));
                 }
@@ -358,8 +378,8 @@ const messageGenerators = {
             if (!addedMessage && percentage >= 60 && artistInfo.plays >= 20) {
                 if (percentage >= 80) {
                     const templates = [
-                        `${artistName} is universally loved: ${listenerCount}/${store.friendCount} friends listened (${artistInfo.plays.toLocaleString()} total plays)`,
-                        `${artistName} is widely popular: ${listenerCount}/${store.friendCount} friends listened (${artistInfo.plays.toLocaleString()} total plays)`
+                        `${artistName} is universally loved: ${listenerCount}/${store.activeFriendCount} friends listened (${artistInfo.plays.toLocaleString()} total plays)`,
+                        `${artistName} is widely popular: ${listenerCount}/${store.activeFriendCount} friends listened (${artistInfo.plays.toLocaleString()} total plays)`
                     ];
                     messages.push(random(templates));
                 } else {
@@ -375,7 +395,7 @@ const messageGenerators = {
             // Tier 6
             if (!addedMessage && artistInfo.plays >= 15 && index < 5 && listenerCount >= 2) {
                 const templates = [
-                    `${listenerCount}/${store.friendCount} friends played ${artistName} ${artistInfo.plays.toLocaleString()} times (${avgPlays} each on average)`,
+                    `${listenerCount}/${store.activeFriendCount} friends played ${artistName} ${artistInfo.plays.toLocaleString()} times (${avgPlays} each on average)`,
                     `${artistName} has ${artistInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''} (${avgPlays} per friend)`
                 ];
                 messages.push(random(templates));
@@ -384,7 +404,7 @@ const messageGenerators = {
             // Tier 7 - basic fallback
             if (!addedMessage && artistInfo.plays >= 15 && index < 5) {
                 const templates = [
-                    `${listenerCount}/${store.friendCount} friends played ${artistName} ${artistInfo.plays.toLocaleString()} times`,
+                    `${listenerCount}/${store.activeFriendCount} friends played ${artistName} ${artistInfo.plays.toLocaleString()} times`,
                     `${artistName} has ${artistInfo.plays.toLocaleString()} plays from ${listenerCount} listener${listenerCount > 1 ? 's' : ''}`
                 ];
                 messages.push(random(templates));
@@ -403,7 +423,7 @@ const messageGenerators = {
             const users = getSortedUsers(albumInfo);
             const [topUsername, topPlays] = users[0];
             const listenerCount = albumInfo.userCount;
-            const percentage = Math.round((listenerCount / store.friendCount) * 100);
+            const percentage = Math.round((listenerCount / store.activeFriendCount) * 100);
             const avgPlays = Math.round(albumInfo.plays / listenerCount);
             const albumDisplay = `${albumInfo.albumName} by ${albumInfo.artist}`;
             
@@ -413,9 +433,9 @@ const messageGenerators = {
             if (index === 0 && albumInfo.plays >= 30) {
                 if (percentage >= 80) {
                     const templates = [
-                        `${albumDisplay} tops the album charts with ${albumInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`,
-                        `${albumDisplay} leads the week with ${albumInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`,
-                        `${albumInfo.artist}'s ${albumInfo.albumName} is the chart-topping album: ${albumInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`
+                        `${albumDisplay} tops the album charts with ${albumInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`,
+                        `${albumDisplay} leads the week with ${albumInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`,
+                        `${albumInfo.artist}'s ${albumInfo.albumName} is the chart-topping album: ${albumInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`
                     ];
                     messages.push(random(templates));
                 } else if (percentage >= 40) {
@@ -427,9 +447,9 @@ const messageGenerators = {
                     messages.push(random(templates));
                 } else {
                     const templates = [
-                        `${albumDisplay} tops the album charts: ${listenerCount} friends played it ${albumInfo.plays.toLocaleString()} times total`,
-                        `${albumInfo.artist}'s ${albumInfo.albumName} leads the week: ${listenerCount} friends played it ${albumInfo.plays.toLocaleString()} times total`,
-                        `${albumDisplay} is the most-played album: ${listenerCount} friends played it ${albumInfo.plays.toLocaleString()} times total`
+                        `${albumDisplay} tops the album charts: ${listenerCount} friend${listenerCount > 1 ? 's' : ''} played it ${albumInfo.plays.toLocaleString()} times total`,
+                        `${albumInfo.artist}'s ${albumInfo.albumName} leads the week: ${listenerCount} friend${listenerCount > 1 ? 's' : ''} played it ${albumInfo.plays.toLocaleString()} times total`,
+                        `${albumDisplay} is the most-played album: ${listenerCount} friend${listenerCount > 1 ? 's' : ''} played it ${albumInfo.plays.toLocaleString()} times total`
                     ];
                     messages.push(random(templates));
                 }
@@ -624,9 +644,9 @@ const messageGenerators = {
             if (!addedMessage && percentage >= 60 && albumInfo.plays >= 15) {
                 if (percentage >= 80) {
                     const templates = [
-                        `${albumDisplay} is universally loved: ${listenerCount}/${store.friendCount} friends listened (${albumInfo.plays.toLocaleString()} total plays)`,
-                        `${albumDisplay} is widely popular: ${listenerCount}/${store.friendCount} friends listened (${albumInfo.plays.toLocaleString()} total plays)`,
-                        `${albumInfo.artist}'s ${albumInfo.albumName} is a universal favorite: ${listenerCount}/${store.friendCount} friends listened (${albumInfo.plays.toLocaleString()} total plays)`
+                        `${albumDisplay} is universally loved: ${listenerCount}/${store.activeFriendCount} friends listened (${albumInfo.plays.toLocaleString()} total plays)`,
+                        `${albumDisplay} is widely popular: ${listenerCount}/${store.activeFriendCount} friends listened (${albumInfo.plays.toLocaleString()} total plays)`,
+                        `${albumInfo.artist}'s ${albumInfo.albumName} is a universal favorite: ${listenerCount}/${store.activeFriendCount} friends listened (${albumInfo.plays.toLocaleString()} total plays)`
                     ];
                     messages.push(random(templates));
                 } else {
@@ -698,7 +718,7 @@ const messageGenerators = {
                 
                 if (trackInfo.userCount === 1) {
                     const templates = [
-                        `${topUsername} is the only listener for ${trackDisplay} this week (${topPlays} plays)`,
+                        `${topUsername} is the only listener of ${trackDisplay} this week (${topPlays} plays)`,
                         `${topUsername} is the only friend listening to ${trackDisplay} this week (${topPlays} plays)`
                     ];
                     messages.push(random(templates));
@@ -1466,13 +1486,13 @@ const messageGenerators = {
             if (tagInfo.plays < 20) return;
             const tag = tagName.charAt(0).toUpperCase() + tagName.slice(1);
             const listenerCount = tagInfo.userCount;
-            const percentage = Math.round((listenerCount / store.friendCount) * 100);
+            const percentage = Math.round((listenerCount / store.activeFriendCount) * 100);
 
             if (index === 0) {
                 if (percentage >= 80) {
                     messages.push(random([
-                        `${tag} tops the genre charts with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`,
-                        `${tag} leads the week with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.friendCount} friends`
+                        `${tag} tops the genre charts with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`,
+                        `${tag} leads the week with ${tagInfo.plays.toLocaleString()} plays from ${listenerCount}/${store.activeFriendCount} friends`
                     ]));
                 } else if (percentage >= 40) {
                     messages.push(random([
@@ -1635,13 +1655,13 @@ const messageGenerators = {
         if (prePct >= 40) {
             const templates = [
                 `${prePct}% of this week's plays are from albums released before 2000`,
-                `The group was vintage this week - ${prePct}% of plays are from pre-2000 albums`
+                `The group leaned vintage this week, with ${prePct}% of plays from pre-2000 albums`
             ];
             messages.push(random(templates));
         } else if (postPct >= 80) {
             const templates = [
                 `${postPct}% of this week's plays are from albums released in 2000 or later`,
-                `The group is staying modern - ${postPct}% of plays are from 2000s albums or newer`
+                `The group stuck to modern music this week, with ${postPct}% of plays from 2000s albums or newer`
             ];
             messages.push(random(templates));
         }
@@ -1753,7 +1773,8 @@ const messageGenerators = {
 
         if (avgAge >= 3) {
             const templates = [
-                `The group's average album this week is ${avgAge} years old (avg release year: ${avgYear})`
+                `The group's music averaged ${avgAge} years old this week, mostly from around ${avgYear}`,
+                `Albums played this week averaged ${avgAge} years old, from around ${avgYear}`
             ];
             messages.push(random(templates));
         }
@@ -1828,8 +1849,8 @@ const messageGenerators = {
         if (!candidates.length) return messages;
         const { username, pct, recent } = candidates[0];
         const templates = [
-            `${username} is keeping up with new releases - ${pct}% of their music is from the last two years`,
-            `${username} is the most recent listener - ${pct}% of their music is from the last two years`
+            `${username} is keeping up with new releases: ${pct}% of their music is from the last two years`,
+            `${username} had the freshest taste this week, with ${pct}% of their plays from the last two years`
         ];
         messages.push(random(templates));
         return messages;
@@ -1852,7 +1873,7 @@ const messageGenerators = {
 
         const templates = [
             `${username} went the deepest into the archives this week, averaging albums released in ${avgYear}`,
-            `${username} is the most nostalgic listener - their average album is ${age} years old`
+            `${username} was the most nostalgic listener this week, averaging albums ${age} years old`
         ];
         messages.push(random(templates));
         return messages;
@@ -1870,28 +1891,28 @@ const messageGenerators = {
         const totalAlbums = data.albums.length;
         
         const totalHours = Math.floor(totalListeningTime / 3600);
-        const avgPlaysPerPerson = Math.round(totalPlays / store.friendCount);
-        const avgHoursPerPerson = Math.round(totalHours / store.friendCount);
+        const avgPlaysPerPerson = Math.round(totalPlays / store.activeFriendCount);
+        const avgHoursPerPerson = Math.round(totalHours / store.activeFriendCount);
         
         if (totalPlays >= 50) {
             const templates = [
-                `The group has ${totalPlays.toLocaleString()} plays from ${store.friendCount} friends this week (${avgPlaysPerPerson} plays per friend)`,
-                `The group totaled ${totalPlays.toLocaleString()} plays from ${store.friendCount} friends this week (${avgPlaysPerPerson} plays per friend)`
+                `The group has ${totalPlays.toLocaleString()} plays from ${store.activeFriendCount} friend${store.activeFriendCount > 1 ? 's' : ''} this week (${avgPlaysPerPerson} plays per friend)`,
+                `The group totaled ${totalPlays.toLocaleString()} plays from ${store.activeFriendCount} friend${store.activeFriendCount > 1 ? 's' : ''} this week (${avgPlaysPerPerson} plays per friend)`
             ];
             messages.push(random(templates));
         }
-        
+
         if (totalHours >= 4) {
             const templates = [
-                `${store.friendCount} listeners logged ${totalHours.toLocaleString()} hours of music this week (${avgHoursPerPerson} hours per friend)`,
-                `${store.friendCount} friends spent ${totalHours.toLocaleString()} hours listening this week (${avgHoursPerPerson} hours per friend)`,
+                `${store.activeFriendCount} listener${store.activeFriendCount > 1 ? 's' : ''} logged ${totalHours.toLocaleString()} hours of music this week (${avgHoursPerPerson} hours per friend)`,
+                `${store.activeFriendCount} friend${store.activeFriendCount > 1 ? 's' : ''} spent ${totalHours.toLocaleString()} hours listening this week (${avgHoursPerPerson} hours per friend)`,
                 `The group racked up ${totalHours.toLocaleString()} hours of listening time this week (${avgHoursPerPerson} hours per friend)`
             ];
             messages.push(random(templates));
         }
         
         if (totalTracks >= 50) {
-            const avgTracksPerPerson = Math.round(totalTracks / store.friendCount);
+            const avgTracksPerPerson = Math.round(totalTracks / store.activeFriendCount);
             const templates = [
                 `${totalTracks.toLocaleString()} unique tracks were played this week (${avgTracksPerPerson} per friend)`,
                 `The group explored ${totalTracks.toLocaleString()} different tracks this week (${avgTracksPerPerson} per friend)`,

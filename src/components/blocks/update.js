@@ -311,6 +311,10 @@ export async function updateAllBlocks() {
     // Call sortBlocks after all updates are done
     await sortBlocks(newBlocks);
 
+    // Update refresh intervals now that we know how many friends are actually active
+    store.updateTimers.blocks.interval = Math.max(5000, (store.activeFriendCount / 5) * 1200);
+    store.updateTimers.listening.interval = Math.max(180000, (store.activeFriendCount / 5) * 5 * 3000);
+
     // Fetches all done
     store.isUpdatingBlocks = false;
     updateProgressText();

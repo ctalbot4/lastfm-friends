@@ -115,6 +115,7 @@ export async function sortBlocks(blocks) {
             !b.classList.contains('removed') &&
             !b.classList.contains('hidden')
         ).length;
+    store.activeFriendCount = count;
     const maxWidth = count * 500;
     container.style.maxWidth = `${maxWidth}px`;
 

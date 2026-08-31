@@ -1,6 +1,7 @@
 export const store = {
     username: null,
     friendCount: 0,
+    activeFriendCount: 0,
     completed: 0,
     isSoundOn: false,
     isScrolling: false,
