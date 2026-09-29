@@ -408,9 +408,9 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
             foundTrack = imageCache.get(cacheKey);
         } else {
             const sanitizedTrackTitle = trackInfo.trackName.replace(/\?/g, '');
-            const query = `artist:"${trackInfo.artist}" track:"${sanitizedTrackTitle}"`;
+            const query = `track:"${sanitizedTrackTitle}" ${trackInfo.artist}`;
             const encodedQuery = encodeURIComponent(query);
-            const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+            const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&limit=200&output=jsonp`;
 
             try {
                 const result = await getJSONP(url);
@@ -423,7 +423,7 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
                     const resultTrackTitle = track.title.toLowerCase();
                     const resultArtistName = track.artist.name.toLowerCase();
                     const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-                    const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+                    const artistMatches = artistWords.every(word => resultArtistName.includes(word));
 
                     if (trackMatches && artistMatches) {
                         foundTrack = track;
@@ -434,9 +434,9 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
                 // If no match found and title has parentheses, try without
                 if (!foundTrack && trackInfo.trackName.includes('(')) {
                     const newTitle = trackInfo.trackName.replace(/\(.*?\)/g, '').trim();
-                    const newQuery = `artist:"${trackInfo.artist}" track:"${newTitle}"`;
+                    const newQuery = `track:"${newTitle}" ${trackInfo.artist}`;
                     const newEncodedQuery = encodeURIComponent(newQuery);
-                    const newUrl = `https://api.deezer.com/search/track/?q=${newEncodedQuery}&output=jsonp`;
+                    const newUrl = `https://api.deezer.com/search/track/?q=${newEncodedQuery}&limit=200&output=jsonp`;
 
                     const newResult = await getJSONP(newUrl);
 
@@ -445,7 +445,7 @@ export async function createTrackCharts(sortedTrackPlays, tracksMax) {
                         const resultTrackTitle = track.title.toLowerCase();
                         const resultArtistName = track.artist.name.toLowerCase();
                         const trackMatches = newTrackWords.some(word => resultTrackTitle.includes(word));
-                        const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+                        const artistMatches = artistWords.every(word => resultArtistName.includes(word));
 
                         if (trackMatches && artistMatches) {
                             foundTrack = track;
@@ -795,9 +795,9 @@ export async function createTrackStreaksChart(sortedStreaks, maxStreak) {
             foundTrack = imageCache.get(cacheKey);
         } else {
             const sanitizedTrackTitle = trackName.replace(/\?/g, '');
-            const query = `artist:"${artistName}" track:"${sanitizedTrackTitle}"`;
+            const query = `track:"${sanitizedTrackTitle}" ${artistName}`;
             const encodedQuery = encodeURIComponent(query);
-            const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+            const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&limit=200&output=jsonp`;
 
             try {
                 const result = await getJSONP(url);
@@ -808,7 +808,7 @@ export async function createTrackStreaksChart(sortedStreaks, maxStreak) {
                     const resultTrackTitle = track.title.toLowerCase();
                     const resultArtistName = track.artist.name.toLowerCase();
                     const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-                    const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+                    const artistMatches = artistWords.every(word => resultArtistName.includes(word));
 
                     if (trackMatches && artistMatches) {
                         foundTrack = track;

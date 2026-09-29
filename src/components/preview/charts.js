@@ -25,7 +25,7 @@ export async function playChartPreview(title, artistName, listItem, isArtist = f
                 const resultAlbumTitle = track.album.title.toLowerCase();
                 const resultArtistName = track.artist.name.toLowerCase();
                 const albumMatches = albumWords.some(word => resultAlbumTitle.includes(word));
-                const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+                const artistMatches = artistWords.every(word => resultArtistName.includes(word));
 
                 if (albumMatches && artistMatches) {
                     foundTrack = track;
@@ -52,9 +52,9 @@ export async function playChartPreview(title, artistName, listItem, isArtist = f
             console.error('Error checking artist preview:', e);
         }
     } else {
-        const query = `artist:"${artistName}" track:"${sanitizedTitle}"`;
+        const query = `track:"${sanitizedTitle}" ${artistName}`;
         const encodedQuery = encodeURIComponent(query);
-        url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+        url = `https://api.deezer.com/search/track/?q=${encodedQuery}&limit=200&output=jsonp`;
 
         const result = await getJSONP(url);
 
@@ -65,7 +65,7 @@ export async function playChartPreview(title, artistName, listItem, isArtist = f
             const resultTrackTitle = track.title.toLowerCase();
             const resultArtistName = track.artist.name.toLowerCase();
             const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-            const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+            const artistMatches = artistWords.every(word => resultArtistName.includes(word));
 
             if (trackMatches && artistMatches) {
                 foundTrack = track;

@@ -12,9 +12,9 @@ export async function playBlockPreview(trackTitle, artistName, block) {
     // Remove any question marks (causes issues with Deezer API)
     const sanitizedTrackTitle = trackTitle.replace(/\?/g, '');
 
-    const query = `artist:"${artistName}" track:"${sanitizedTrackTitle}"`;
+    const query = `track:"${sanitizedTrackTitle}" ${artistName}`;
     const encodedQuery = encodeURIComponent(query);
-    const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&output=jsonp`;
+    const url = `https://api.deezer.com/search/track/?q=${encodedQuery}&limit=200&output=jsonp`;
 
     const requestId = audioState.activeRequestId;
     const result = await getJSONP(url);
@@ -29,7 +29,7 @@ export async function playBlockPreview(trackTitle, artistName, block) {
         const resultTrackTitle = track.title.toLowerCase();
         const resultArtistName = track.artist.name.toLowerCase();
         const trackMatches = trackWords.some(word => resultTrackTitle.includes(word));
-        const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+        const artistMatches = artistWords.every(word => resultArtistName.includes(word));
 
         if (trackMatches && artistMatches) {
             foundTrack = track;

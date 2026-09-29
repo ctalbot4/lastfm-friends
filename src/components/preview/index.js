@@ -159,7 +159,7 @@ export async function hasPreview(title, artistName) {
             const resultAlbumTitle = track.album.title.toLowerCase();
             const resultArtistName = track.artist.name.toLowerCase();
             const albumMatches = albumWords.some(word => resultAlbumTitle.includes(word));
-            const artistMatches = artistWords.some(word => resultArtistName.includes(word));
+            const artistMatches = artistWords.every(word => resultArtistName.includes(word));
 
             if (albumMatches && artistMatches) {
                 return true;

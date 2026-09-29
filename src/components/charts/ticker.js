@@ -1773,8 +1773,8 @@ const messageGenerators = {
 
         if (avgAge >= 3) {
             const templates = [
-                `The group's music averaged ${avgAge} years old this week, mostly from around ${avgYear}`,
-                `Albums played this week averaged ${avgAge} years old, from around ${avgYear}`
+                `The group's music averaged ${avgAge} years old this week, with an average release year of ${avgYear}`,
+                `Albums played this week averaged ${avgAge} years old, equaling an average release year of ${avgYear}`
             ];
             messages.push(random(templates));
         }
