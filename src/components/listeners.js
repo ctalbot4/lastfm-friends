@@ -202,9 +202,6 @@ function buildListenerStatsPanel(listeners, itemKey, itemType, genreNames, album
 export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     const username = block.dataset.username;
 
-    // Reselect block in case it changed during fetch
-    block = document.querySelector(`.block[data-username="${username}"]`);
-    
     let listenersContent = block.querySelector(".listeners-content-track");
     let YOffset = 0;
 
@@ -221,8 +218,6 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     } else {
         YOffset = block.querySelector(".listeners-content-track .listeners-list").scrollTop;
     }
-
-    store.isFetchingListeners = true;
 
     const artistName = block.querySelector(".artist-title > a").innerText;
     const trackName = block.querySelector(".song-title > a").innerText;
@@ -292,12 +287,11 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                 // If we've been rate limited, show message
                 if (e.code === 29) {
                     rateLimited = true;
-                    listenersContent = document.querySelector(`.block[data-username="${username}"] .listeners-content-track`);
+                    listenersContent = block.querySelector(".listeners-content-track");
                     listenersContent.innerHTML = `
                       <div class="no-listeners">
                         <div>You're making requests too quickly. Please try again in a moment.</div>
                       </div>`;
-                    store.isFetchingListeners = false;
                     gtag('event', 'rate_limit-listeners', {});
                     return null;
                 } else if (e.code == 6) {
@@ -319,7 +313,6 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
 
         // Fall back to album name stored on block dataset
         if (!albumName) {
-            block = document.querySelector(`.block[data-username="${username}"]`);
             albumName = block.dataset.currentAlbum || null;
         }
 
@@ -372,13 +365,9 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
             }
         }
 
-        // Reselect block in case it changed during fetch
-        block = document.querySelector(`.block[data-username="${username}"]`);
-        
         // Check if track tab is still active before appending to DOM
         trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
         if (!trackTab.classList.contains('active')) {
-            store.isFetchingListeners = false;
             return;
         }
         
@@ -442,20 +431,6 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
                 if (row) row.classList.add('expanded');
             });
 
-            // Add scroll listener to container to pause sortBlocks() when scrolling
-            const list = block.querySelector('.listeners-list');
-            list.addEventListener('scroll', () => {
-                store.isScrolling = true;
-                clearTimeout(store.scrollTimeoutId);
-                store.scrollTimeoutId = setTimeout(() => { store.isScrolling = false; }, 2000);
-            }, { passive: true });
-            if ('onscrollend' in window) {
-                list.addEventListener('scrollend', () => {
-                    clearTimeout(store.scrollTimeoutId);
-                    store.isScrolling = false;
-                }, { passive: true });
-            }
-
         } else {
             listenersContent.innerHTML = `
                 <div class="no-listeners">
@@ -469,24 +444,18 @@ export async function fetchTrackListeners(block, key = store.keys.KEY3) {
     } catch (error) {
         console.error("Error fetching track listeners:", error);
 
-        block = document.querySelector(`.block[data-username="${username}"]`);
         listenersContent = block.querySelector(".listeners-content-track");
         listenersContent.innerHTML = `
        <div class="no-listeners">
          <div>Couldn't load listener data. Try again.</div>
        </div>`;
         block.dataset.trackListenersLoaded = "0";
-    } finally {
-        store.isFetchingListeners = false;
     }
 }
 
 // Fetch artist listeners
 export async function fetchArtistListeners(block, key = store.keys.KEY3) {
     const username = block.dataset.username;
-
-    // Reselect block in case it changed during fetch
-    block = document.querySelector(`.block[data-username="${username}"]`);
 
     let listenersContent = block.querySelector(".listeners-content-artist");
     let YOffset = 0;
@@ -532,11 +501,6 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
         
         imageCache.set(cacheKey, artistImageUrl);
     }
-
-    store.isFetchingListeners = true;
-
-    // Reselect block in case it changed during fetch
-    block = document.querySelector(`.block[data-username="${username}"]`);
 
     let trackTab = block.querySelector('.listeners-tab[data-tab="track"]');
     let artistTab = block.querySelector('.listeners-tab[data-tab="artist"]');
@@ -601,12 +565,11 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
                 // If we've been rate limited, show message
                 if (e.code === 29) {
                     rateLimited = true;
-                    listenersContent = document.querySelector(`.block[data-username="${username}"] .listeners-content-artist`);
+                    listenersContent = block.querySelector(".listeners-content-artist");
                     listenersContent.innerHTML = `
                       <div class="no-listeners">
                         <div>You're making requests too quickly. Please try again in a moment.</div>
                       </div>`;
-                    store.isFetchingListeners = false;
                     gtag('event', 'rate_limit-listeners', {});
                     return null;
                 } else if (e.code == 6) {
@@ -650,13 +613,9 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
             }
         }
 
-        // Reselect block in case it changed during fetch
-        block = document.querySelector(`.block[data-username="${username}"]`);
-        
         // Check if artist tab is still active before appending to DOM
         const artistTab = block.querySelector('.listeners-tab[data-tab="artist"]');
         if (!artistTab.classList.contains('active')) {
-            store.isFetchingListeners = false;
             return;
         }
         
@@ -718,20 +677,6 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
                 if (row) row.classList.add('expanded');
             });
 
-            // Add scroll listener to container to pause sortBlocks() when scrolling
-            const list = block.querySelector('.listeners-content-artist .listeners-list');
-            list.addEventListener('scroll', () => {
-                store.isScrolling = true;
-                clearTimeout(store.scrollTimeoutId);
-                store.scrollTimeoutId = setTimeout(() => { store.isScrolling = false; }, 2000);
-            }, { passive: true });
-            if ('onscrollend' in window) {
-                list.addEventListener('scrollend', () => {
-                    clearTimeout(store.scrollTimeoutId);
-                    store.isScrolling = false;
-                }, { passive: true });
-            }
-
         } else {
             listenersContent.innerHTML = `
                 <div class="no-listeners">
@@ -745,7 +690,6 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
     } catch (error) {
         console.error("Error fetching artist listeners:", error);
 
-        block = document.querySelector(`.block[data-username="${username}"]`);
         listenersContent = block.querySelector(".listeners-content-artist");
         listenersContent.innerHTML = `
        <div class="no-listeners">
@@ -754,7 +698,6 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
         block.dataset.artistListenersLoaded = "0";
     } finally {
         // Show now that images and user data are loaded
-        block = document.querySelector(`.block[data-username="${username}"]`);
         const listenersHeader = block.querySelector(".listeners-header");
         const artistContent = block.querySelector('.listeners-content-artist');
         const artistTab = block.querySelector('.listeners-tab[data-tab="artist"]');
@@ -766,6 +709,5 @@ export async function fetchArtistListeners(block, key = store.keys.KEY3) {
             artistContent.style.display = 'flex';
         }
         
-        store.isFetchingListeners = false;
     }
 }

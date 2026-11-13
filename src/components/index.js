@@ -6,7 +6,6 @@ import * as lastfm from "../api/lastfm.js";
 
 // Blocks
 import { createBlock } from "./blocks/create.js";
-import { setupBlocks } from "./blocks/index.js";
 import { updateAllBlocks } from "./blocks/update.js";
 
 // Cache

@@ -7,11 +7,44 @@ import { setupBlocks } from "./index.js";
 // UI
 import { getUsernameFromURL } from "../../ui/dom.js";
 
-// Sort blocks then replace old ones
-export async function sortBlocks(blocks) {
+// Sort blocks then insert changed ones
+export function sortBlocks(blocks) {
 
-    // Ignore null blocks
-    blocks = blocks.filter(block => block != null);
+    const replacedBlocks = [];
+
+    // Keep live blocks unless new play
+    blocks = blocks.map(newBlock => {
+        const liveBlock = document.querySelector(`.block[data-username="${newBlock.dataset.username}"]`);
+
+        // Private or empty blocks aren't updated
+        if (newBlock === liveBlock) return liveBlock;
+
+        if (newBlock.dataset.reset == "true") {
+            // New play, remove live block and use new block
+            delete newBlock.dataset.reset;
+            liveBlock.remove();
+            replacedBlocks.push(newBlock);
+            return newBlock;
+        }
+
+        // Same play, keep live block and pull out if no longer playing so it moves
+        if (liveBlock.dataset.nowPlaying !== newBlock.dataset.nowPlaying) {
+            liveBlock.remove();
+        }
+
+        // Copy updated track info to live block
+        liveBlock.querySelector(".bottom").replaceWith(newBlock.querySelector(".bottom"));
+        liveBlock.style.backgroundImage = newBlock.style.backgroundImage;
+        ['removed', 'empty', 'private'].forEach(name => {
+            liveBlock.classList.toggle(name, newBlock.classList.contains(name));
+        });
+        ['nowPlaying', 'date', 'currentAlbum', 'nowPlayingAlbum', 'nowPlayingArtist', 'nowPlayingMbid'].forEach(key => {
+            if (key in newBlock.dataset) {
+                liveBlock.dataset[key] = newBlock.dataset[key];
+            }
+        });
+        return liveBlock;
+    });
 
     const username = getUsernameFromURL().toLowerCase();
     blocks.sort((x, y) => {
@@ -37,76 +70,12 @@ export async function sortBlocks(blocks) {
         }
     });
 
-    // If user is scrolling listeners list, wait to rebuild DOM
-    while (store.isScrolling) {
-        await new Promise(r => setTimeout(r, 16));
-    }
-
-    const newBlocks = [];
-
-    // Sync values from original blocks that user might've changed during update and ignore null blocks
-    blocks.forEach((newBlock, index) => {
-        const originalBlock = document.querySelector(`.block[data-username="${newBlock.dataset.username}"]`);
-        newBlock.dataset.previewPlaying = originalBlock.dataset.previewPlaying || "false";
-        if (newBlock.dataset.previewTime != 0) {
-            newBlock.dataset.previewTime = originalBlock.dataset.previewTime;
-        }
-
-        // Sync listeners-containers across updates
-        if (newBlock.dataset.reset == "true") {
-            // New track - reset listeners-container
-            const trackTab = newBlock.querySelector('.listeners-tab[data-tab="track"]');
-            const artistTab = newBlock.querySelector('.listeners-tab[data-tab="artist"]');
-            const trackContent = newBlock.querySelector('.listeners-content-track');
-            const artistContent = newBlock.querySelector('.listeners-content-artist');
-            const listenersHeader = newBlock.querySelector('.listeners-header');
-            
-            artistTab.classList.add('active');
-            trackTab.classList.remove('active');
-            artistContent.style.display = 'flex';
-            trackContent.style.display = 'none';
-            listenersHeader.style.display = "none";
-            
-            delete newBlock.dataset.reset;
-        } else if (originalBlock.dataset.artistListenersLoaded != "0") {
-            // Listeners screen has been opened
-            newBlock.querySelector(".listeners-container").className =
-                originalBlock.querySelector(".listeners-container").className;
-            newBlock.querySelector(".listeners-container").innerHTML =
-                originalBlock.querySelector(".listeners-container").innerHTML;
-            newBlock.dataset.trackListenersLoaded = originalBlock.dataset.trackListenersLoaded;
-            newBlock.dataset.artistListenersLoaded = originalBlock.dataset.artistListenersLoaded;
-        }
-
-        // Preserve info button hover state
-        if (originalBlock.matches(':hover')) {
-            newBlock.querySelector(".info-button").style.opacity = "1";
-            newBlock.addEventListener('mouseout', () => {
-                newBlock.querySelector(".info-button").style.opacity = "";
-            }, {
-                once: true
-            });
-        } else {
-            newBlock.querySelector(".info-button").style.opacity = "";
-        }
-        newBlocks.push(newBlock);
-    });
-
-    // Save scroll positions inside listeners-container and reapply them after rebuilding
-    const scrollPositions = {};
-
-    document.querySelectorAll('.listeners-list').forEach(list => {
-        const block = list.closest('.block');
-        const contentPanel = list.closest('.listeners-content-track, .listeners-content-artist');
-        if (!block || !contentPanel || contentPanel.style.display === 'none') return;
-        const tab = contentPanel.classList.contains('listeners-content-track') ? 'track' : 'artist';
-        scrollPositions[`${block.dataset.username}:${tab}`] = list.scrollTop;
-    });
-
+    // Insert changed blocks in sorted position
     const container = document.getElementById("block-container");
-    container.innerHTML = "";
-    newBlocks.forEach(block => {
-        container.appendChild(block);
+    blocks.forEach((block, index) => {
+        if (container.children[index] !== block) {
+            container.insertBefore(block, container.children[index]);
+        }
     });
 
     // Limit grid width for small groups
@@ -119,17 +88,5 @@ export async function sortBlocks(blocks) {
     const maxWidth = count * 500;
     container.style.maxWidth = `${maxWidth}px`;
 
-    newBlocks.forEach(block => {
-        const name = block.dataset.username;
-        ['track', 'artist'].forEach(tab => {
-            const pos = scrollPositions[`${name}:${tab}`];
-            if (pos == null) return;
-            const contentPanel = block.querySelector(`.listeners-content-${tab}`);
-            if (!contentPanel || contentPanel.style.display === 'none') return;
-            const domList = contentPanel.querySelector('.listeners-list');
-            if (domList) domList.scrollTop = pos;
-        });
-    });
-
-    setupBlocks();
+    setupBlocks(replacedBlocks);
 }

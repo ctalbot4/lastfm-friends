@@ -27,11 +27,9 @@ function setRowExpanded(row, expanded) {
     }
 }
 
-// Setup blocks on initial load and when blocks are rebuilt in sortBlocks()
-export function setupBlocks() {
-    document.querySelectorAll(`.block`).forEach(block => {
-        if (!block) return;
-
+// Setup blocks on initial load and when they're replaced with a new play in sortBlocks()
+export function setupBlocks(blocks) {
+    blocks.forEach(block => {
         block.querySelector(".info-button").addEventListener("click", async (e) => {
             e.preventDefault();
             const block = e.currentTarget.closest('.block');
@@ -95,21 +93,6 @@ export function setupBlocks() {
 
             if (!store.keys.KEY3) store.keys.KEY3 = await getKey(3);
             await fetchArtistListeners(block);
-        });
-
-        // Add scroll listeners to any active listeners-lists
-        block.querySelectorAll('.listeners-list').forEach(list => {
-            list.addEventListener('scroll', () => {
-                store.isScrolling = true;
-                clearTimeout(store.scrollTimeoutId);
-                store.scrollTimeoutId = setTimeout(() => { store.isScrolling = false; }, 2000);
-            }, { passive: true });
-            if ('onscrollend' in window) {
-                list.addEventListener('scrollend', () => {
-                    clearTimeout(store.scrollTimeoutId);
-                    store.isScrolling = false;
-                }, { passive: true });
-            }
         });
 
         // Expand/collapse listener rows

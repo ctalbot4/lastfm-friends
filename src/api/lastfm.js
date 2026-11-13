@@ -60,6 +60,19 @@ async function callApi(method, params = {}, key = store.keys.KEY, retry = 0) {
         }
     }
 
+    // Handle getInfo responses randomly missing the user's play count
+    const info = data.track || data.artist?.stats;
+    if (params.username && info && info.userplaycount === undefined) {
+        if (retry < 3) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            return callApi(method, params, key, retry + 1);
+        }
+        const err = new Error(`Last.fm ${method} response missing userplaycount`);
+        err.status = response.status;
+        err.data = data;
+        throw err;
+    }
+
     return data;
 }
 

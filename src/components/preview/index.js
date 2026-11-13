@@ -56,14 +56,12 @@ export function initPreview() {
 
             // Clear previous timeout and save preview time on previous block if mouseout wasn't triggered
             if (audioState.currentBlock) {
-                // Need to get block again, might have old copy after refresh
-                const updatedCurrentBlock = document.getElementById("block-container").querySelector(`.block[data-username="${audioState.currentBlock.dataset.username}"]`);
-                updatedCurrentBlock.dataset.previewPlaying = "false";
+                audioState.currentBlock.dataset.previewPlaying = "false";
                 clearTimeout(audioState.hoverTimers[audioState.currentBlock.dataset.username]);
 
                 // Check if currentBlock is the block playing audio
-                if (audioState.currentAudioBlock == audioState.currentBlock?.dataset.username) {
-                    updatedCurrentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
+                if (audioState.currentAudioBlock == audioState.currentBlock.dataset.username) {
+                    audioState.currentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
                 }
             }
 
@@ -103,11 +101,11 @@ export function initPreview() {
                 audioState.currentAudio.pause();
                 // Check if block is the block playing audio
                 if (audioState.currentAudioBlock == block.dataset.username) {
-                    block.dataset.previewTime = audioState.currentAudio.currentTime;
+                    audioState.currentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
                 }
                 audioState.currentAudioBlock = null;
             }
-            document.getElementById("block-container").querySelector(`.block[data-username="${block.dataset.username}"]`).dataset.previewPlaying = "false";
+            block.dataset.previewPlaying = "false";
             audioState.currentBlock = null;
         });
     }
@@ -217,13 +215,11 @@ export function handleScroll() {
 
         // Clear previous timeout on previous block 
         if (audioState.currentBlock) {
-            // Need to get block again, might have old copy after refresh
-            const updatedCurrentBlock = document.getElementById("block-container").querySelector(`.block[data-username="${audioState.currentBlock.dataset.username}"]`);
-            updatedCurrentBlock.dataset.previewPlaying = "false";
+            audioState.currentBlock.dataset.previewPlaying = "false";
 
             // Check if currentBlock is the block playing audio
-            if (audioState.currentAudioBlock == audioState.currentBlock?.dataset.username) {
-                updatedCurrentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
+            if (audioState.currentAudioBlock == audioState.currentBlock.dataset.username) {
+                audioState.currentBlock.dataset.previewTime = audioState.currentAudio.currentTime;
             }
         }
 

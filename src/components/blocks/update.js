@@ -34,15 +34,16 @@ async function updateBlock(block, key = store.keys.KEY) {
     const username = block.dataset.username;
     const oldSongRest = block.querySelector('.song-title .rest').innerText;
     const oldSongNoBreak = block.querySelector('.song-title .no-break').innerText;
-    const savedPreviewPlaying = block.dataset.previewPlaying || "false";
-    block = null;
+    const oldArtistRest = block.querySelector('.artist-title .rest').innerText;
+    const oldArtistNoBreak = block.querySelector('.artist-title .no-break').innerText;
+    const oldNowPlaying = block.dataset.nowPlaying === "true";
+    const oldDate = block.dataset.date;
 
-    const liveBlock = document.querySelector(`.block[data-username="${username}"]`);
-    if (liveBlock.classList.contains("private") || liveBlock.classList.contains("empty")) {
-        return liveBlock;
+    if (block.classList.contains("private") || block.classList.contains("empty")) {
+        return block;
     }
     const oneWeekAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-    const newBlock = liveBlock.cloneNode(true);
+    const newBlock = block.cloneNode(true);
     newBlock.classList.remove("removed");
     try {
         const data = await lastfm.getRecentTracks(username, key, oneWeekAgo);
@@ -74,14 +75,27 @@ async function updateBlock(block, key = store.keys.KEY) {
         const recentTrack = data.recenttracks.track[0];
         const trimmedName = recentTrack.name.trim();
         const oldName = (`${oldSongRest}${oldSongRest ? " " : ""}${oldSongNoBreak}`).trim();
+        const oldArtist = (`${oldArtistRest}${oldArtistRest ? " " : ""}${oldArtistNoBreak}`).trim();
+        const nowPlaying = recentTrack["@attr"]?.nowplaying;
 
-        // Reset block if track changes
-        if (trimmedName != oldName) {
+        // Reset block if it's a new play (different track, or same track replayed)
+        const isNewPlay = trimmedName != oldName ||
+            recentTrack.artist.name.trim() != oldArtist ||
+            (nowPlaying && !oldNowPlaying) ||
+            (!nowPlaying && !oldNowPlaying && recentTrack.date.uts != oldDate);
+
+        if (isNewPlay) {
             newBlock.dataset.previewTime = 0;
+            newBlock.dataset.previewPlaying = "false";
             newBlock.dataset.trackListenersLoaded = "0";
             newBlock.dataset.artistListenersLoaded = "0";
             newBlock.dataset.reset = "true";
             newBlock.querySelector(".listeners-container").classList.remove("active");
+            newBlock.querySelector('.listeners-tab[data-tab="artist"]').classList.add("active");
+            newBlock.querySelector('.listeners-tab[data-tab="track"]').classList.remove("active");
+            newBlock.querySelector('.listeners-content-artist').style.display = "flex";
+            newBlock.querySelector('.listeners-content-track').style.display = "none";
+            newBlock.querySelector('.listeners-header').style.display = "none";
         }
 
         // Workaround for heart and star icons wrapping incorrectly
@@ -200,7 +214,6 @@ async function updateBlock(block, key = store.keys.KEY) {
             newBlock.style.backgroundImage = `url(${imageUrl})`;
         }
 
-        const nowPlaying = recentTrack["@attr"]?.nowplaying;
         const timeSpan = newBlock.querySelector(".time");
 
         if (nowPlaying) {
@@ -253,18 +266,11 @@ async function updateBlock(block, key = store.keys.KEY) {
         updateProgress("activity", username);
     }
 
-    newBlock.dataset.previewPlaying = savedPreviewPlaying;
-
     return newBlock;
 }
 
 // Update all blocks
 export async function updateAllBlocks() {
-    // Wait for listeners fetch to complete
-    while (store.isFetchingListeners) {
-        await new Promise(r => setTimeout(r, 100));
-    }
-
     const blockContainer = document.getElementById("block-container");
     const blocks = blockContainer.getElementsByClassName("block");
     const blocksArr = Array.from(blocks);
@@ -309,7 +315,7 @@ export async function updateAllBlocks() {
     }
 
     // Call sortBlocks after all updates are done
-    await sortBlocks(newBlocks);
+    sortBlocks(newBlocks);
 
     // Update refresh intervals now that we know how many friends are actually active
     store.updateTimers.blocks.interval = Math.max(5000, (store.activeFriendCount / 5) * 1200);
